@@ -1,0 +1,26 @@
+---
+import type { Category } from '../../types';
+import Container from '../ui/Container.astro';
+import SectionHeading from '../ui/SectionHeading.astro';
+import CategoryCard from '../category/CategoryCard.astro';
+
+interface Props {
+  categories: Category[];
+}
+
+const { categories } = Astro.props;
+---
+
+<section class="section-padding bg-neutral-50">
+  <Container>
+    <SectionHeading
+      title="Shop By Category"
+      subtitle="Browse electronics and home appliances by category"
+    />
+    <div class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+      {categories.map((category) => (
+        <CategoryCard category={category} />
+      ))}
+    </div>
+  </Container>
+</section>

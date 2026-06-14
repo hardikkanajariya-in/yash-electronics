@@ -1,0 +1,15 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ContactSection from '../components/home/ContactSection.astro';
+import { getSettings } from '../services/cms';
+
+const settings = await getSettings();
+---
+
+<BaseLayout
+  title="Contact Us"
+  description={`Contact ${settings.businessName} for product enquiries, pricing and store directions.`}
+  canonicalUrl="/contact"
+>
+  <ContactSection settings={settings} />
+</BaseLayout>

@@ -1,0 +1,25 @@
+---
+import type { Brand } from '../../types';
+import CloudinaryImage from '../common/CloudinaryImage.astro';
+
+interface Props {
+  brand: Brand;
+}
+
+const { brand } = Astro.props;
+---
+
+<a
+  href={`/products?brand=${brand.slug}`}
+  class="retail-card flex h-20 items-center justify-center p-4 transition-colors hover:border-primary"
+  title={`Shop ${brand.name} products`}
+>
+  <CloudinaryImage
+    publicId={brand.logo}
+    alt={`${brand.name} logo`}
+    width={120}
+    height={48}
+    class="max-h-10 w-auto object-contain"
+    sizes="120px"
+  />
+</a>

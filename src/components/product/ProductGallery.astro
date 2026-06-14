@@ -1,0 +1,66 @@
+---
+import type { Product } from '../../types';
+import CloudinaryImage from '../common/CloudinaryImage.astro';
+
+interface Props {
+  images: string[];
+  productName: string;
+}
+
+const { images, productName } = Astro.props;
+const displayImages = images.length > 0 ? images : [''];
+---
+
+<div class="product-gallery">
+  <div class="overflow-hidden rounded-lg border border-neutral-200 bg-white">
+    <CloudinaryImage
+      publicId={displayImages[0]}
+      alt={productName}
+      width={600}
+      height={600}
+      class="aspect-square w-full"
+      priority
+      sizes="(max-width: 768px) 100vw, 50vw"
+    />
+  </div>
+  {displayImages.length > 1 && (
+    <div class="mt-2 grid grid-cols-4 gap-2">
+      {displayImages.slice(0, 4).map((img, i) => (
+        <button
+          type="button"
+          class="gallery-thumb overflow-hidden rounded border-2 border-transparent bg-white transition-colors hover:border-primary focus:border-primary"
+          data-index={i}
+          aria-label={`View image ${i + 1}`}
+        >
+          <CloudinaryImage
+            publicId={img}
+            alt={`${productName} - view ${i + 1}`}
+            width={120}
+            height={120}
+            class="aspect-square w-full"
+          />
+        </button>
+      ))}
+    </div>
+  )}
+</div>
+
+<script>
+  const gallery = document.querySelector('.product-gallery');
+  if (gallery) {
+    const mainImg = gallery.querySelector('img');
+    const thumbs = gallery.querySelectorAll('.gallery-thumb');
+
+    thumbs.forEach((thumb) => {
+      thumb.addEventListener('click', () => {
+        const thumbImg = thumb.querySelector('img');
+        if (mainImg && thumbImg) {
+          mainImg.src = thumbImg.src;
+          mainImg.srcset = thumbImg.srcset;
+        }
+        thumbs.forEach((t) => t.classList.remove('border-primary'));
+        thumb.classList.add('border-primary');
+      });
+    });
+  }
+</script>

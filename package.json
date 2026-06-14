@@ -1,5 +1,5 @@
 {
-  "name": "",
+  "name": "yash-electronics",
   "type": "module",
   "version": "0.0.1",
   "engines": {
@@ -12,6 +12,9 @@
     "astro": "astro"
   },
   "dependencies": {
-    "astro": "^6.4.6"
+    "@astrojs/sitemap": "^3.7.3",
+    "@astrojs/tailwind": "^6.0.2",
+    "astro": "^6.4.6",
+    "tailwindcss": "^3.4.19"
   }
 }

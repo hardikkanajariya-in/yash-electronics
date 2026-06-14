@@ -1,0 +1,41 @@
+---
+interface Props {
+  publicId: string;
+  alt: string;
+  width?: number;
+  height?: number;
+  class?: string;
+  loading?: 'lazy' | 'eager';
+  sizes?: string;
+  priority?: boolean;
+}
+
+import { buildCloudinaryUrl, buildSrcSet } from '../../lib/cloudinary';
+
+const {
+  publicId,
+  alt,
+  width = 400,
+  height,
+  class: className = '',
+  loading = 'lazy',
+  sizes = '100vw',
+  priority = false,
+} = Astro.props;
+
+const src = buildCloudinaryUrl(publicId, { width, height });
+const srcSet = buildSrcSet(publicId, [320, 480, 640, 768, 1024]);
+const imgLoading = priority ? 'eager' : loading;
+---
+
+<img
+  src={src}
+  srcset={srcSet}
+  sizes={sizes}
+  alt={alt}
+  width={width}
+  height={height}
+  loading={imgLoading}
+  decoding="async"
+  class:list={['object-cover', className]}
+/>

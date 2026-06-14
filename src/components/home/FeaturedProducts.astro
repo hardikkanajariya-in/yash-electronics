@@ -1,0 +1,31 @@
+---
+import type { Product } from '../../types';
+import Container from '../ui/Container.astro';
+import SectionHeading from '../ui/SectionHeading.astro';
+import ProductGrid from '../product/ProductGrid.astro';
+import Button from '../ui/Button.astro';
+
+interface Props {
+  products: Product[];
+}
+
+const { products } = Astro.props;
+---
+
+<section class="section-padding bg-white">
+  <Container>
+    <div class="flex items-end justify-between gap-4">
+      <SectionHeading
+        title="Featured Products"
+        subtitle="Handpicked deals on popular electronics and appliances"
+      />
+      <Button href="/products" text="View All" variant="outline" class="hidden shrink-0 sm:inline-flex" />
+    </div>
+    <div class="mt-6">
+      <ProductGrid products={products} />
+    </div>
+    <div class="mt-6 text-center sm:hidden">
+      <Button href="/products" text="View All Products" variant="outline" />
+    </div>
+  </Container>
+</section>

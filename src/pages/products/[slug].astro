@@ -1,0 +1,144 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Container from '../../components/ui/Container.astro';
+import ProductGallery from '../../components/product/ProductGallery.astro';
+import Button from '../../components/ui/Button.astro';
+import ProductSchema from '../../components/seo/ProductSchema.astro';
+import { getProducts, getSettings } from '../../services/cms';
+import {
+  formatPrice,
+  calculateSavings,
+  calculateDiscountPercent,
+  parseSpecifications,
+} from '../../lib/format';
+import { buildCloudinaryUrl } from '../../lib/cloudinary';
+import {
+  buildWhatsAppUrl,
+  generateProductInquiryMessage,
+} from '../../features/whatsapp/generateMessage';
+
+export async function getStaticPaths() {
+  const products = await getProducts();
+  return products.map((product) => ({
+    params: { slug: product.slug },
+    props: { product },
+  }));
+}
+
+const { product } = Astro.props;
+const settings = await getSettings();
+const siteUrl = import.meta.env.PUBLIC_SITE_URL || Astro.url.origin;
+const savings = calculateSavings(product.mrp, product.offerPrice);
+const discount = calculateDiscountPercent(product.mrp, product.offerPrice);
+const specs = parseSpecifications(product.specifications);
+const ogImage = product.images[0]
+  ? buildCloudinaryUrl(product.images[0], { width: 1200 })
+  : undefined;
+
+const whatsappUrl = buildWhatsAppUrl(
+  settings.whatsapp,
+  generateProductInquiryMessage(
+    {
+      name: product.name,
+      brand: product.brand,
+      modelNumber: product.modelNumber,
+      offerPrice: product.offerPrice,
+      url: `${siteUrl}/products/${product.slug}`,
+    },
+    settings,
+  ),
+);
+---
+
+<BaseLayout
+  title={product.name}
+  description={product.description}
+  canonicalUrl={`/products/${product.slug}`}
+  ogImage={ogImage}
+>
+  <ProductSchema product={product} settings={settings} />
+  <Container class="py-6">
+    <nav class="mb-4 text-sm text-neutral-500" aria-label="Breadcrumb">
+      <a href="/" class="hover:text-primary">Home</a>
+      <span class="mx-1">/</span>
+      <a href="/products" class="hover:text-primary">Products</a>
+      <span class="mx-1">/</span>
+      <a href={`/category/${product.categorySlug}`} class="hover:text-primary">{product.category}</a>
+      <span class="mx-1">/</span>
+      <span class="text-neutral-800">{product.name}</span>
+    </nav>
+
+    <div class="grid gap-8 lg:grid-cols-2">
+      <ProductGallery images={product.images} productName={product.name} />
+
+      <div>
+        <p class="text-sm font-semibold uppercase tracking-wide text-neutral-500">{product.brand}</p>
+        <h1 class="mt-1 text-xl font-bold text-neutral-900 md:text-2xl">{product.name}</h1>
+        <p class="mt-1 text-sm text-neutral-500">Model: {product.modelNumber}</p>
+
+        <div class="mt-4 rounded-lg border border-neutral-200 bg-neutral-50 p-4">
+          <div class="flex flex-wrap items-baseline gap-3">
+            <span class="text-2xl font-bold text-primary">{formatPrice(product.offerPrice)}</span>
+            {product.mrp > product.offerPrice && (
+              <>
+                <span class="text-base text-neutral-400 line-through">{formatPrice(product.mrp)}</span>
+                <span class="rounded bg-accent px-2 py-0.5 text-xs font-semibold text-white">
+                  {discount}% OFF
+                </span>
+              </>
+            )}
+          </div>
+          {savings > 0 && (
+            <p class="mt-1 text-sm font-medium text-accent">You save {formatPrice(savings)}</p>
+          )}
+          <p class="mt-2 text-xs text-neutral-500">MRP inclusive of all taxes. Final price may vary.</p>
+        </div>
+
+        <div class="mt-4 flex flex-col gap-3 sm:flex-row">
+          <Button href={whatsappUrl} text="Enquire On WhatsApp" variant="whatsapp" external class="flex-1 py-3 text-base" />
+          <Button href={`tel:${settings.phone.replace(/\s/g, '')}`} text="Call Store" variant="primary" class="flex-1 py-3" />
+        </div>
+
+        <div class="mt-6">
+          <h2 class="font-semibold text-neutral-900">Description</h2>
+          <p class="mt-2 text-sm leading-relaxed text-neutral-600">{product.description}</p>
+        </div>
+
+        {Object.keys(specs).length > 0 && (
+          <div class="mt-6">
+            <h2 class="font-semibold text-neutral-900">Specifications</h2>
+            <table class="mt-2 w-full text-sm">
+              <tbody>
+                {Object.entries(specs).map(([key, value]) => (
+                  <tr class="border-b border-neutral-100">
+                    <td class="py-2 pr-4 font-medium text-neutral-700">{key}</td>
+                    <td class="py-2 text-neutral-600">{value}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <dl class="mt-6 grid grid-cols-2 gap-3 text-sm">
+          <div class="rounded border border-neutral-200 p-3">
+            <dt class="text-neutral-500">Brand</dt>
+            <dd class="font-medium text-neutral-900">
+              <a href={`/products?brand=${product.brandSlug}`} class="text-primary hover:underline">
+                {product.brand}
+              </a>
+            </dd>
+          </div>
+          <div class="rounded border border-neutral-200 p-3">
+            <dt class="text-neutral-500">Category</dt>
+            <dd class="font-medium text-neutral-900">
+              <a href={`/category/${product.categorySlug}`} class="text-primary hover:underline">
+                {product.category}
+              </a>
+            </dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+  </Container>
+</BaseLayout>

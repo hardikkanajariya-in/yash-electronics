@@ -1,0 +1,50 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Container from '../../components/ui/Container.astro';
+import SectionHeading from '../../components/ui/SectionHeading.astro';
+import OfferCard from '../../components/offer/OfferCard.astro';
+import { getOffers, getSettings } from '../../services/cms';
+import { OFFER_TYPE_LABELS } from '../../lib/constants';
+import type { Offer } from '../../types';
+
+const [offers, settings] = await Promise.all([getOffers(), getSettings()]);
+
+const groupedOffers = offers.reduce<Record<Offer['type'], Offer[]>>(
+  (acc, offer) => {
+    if (!acc[offer.type]) acc[offer.type] = [];
+    acc[offer.type].push(offer);
+    return acc;
+  },
+  {} as Record<Offer['type'], Offer[]>,
+);
+---
+
+<BaseLayout
+  title="Special Offers"
+  description="Combo offers, build your bundle deals, weekly specials and festival discounts on electronics and appliances."
+  canonicalUrl="/offers"
+>
+  <Container class="py-6">
+    <SectionHeading
+      title="Special Offer Zone"
+      subtitle="Limited-time deals on electronics and home appliances"
+    />
+
+    {Object.entries(groupedOffers).map(([type, typeOffers]) => (
+      <section class="mt-8">
+        <h2 class="text-lg font-semibold text-neutral-900">
+          {OFFER_TYPE_LABELS[type as Offer['type']]}
+        </h2>
+        <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {typeOffers.map((offer) => (
+            <OfferCard offer={offer} settings={settings} />
+          ))}
+        </div>
+      </section>
+    ))}
+
+    {offers.length === 0 && (
+      <p class="mt-8 text-center text-neutral-600">No active offers at the moment. Check back soon!</p>
+    )}
+  </Container>
+</BaseLayout>

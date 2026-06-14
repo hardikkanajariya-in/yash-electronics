@@ -1,0 +1,52 @@
+---
+import type { Category } from '../../types';
+import CloudinaryImage from '../common/CloudinaryImage.astro';
+
+interface Props {
+  category: Category;
+}
+
+const { category } = Astro.props;
+
+const iconPaths: Record<string, string> = {
+  tv: 'M3 5h18v12H3V5zm0 14h18v2H3v-2z',
+  fridge: 'M6 2h12a2 2 0 012 2v20a2 2 0 01-2 2H6a2 2 0 01-2-2V4a2 2 0 012-2zm4 4h4v4h-4V6z',
+  washer: 'M12 2a10 10 0 100 20 10 10 0 000-20zm0 4a3 3 0 110 6 3 3 0 010-6z',
+  microwave: 'M4 4h16v16H4V4zm2 2v12h12V6H6zm2 2h8v8H8V8z',
+  'air-fryer': 'M12 2C8 2 5 5 5 9v10h14V9c0-4-3-7-7-7zm0 4a3 3 0 110 6 3 3 0 010-6z',
+  water: 'M12 2.69l5.66 5.66a8 8 0 11-11.32 0L12 2.69z',
+  ac: 'M3 7h18v2H3V7zm2 4h14v2H5v-2zm2 4h10v2H7v-2z',
+  cooler: 'M4 8h16v10H4V8zm2 2v6h12v-6H6z',
+  mill: 'M12 2a10 10 0 100 20 10 10 0 000-20zm-1 5h2v4h-2V7zm0 6h2v4h-2v-4z',
+  stove: 'M4 6h16v12H4V6zm3 2v2h2V8H7zm6 0v2h2V8h-2zM7 14v2h2v-2H7zm6 0v2h2v-2h-2z',
+  chimney: 'M8 4h8v4H8V4zm-2 6h12v10H6V10z',
+  blender: 'M8 2h8v4H8V2zm-2 6h12v12H6V8z',
+  mixer: 'M7 4h10v4H7V4zm-1 6h12v10H6V10z',
+};
+---
+
+<a
+  href={`/category/${category.slug}`}
+  class="retail-card group flex flex-col overflow-hidden"
+>
+  <div class="relative aspect-[4/3] overflow-hidden bg-neutral-100">
+    <CloudinaryImage
+      publicId={category.image}
+      alt={category.name}
+      width={300}
+      height={225}
+      class="h-full w-full transition-transform duration-200 group-hover:scale-105"
+      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 16vw"
+    />
+    <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
+      <div class="flex items-center gap-2">
+        <div class="flex h-8 w-8 items-center justify-center rounded-full bg-white/90">
+          <svg class="h-4 w-4 text-primary" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path d={iconPaths[category.icon] || iconPaths.tv} />
+          </svg>
+        </div>
+        <span class="text-sm font-semibold text-white">{category.name}</span>
+      </div>
+    </div>
+  </div>
+</a>

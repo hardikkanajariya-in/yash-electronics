@@ -1,0 +1,80 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Container from '../../components/ui/Container.astro';
+import ProductGrid from '../../components/product/ProductGrid.astro';
+import CatalogFilters from '../../components/product/CatalogFilters.astro';
+import { getCategories, getBrands, getProducts } from '../../services/cms';
+import {
+  filterProducts,
+  sortProducts,
+  getPriceRange,
+  getProductsByCategory,
+} from '../../features/catalog/filterProducts';
+import type { SortOption } from '../../types';
+
+export async function getStaticPaths() {
+  const categories = await getCategories();
+  return categories.map((category) => ({
+    params: { slug: category.slug },
+    props: { category },
+  }));
+}
+
+const { category } = Astro.props;
+const [allProducts, categories, brands] = await Promise.all([
+  getProducts(),
+  getCategories(),
+  getBrands(),
+]);
+
+const params = Astro.url.searchParams;
+const filters = {
+  search: params.get('search') || undefined,
+  category: category.slug,
+  brand: params.get('brand') || undefined,
+  minPrice: params.get('minPrice') ? Number(params.get('minPrice')) : undefined,
+  maxPrice: params.get('maxPrice') ? Number(params.get('maxPrice')) : undefined,
+  sort: (params.get('sort') as SortOption) || 'featured',
+};
+
+const categoryProducts = getProductsByCategory(allProducts, category.slug);
+const priceRange = getPriceRange(categoryProducts);
+let products = filterProducts(categoryProducts, { ...filters, category: category.slug });
+products = sortProducts(products, filters.sort);
+---
+
+<BaseLayout
+  title={`${category.name} - Electronics & Appliances`}
+  description={category.description || `Shop ${category.name} at Yash Electronics. Genuine products with local support.`}
+  canonicalUrl={`/category/${category.slug}`}
+>
+  <Container class="py-6">
+    <nav class="mb-4 text-sm text-neutral-500" aria-label="Breadcrumb">
+      <a href="/" class="hover:text-primary">Home</a>
+      <span class="mx-1">/</span>
+      <a href="/products" class="hover:text-primary">Products</a>
+      <span class="mx-1">/</span>
+      <span class="text-neutral-800">{category.name}</span>
+    </nav>
+
+    <div class="mb-6">
+      <h1 class="text-2xl font-bold text-neutral-900">{category.name}</h1>
+      {category.description && (
+        <p class="mt-1 text-sm text-neutral-600">{category.description}</p>
+      )}
+      <p class="mt-1 text-sm text-neutral-500">
+        {products.length} product{products.length !== 1 ? 's' : ''}
+      </p>
+    </div>
+
+    <div class="grid gap-6 lg:grid-cols-[260px_1fr]">
+      <CatalogFilters
+        categories={categories}
+        brands={brands}
+        currentFilters={filters}
+        priceRange={priceRange}
+      />
+      <ProductGrid products={products} />
+    </div>
+  </Container>
+</BaseLayout>

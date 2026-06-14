@@ -1,0 +1,49 @@
+---
+interface Props {
+  title: string;
+  description?: string;
+  canonicalUrl?: string;
+  ogImage?: string;
+  type?: 'website' | 'product';
+  noindex?: boolean;
+}
+
+import { siteConfig } from '../../config/site';
+
+const {
+  title,
+  description = siteConfig.defaultDescription,
+  canonicalUrl,
+  ogImage,
+  type = 'website',
+  noindex = false,
+} = Astro.props;
+
+const siteUrl = import.meta.env.PUBLIC_SITE_URL || Astro.url.origin;
+const fullTitle = title.includes(siteConfig.name) ? title : `${title} | ${siteConfig.name}`;
+const canonical = canonicalUrl ? new URL(canonicalUrl, siteUrl).href : Astro.url.href;
+const image = ogImage || `${siteUrl}/og-default.jpg`;
+---
+
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="generator" content={Astro.generator} />
+<title>{fullTitle}</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={canonical} />
+{noindex && <meta name="robots" content="noindex, nofollow" />}
+
+<meta property="og:type" content={type} />
+<meta property="og:title" content={fullTitle} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={canonical} />
+<meta property="og:image" content={image} />
+<meta property="og:site_name" content={siteConfig.name} />
+<meta property="og:locale" content={siteConfig.locale} />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={fullTitle} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={image} />
+
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />

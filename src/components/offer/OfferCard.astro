@@ -1,0 +1,42 @@
+---
+import type { Offer, SiteSettings } from '../../types';
+import CloudinaryImage from '../common/CloudinaryImage.astro';
+import { OFFER_TYPE_LABELS } from '../../lib/constants';
+import { buildWhatsAppUrl, generateOfferInquiryMessage } from '../../features/whatsapp/generateMessage';
+
+interface Props {
+  offer: Offer;
+  settings: SiteSettings;
+}
+
+const { offer, settings } = Astro.props;
+const whatsappUrl = buildWhatsAppUrl(
+  settings.whatsapp,
+  generateOfferInquiryMessage(offer.title, settings),
+);
+---
+
+<article class="retail-card flex flex-col overflow-hidden">
+  <div class="relative aspect-[16/9] overflow-hidden bg-neutral-100">
+    <CloudinaryImage
+      publicId={offer.image}
+      alt={offer.title}
+      width={400}
+      height={225}
+      class="h-full w-full"
+      sizes="(max-width: 768px) 100vw, 25vw"
+    />
+    <span class="absolute left-2 top-2 rounded bg-secondary px-2 py-0.5 text-xs font-semibold text-white">
+      {OFFER_TYPE_LABELS[offer.type]}
+    </span>
+  </div>
+  <div class="flex flex-1 flex-col p-4">
+    <h3 class="font-semibold text-neutral-900">{offer.title}</h3>
+    <p class="mt-1 line-clamp-2 text-sm text-neutral-600">{offer.description}</p>
+    <p class="mt-2 text-sm font-bold text-accent">{offer.discountText}</p>
+    <p class="mt-1 text-xs text-neutral-500">Valid till {offer.validUntil}</p>
+    <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" class="btn-whatsapp mt-3 w-full text-sm">
+      Enquire Now
+    </a>
+  </div>
+</article>

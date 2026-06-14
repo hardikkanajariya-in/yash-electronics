@@ -1,0 +1,40 @@
+---
+import type { Product, SiteSettings } from '../../types';
+import { buildCloudinaryUrl } from '../../lib/cloudinary';
+
+interface Props {
+  product: Product;
+  settings: SiteSettings;
+}
+
+const { product, settings } = Astro.props;
+const siteUrl = import.meta.env.PUBLIC_SITE_URL || Astro.url.origin;
+
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'Product',
+  name: product.name,
+  description: product.description,
+  sku: product.modelNumber,
+  brand: {
+    '@type': 'Brand',
+    name: product.brand,
+  },
+  category: product.category,
+  image: product.images.map((img) => buildCloudinaryUrl(img, { width: 800 })),
+  offers: {
+    '@type': 'Offer',
+    url: `${siteUrl}/products/${product.slug}`,
+    priceCurrency: 'INR',
+    price: product.offerPrice,
+    priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    availability: 'https://schema.org/InStock',
+    seller: {
+      '@type': 'Organization',
+      name: settings.businessName,
+    },
+  },
+};
+---
+
+<script type="application/ld+json" set:html={JSON.stringify(schema)} />

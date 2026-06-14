@@ -1,0 +1,27 @@
+---
+import type { Brand } from '../../types';
+import Container from '../ui/Container.astro';
+import SectionHeading from '../ui/SectionHeading.astro';
+import BrandLogo from '../brand/BrandLogo.astro';
+
+interface Props {
+  brands: Brand[];
+}
+
+const { brands } = Astro.props;
+---
+
+<section class="section-padding bg-neutral-50">
+  <Container>
+    <SectionHeading
+      title="Top Brands"
+      subtitle="Shop genuine products from India's most trusted brands"
+      align="center"
+    />
+    <div class="mt-6 grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-7">
+      {brands.map((brand) => (
+        <BrandLogo brand={brand} />
+      ))}
+    </div>
+  </Container>
+</section>

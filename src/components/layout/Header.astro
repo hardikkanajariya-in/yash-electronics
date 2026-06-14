@@ -1,0 +1,150 @@
+---
+import type { Category, SiteSettings } from '../../types';
+import Container from '../ui/Container.astro';
+
+interface Props {
+  settings: SiteSettings;
+  categories: Category[];
+}
+
+const { settings, categories } = Astro.props;
+const currentPath = Astro.url.pathname;
+---
+
+<header class="sticky top-0 z-50 border-b border-neutral-200 bg-white shadow-sm">
+  <div class="bg-primary text-white">
+    <Container>
+      <div class="flex items-center justify-between py-1.5 text-xs md:text-sm">
+        <p class="truncate">{settings.workingHours}</p>
+        <div class="flex items-center gap-4">
+          <a href={`tel:${settings.phone.replace(/\s/g, '')}`} class="hidden hover:underline sm:inline">
+            {settings.phone}
+          </a>
+          <a
+            href={`https://wa.me/${settings.whatsapp}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="font-medium hover:underline"
+          >
+            WhatsApp Us
+          </a>
+        </div>
+      </div>
+    </Container>
+  </div>
+
+  <Container>
+    <div class="flex items-center justify-between gap-4 py-3">
+      <a href="/" class="flex shrink-0 items-center gap-2">
+        <div class="flex h-10 w-10 items-center justify-center rounded-md bg-primary text-lg font-bold text-white">
+          YE
+        </div>
+        <div class="hidden sm:block">
+          <p class="font-display text-lg font-bold leading-tight text-primary">{settings.businessName}</p>
+          <p class="text-xs text-neutral-500">{settings.tagline}</p>
+        </div>
+      </a>
+
+      <form action="/products" method="get" class="hidden flex-1 max-w-md md:block">
+        <div class="relative">
+          <input
+            type="search"
+            name="search"
+            placeholder="Search by name, model or brand..."
+            class="w-full rounded-md border border-neutral-300 py-2 pl-4 pr-10 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          />
+          <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-primary" aria-label="Search">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </button>
+        </div>
+      </form>
+
+      <nav class="hidden items-center gap-1 lg:flex" aria-label="Main navigation">
+        <a href="/" class:list={['rounded px-3 py-2 text-sm font-medium transition-colors', currentPath === '/' ? 'text-primary' : 'text-neutral-700 hover:text-primary']}>
+          Home
+        </a>
+        <a href="/products" class:list={['rounded px-3 py-2 text-sm font-medium transition-colors', currentPath.startsWith('/products') ? 'text-primary' : 'text-neutral-700 hover:text-primary']}>
+          Products
+        </a>
+        <a href="/offers" class:list={['rounded px-3 py-2 text-sm font-medium transition-colors', currentPath.startsWith('/offers') ? 'text-primary' : 'text-neutral-700 hover:text-primary']}>
+          Offers
+        </a>
+        <a href="/contact" class:list={['rounded px-3 py-2 text-sm font-medium transition-colors', currentPath === '/contact' ? 'text-primary' : 'text-neutral-700 hover:text-primary']}>
+          Contact
+        </a>
+      </nav>
+
+      <button
+        type="button"
+        id="mobile-menu-btn"
+        class="rounded p-2 text-neutral-700 hover:bg-neutral-100 lg:hidden"
+        aria-label="Open menu"
+        aria-expanded="false"
+      >
+        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+    </div>
+  </Container>
+
+  <div class="hidden border-t border-neutral-200 bg-neutral-50 lg:block">
+    <Container>
+      <nav class="flex gap-1 overflow-x-auto py-2" aria-label="Categories">
+        {categories.slice(0, 8).map((cat) => (
+          <a
+            href={`/category/${cat.slug}`}
+            class="shrink-0 rounded px-3 py-1.5 text-xs font-medium text-neutral-700 transition-colors hover:bg-white hover:text-primary"
+          >
+            {cat.name}
+          </a>
+        ))}
+        <a href="/products" class="shrink-0 rounded px-3 py-1.5 text-xs font-medium text-secondary hover:underline">
+          View All →
+        </a>
+      </nav>
+    </Container>
+  </div>
+
+  <div id="mobile-menu" class="hidden border-t border-neutral-200 bg-white lg:hidden">
+    <Container>
+      <form action="/products" method="get" class="py-3">
+        <input
+          type="search"
+          name="search"
+          placeholder="Search products..."
+          class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+        />
+      </form>
+      <nav class="flex flex-col border-t border-neutral-100 py-2">
+        <a href="/" class="px-2 py-2.5 text-sm font-medium text-neutral-800">Home</a>
+        <a href="/products" class="px-2 py-2.5 text-sm font-medium text-neutral-800">Products</a>
+        <a href="/offers" class="px-2 py-2.5 text-sm font-medium text-neutral-800">Offers</a>
+        <a href="/contact" class="px-2 py-2.5 text-sm font-medium text-neutral-800">Contact</a>
+      </nav>
+      <div class="border-t border-neutral-100 py-3">
+        <p class="mb-2 text-xs font-semibold uppercase text-neutral-500">Categories</p>
+        <div class="grid grid-cols-2 gap-1">
+          {categories.map((cat) => (
+            <a href={`/category/${cat.slug}`} class="rounded px-2 py-1.5 text-sm text-neutral-700 hover:bg-neutral-50">
+              {cat.name}
+            </a>
+          ))}
+        </div>
+      </div>
+    </Container>
+  </div>
+</header>
+
+<script>
+  const btn = document.getElementById('mobile-menu-btn');
+  const menu = document.getElementById('mobile-menu');
+
+  btn?.addEventListener('click', () => {
+    const isOpen = !menu?.classList.contains('hidden');
+    menu?.classList.toggle('hidden');
+    btn.setAttribute('aria-expanded', String(!isOpen));
+  });
+</script>

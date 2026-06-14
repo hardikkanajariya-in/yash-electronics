@@ -1,0 +1,73 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Container from '../../components/ui/Container.astro';
+import ProductGrid from '../../components/product/ProductGrid.astro';
+import CatalogFilters from '../../components/product/CatalogFilters.astro';
+import { getProducts, getCategories, getBrands } from '../../services/cms';
+import {
+  filterProducts,
+  sortProducts,
+  getPriceRange,
+} from '../../features/catalog/filterProducts';
+import type { SortOption } from '../../types';
+
+const [allProducts, categories, brands] = await Promise.all([
+  getProducts(),
+  getCategories(),
+  getBrands(),
+]);
+
+const params = Astro.url.searchParams;
+const filters = {
+  search: params.get('search') || undefined,
+  category: params.get('category') || undefined,
+  brand: params.get('brand') || undefined,
+  minPrice: params.get('minPrice') ? Number(params.get('minPrice')) : undefined,
+  maxPrice: params.get('maxPrice') ? Number(params.get('maxPrice')) : undefined,
+  sort: (params.get('sort') as SortOption) || 'featured',
+};
+
+const priceRange = getPriceRange(allProducts);
+let products = filterProducts(allProducts, filters);
+products = sortProducts(products, filters.sort);
+
+const pageTitle = filters.search
+  ? `Search: ${filters.search}`
+  : 'All Products';
+---
+
+<BaseLayout
+  title={pageTitle}
+  description="Browse our complete catalog of electronics and home appliances. Search by name, model number or brand."
+  canonicalUrl="/products"
+>
+  <Container class="py-6">
+    <div class="mb-6">
+      <h1 class="text-2xl font-bold text-neutral-900">{pageTitle}</h1>
+      <p class="mt-1 text-sm text-neutral-600">
+        {products.length} product{products.length !== 1 ? 's' : ''} found
+      </p>
+    </div>
+
+    <div class="grid gap-6 lg:grid-cols-[260px_1fr]">
+      <CatalogFilters
+        categories={categories}
+        brands={brands}
+        currentFilters={filters}
+        priceRange={priceRange}
+      />
+      <div>
+        <form action="/products" method="get" class="mb-4 lg:hidden">
+          <input
+            type="search"
+            name="search"
+            value={filters.search || ''}
+            placeholder="Search by name, model or brand..."
+            class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+          />
+        </form>
+        <ProductGrid products={products} />
+      </div>
+    </div>
+  </Container>
+</BaseLayout>

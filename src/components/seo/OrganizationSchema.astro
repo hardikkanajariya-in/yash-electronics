@@ -1,0 +1,32 @@
+---
+import type { SiteSettings } from '../../types';
+
+interface Props {
+  settings: SiteSettings;
+}
+
+const { settings } = Astro.props;
+const siteUrl = import.meta.env.PUBLIC_SITE_URL || Astro.url.origin;
+
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'ElectronicsStore',
+  name: settings.businessName,
+  description: settings.tagline,
+  url: siteUrl,
+  telephone: settings.phone,
+  email: settings.email,
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: settings.address,
+    addressLocality: settings.city,
+    addressRegion: settings.state,
+    postalCode: settings.pincode,
+    addressCountry: 'IN',
+  },
+  openingHours: settings.workingHours,
+  sameAs: [settings.facebookUrl, settings.instagramUrl, settings.youtubeUrl].filter(Boolean),
+};
+---
+
+<script type="application/ld+json" set:html={JSON.stringify(schema)} />

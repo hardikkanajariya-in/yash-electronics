@@ -1,43 +1,78 @@
-# Astro Starter Kit: Minimal
+# Yash Electronics — Product Catalog Platform
 
-```sh
-pnpm create astro@latest -- --template minimal
+Production-ready electronics retail catalog built with Astro, TypeScript, and Tailwind CSS. CMS-driven via Google Sheets, images via Cloudinary, deployed on Vercel.
+
+## Quick Start
+
+```bash
+pnpm install
+cp .env.example .env
+# For local preview without CMS:
+# USE_MOCK_DATA=true
+pnpm dev
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+## Tech Stack
 
-## 🚀 Project Structure
+| Layer | Technology |
+|-------|------------|
+| Frontend | Astro 6, TypeScript, Tailwind CSS 3 |
+| CMS | Google Sheets + Apps Script API |
+| Images | Cloudinary |
+| Hosting | Vercel |
 
-Inside of your Astro project, you'll see the following folders and files:
+## Project Structure
 
-```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
+```
+src/
+├── components/     # Reusable UI (layout, product, home, seo)
+├── config/         # Site & Cloudinary config
+├── features/       # Catalog filters, WhatsApp messaging
+├── layouts/        # BaseLayout with header/footer
+├── lib/            # Cloudinary, formatting utilities
+├── pages/          # Routes (home, products, category, offers)
+├── services/       # CMS data layer (Google Sheets API)
+└── types/          # TypeScript interfaces
+
+google-apps-script/ # Apps Script for Sheets API
+docs/               # Deployment guide & sheet templates
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+## Pages
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+- `/` — Homepage (hero, categories, featured products, brands, offers, trust, contact)
+- `/products` — Full catalog with search, filters, sorting
+- `/products/[slug]` — Product detail with WhatsApp enquiry
+- `/category/[slug]` — Category listing
+- `/offers` — Special offers (combo, bundle, weekly, festival)
+- `/contact` — Store contact & WhatsApp
 
-Any static assets, like images, can be placed in the `public/` directory.
+## CMS Setup
 
-## 🧞 Commands
+1. Create Google Spreadsheet with sheets: Products, Categories, Brands, Offers, Settings
+2. Deploy `google-apps-script/Code.gs` as web app
+3. Set `SHEETS_API_URL` and `SHEETS_API_KEY` in environment
 
-All commands are run from the root of the project, from a terminal:
+See [docs/SHEETS_TEMPLATE.md](./docs/SHEETS_TEMPLATE.md) for column structure.
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `pnpm install`             | Installs dependencies                            |
-| `pnpm dev`             | Starts local dev server at `localhost:4321`      |
-| `pnpm build`           | Build your production site to `./dist/`          |
-| `pnpm preview`         | Preview your build locally, before deploying     |
-| `pnpm astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `pnpm astro -- --help` | Get help using the Astro CLI                     |
+## Deployment
 
-## 👀 Want to learn more?
+See [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) for full Vercel deployment guide.
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+## Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `PUBLIC_SITE_URL` | Yes | Production site URL |
+| `SHEETS_API_URL` | Prod | Google Apps Script URL |
+| `SHEETS_API_KEY` | Prod | API authentication key |
+| `PUBLIC_CLOUDINARY_CLOUD_NAME` | Yes | Cloudinary cloud name |
+| `USE_MOCK_DATA` | Dev | `true` for local without CMS |
+
+## Scripts
+
+```bash
+pnpm dev      # Development server
+pnpm build    # Static production build
+pnpm preview  # Preview production build
+```
