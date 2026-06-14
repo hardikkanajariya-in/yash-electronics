@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 60" role="img" aria-label="Mitsubishi Heavy">
+  <rect width="240" height="60" fill="#fff"/>
+  <text x="120" y="28" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#E60012">MITSUBISHI</text>
+  <text x="120" y="46" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="600" fill="#333">HEAVY INDUSTRIES</text>
+</svg>

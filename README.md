@@ -7,8 +7,7 @@ Production-ready electronics retail catalog built with Astro, TypeScript, and Ta
 ```bash
 pnpm install
 cp .env.example .env
-# For local preview without CMS:
-# USE_MOCK_DATA=true
+pnpm seed:images   # Download sample product/category/offer photos + brand logos
 pnpm dev
 ```
 
@@ -73,6 +72,7 @@ See [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) for full Vercel deployment guide.
 
 ```bash
 pnpm dev      # Development server
+pnpm seed:images  # Re-download local mock photos & brand SVGs
 pnpm build    # Static production build
 pnpm preview  # Preview production build
 ```

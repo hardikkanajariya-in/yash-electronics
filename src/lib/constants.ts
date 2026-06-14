@@ -22,7 +22,7 @@ export const TRUST_POINTS = [
   },
   {
     title: 'Trusted Brands',
-    description: 'Sony, Samsung, Haier, IFB, Daikin and more.',
+    description: 'Sony, Samsung, Haier, IFB, Daikin, Natraj and more.',
     icon: 'badge',
   },
   {

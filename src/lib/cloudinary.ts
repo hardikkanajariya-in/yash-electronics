@@ -14,6 +14,7 @@ export function buildCloudinaryUrl(
 ): string {
   if (!publicId) return '/images/placeholder-product.svg';
   if (publicId.startsWith('http')) return publicId;
+  if (publicId.startsWith('/')) return publicId;
 
   const { width, height, crop = 'fill', quality = 'auto', format = 'auto' } = options;
   const transforms: string[] = [`f_${format}`, `q_${quality}`];
@@ -26,7 +27,15 @@ export function buildCloudinaryUrl(
 }
 
 export function buildSrcSet(publicId: string, widths: number[]): string {
+  if (!publicId || publicId.startsWith('/') || publicId.startsWith('http')) {
+    return '';
+  }
+
   return widths
     .map((w) => `${buildCloudinaryUrl(publicId, { width: w })} ${w}w`)
     .join(', ');
+}
+
+export function isLocalImage(publicId: string): boolean {
+  return Boolean(publicId && (publicId.startsWith('/') || publicId.startsWith('http')));
 }
