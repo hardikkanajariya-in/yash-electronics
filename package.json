@@ -26,6 +26,7 @@
     "typescript": "^6.0.3"
   },
   "devDependencies": {
+    "@astrojs/node": "^10.1.4",
     "@types/pg": "^8.20.0",
     "drizzle-kit": "^0.31.10"
   }
