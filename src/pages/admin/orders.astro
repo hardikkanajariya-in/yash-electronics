@@ -128,7 +128,7 @@ const counts = {
                 <h3 class="text-sm font-mono font-bold text-neutral-800 flex items-center gap-1.5">
                   #{order.id.slice(0, 8)}...
                   <button 
-                    onclick={`navigator.clipboard.writeText('${order.id}'); alert('Copied ID!')`} 
+                    onclick={`navigator.clipboard.writeText('${order.id}'); window.showToast('Copied ID!')`} 
                     class="text-[10px] text-primary hover:underline font-sans cursor-pointer focus:outline-none"
                     title="Copy full ID"
                   >
