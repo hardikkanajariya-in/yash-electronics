@@ -11,6 +11,7 @@ export const prerender = false;
 // If already logged in as admin, redirect
 const currentUser = await getSessionUser(Astro.cookies);
 if (currentUser && currentUser.role === 'admin') {
+  Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
   return Astro.redirect('/admin');
 }
 
@@ -36,7 +37,9 @@ if (Astro.request.method === 'POST') {
       );
 
     if (user) {
-      setSessionUser(Astro.cookies, user.id);
+      const isSecure = Astro.url.hostname !== 'localhost' && Astro.url.hostname !== '127.0.0.1';
+      setSessionUser(Astro.cookies, user.id, isSecure);
+      Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
       return Astro.redirect('/admin');
     } else {
       error = 'Invalid credentials or access denied.';

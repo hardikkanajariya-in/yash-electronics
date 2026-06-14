@@ -6,12 +6,14 @@ import { products, orders, orderItems, users } from '../db/schema';
 import { eq, inArray } from 'drizzle-orm';
 import { getSessionUser, generateId } from '../lib/auth';
 import { getLocalizedPath } from '../lib/translations';
+import { cloudinaryConfig } from '../config/cloudinary';
 
 export const prerender = false;
 
 const locale = Astro.currentLocale || 'gu';
 
 // Authenticate user to check for credits
+Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
 const currentUser = await getSessionUser(Astro.cookies);
 
 let error = '';
@@ -327,7 +329,7 @@ const t = translations[locale === 'en' ? 'en' : 'gu'];
   </Container>
 </BaseLayout>
 
-<script is:inline define:vars={{ userCredits: currentUser?.credits || 0, successOrderId, locale }}>
+<script is:inline define:vars={{ userCredits: currentUser?.credits || 0, successOrderId, locale, cloudName: cloudinaryConfig.cloudName }}>
   // Manage client side cart
   const CART_KEY = 'ye_cart';
 
@@ -367,12 +369,18 @@ const t = translations[locale === 'en' ? 'en' : 'gu'];
     if (emptyEl) emptyEl.classList.add('hidden');
     if (!containerEl) return;
 
+    function buildImageUrl(imagePath) {
+      if (!imagePath) return '/images/placeholder-product.svg';
+      if (imagePath.startsWith('/') || imagePath.startsWith('http')) return imagePath;
+      return `https://res.cloudinary.com/${cloudName}/image/upload/${imagePath}`;
+    }
+
     // Render items
     containerEl.innerHTML = cart.map((item) => `
       <div class="bg-white border border-neutral-200 rounded-lg p-4 flex gap-4 items-center">
         <!-- Thumbnail -->
         <div class="h-16 w-16 bg-neutral-100 rounded border border-neutral-200 flex items-center justify-center text-xl shrink-0">
-          ${item.image ? `<img src="https://res.cloudinary.com/demo/image/upload/${item.image}" alt="${item.name}" class="h-full w-full object-cover rounded" />` : '📺'}
+          ${item.image ? `<img src="${buildImageUrl(item.image)}" alt="${item.name}" class="h-full w-full object-cover rounded" />` : '📺'}
         </div>
         
         <!-- Info -->

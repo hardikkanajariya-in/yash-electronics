@@ -33,11 +33,12 @@ export async function getSessionUser(cookies: any) {
   }
 }
 
-export function setSessionUser(cookies: any, userId: string) {
+export function setSessionUser(cookies: any, userId: string, isSecure?: boolean) {
   cookies.set(SESSION_COOKIE_NAME, userId, {
     path: '/',
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isSecure !== undefined ? isSecure : (process.env.NODE_ENV === 'production' && process.env.VERCEL === '1'),
+    sameSite: 'lax',
     maxAge: 60 * 60 * 24 * 30, // 30 days
   });
 }

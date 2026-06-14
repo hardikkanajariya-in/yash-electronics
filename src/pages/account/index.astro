@@ -12,6 +12,7 @@ export const prerender = false;
 const locale = Astro.currentLocale || 'gu';
 
 // Authenticate user
+Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
 const currentUser = await getSessionUser(Astro.cookies);
 if (!currentUser || currentUser.role !== 'customer') {
   return Astro.redirect(getLocalizedPath('/account/login', locale));

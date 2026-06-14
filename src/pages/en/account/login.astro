@@ -14,6 +14,7 @@ const locale = 'en';
 // Redirect if already logged in as customer
 const currentUser = await getSessionUser(Astro.cookies);
 if (currentUser) {
+  Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
   return Astro.redirect(getLocalizedPath('/account', locale));
 }
 
@@ -65,7 +66,9 @@ if (Astro.request.method === 'POST') {
         );
 
       if (user) {
-        setSessionUser(Astro.cookies, user.id);
+        const isSecure = Astro.url.hostname !== 'localhost' && Astro.url.hostname !== '127.0.0.1';
+        setSessionUser(Astro.cookies, user.id, isSecure);
+        Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
         return Astro.redirect(getLocalizedPath('/account', locale));
       } else {
         error = t.errInvalid;
@@ -128,7 +131,9 @@ if (Astro.request.method === 'POST') {
               .where(eq(users.id, referredById));
           }
 
-          setSessionUser(Astro.cookies, newUserId);
+          const isSecure = Astro.url.hostname !== 'localhost' && Astro.url.hostname !== '127.0.0.1';
+          setSessionUser(Astro.cookies, newUserId, isSecure);
+          Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
           return Astro.redirect(getLocalizedPath('/account', locale));
         }
       }
