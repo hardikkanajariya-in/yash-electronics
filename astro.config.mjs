@@ -2,7 +2,7 @@
 import { defineConfig } from 'astro/config';
 import tailwind from '@astrojs/tailwind';
 import sitemap from '@astrojs/sitemap';
-import vercel from '@astrojs/vercel/serverless';
+import vercel from '@astrojs/vercel';
 
 const site = process.env.PUBLIC_SITE_URL || 'https://yashelectronics.in';
 
@@ -10,7 +10,7 @@ const site = process.env.PUBLIC_SITE_URL || 'https://yashelectronics.in';
 export default defineConfig({
   site,
   adapter: vercel(),
-  output: 'hybrid',
+  output: 'static',
   i18n: {
     defaultLocale: 'gu',
     locales: ['gu', 'en'],

@@ -1,4 +1,6 @@
 import type { CmsData } from '../types';
+import { db } from '../db';
+import { settings, categories, brands, products, offers } from '../db/schema';
 
 const API_URL = import.meta.env.SHEETS_API_URL;
 const API_KEY = import.meta.env.SHEETS_API_KEY;
@@ -33,10 +35,61 @@ export async function getCmsData(): Promise<CmsData> {
   if (USE_MOCK) {
     if (import.meta.env.DEV) {
       console.warn(
-        '[CMS] Using mock data. Set SHEETS_API_URL in .env to connect Google Sheets.',
+        '[CMS] Using mock data from database. Set SHEETS_API_URL in .env to connect Google Sheets.',
       );
     }
-    return cachedData!;
+    
+    try {
+      const dbSettingsList = await db.select().from(settings);
+      const dbSettingsObj: any = {};
+      dbSettingsList.forEach(s => {
+        dbSettingsObj[s.key] = s.value;
+      });
+
+      const dbCategories = await db.select().from(categories);
+      const dbBrands = await db.select().from(brands);
+      
+      const dbProductsRaw = await db.query.products.findMany({
+        with: {
+          brand: true,
+          category: true,
+        }
+      });
+
+      const dbProducts = dbProductsRaw.map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        slug: p.slug,
+        brand: p.brand?.name || '',
+        brandSlug: p.brand?.slug || '',
+        category: p.category?.name || '',
+        categorySlug: p.category?.slug || '',
+        modelNumber: p.modelNumber || '',
+        description: p.description || '',
+        specifications: p.specifications || '{}',
+        mrp: p.mrp,
+        offerPrice: p.offerPrice,
+        images: p.images || [],
+        isFeatured: p.isFeatured,
+        isActive: p.isActive,
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
+      }));
+
+      const dbOffers = await db.select().from(offers);
+
+      cachedData = {
+        settings: dbSettingsObj,
+        categories: dbCategories,
+        brands: dbBrands,
+        products: dbProducts,
+        offers: dbOffers as any[],
+      };
+      return cachedData;
+    } catch (e) {
+      console.error('[CMS] Database fallback error:', e);
+      throw e;
+    }
   }
 
   cachedData = await fetchFromApi();
