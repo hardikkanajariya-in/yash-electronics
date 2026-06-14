@@ -4,7 +4,7 @@ import Container from '../../components/ui/Container.astro';
 import { db } from '../../db';
 import { users } from '../../db/schema';
 import { eq, and } from 'drizzle-orm';
-import { hashPassword, setSessionUser, getSessionUser, generateId, generateReferralCode } from '../../lib/auth';
+import { hashPassword, redirectWithSession, getSessionUser, generateId, generateReferralCode } from '../../lib/auth';
 
 export const prerender = false;
 
@@ -86,10 +86,13 @@ if (Astro.request.method === 'POST') {
         );
 
       if (user) {
-        const isSecure = Astro.url.hostname !== 'localhost' && Astro.url.hostname !== '127.0.0.1';
-        setSessionUser(Astro.cookies, user.id, isSecure);
         Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-        return Astro.redirect(locale === 'en' ? '/en/account' : '/account');
+        return redirectWithSession(
+          Astro.cookies,
+          user.id,
+          locale === 'en' ? '/en/account' : '/account',
+          Astro.url,
+        );
       } else {
         error = t.errInvalid;
       }
@@ -151,10 +154,13 @@ if (Astro.request.method === 'POST') {
               .where(eq(users.id, referredById));
           }
 
-          const isSecure = Astro.url.hostname !== 'localhost' && Astro.url.hostname !== '127.0.0.1';
-          setSessionUser(Astro.cookies, newUserId, isSecure);
           Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-          return Astro.redirect(locale === 'en' ? '/en/account' : '/account');
+          return redirectWithSession(
+            Astro.cookies,
+            newUserId,
+            locale === 'en' ? '/en/account' : '/account',
+            Astro.url,
+          );
         }
       }
     }

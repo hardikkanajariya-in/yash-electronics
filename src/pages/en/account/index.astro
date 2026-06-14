@@ -20,7 +20,7 @@ if (!currentUser || currentUser.role !== 'customer') {
 
 // Handle logout
 if (Astro.url.searchParams.get('action') === 'logout') {
-  clearSessionUser(Astro.cookies);
+  clearSessionUser(Astro.cookies, Astro.url);
   return Astro.redirect(getLocalizedPath('/account/login', locale));
 }
 

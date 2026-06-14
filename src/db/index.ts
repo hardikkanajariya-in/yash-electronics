@@ -14,6 +14,9 @@ const isLocal = connectionString.includes('localhost') || connectionString.inclu
 export const pool = new pg.Pool({
   connectionString,
   ssl: isLocal ? false : { rejectUnauthorized: false },
+  max: isLocal ? 10 : 1,
+  idleTimeoutMillis: 10_000,
+  connectionTimeoutMillis: 10_000,
 });
 
 export const db = drizzle(pool, { schema });

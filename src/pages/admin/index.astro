@@ -17,7 +17,7 @@ if (!currentUser || currentUser.role !== 'admin') {
 
 // Handle Logout
 if (Astro.url.searchParams.get('action') === 'logout') {
-  clearSessionUser(Astro.cookies);
+  clearSessionUser(Astro.cookies, Astro.url);
   return Astro.redirect('/admin/login');
 }
 
@@ -73,16 +73,16 @@ try {
 
     <!-- Navigation Tabs -->
     <nav class="flex flex-wrap border-b border-neutral-200 gap-x-4 gap-y-1 mb-6 text-sm font-medium">
-      <a href="/admin" class="border-b-2 border-primary text-primary px-1 pb-3">Overview</a>
-      <a href="/admin/products" class="text-neutral-600 hover:text-primary px-1 pb-3">Products</a>
-      <a href="/admin/offers" class="text-neutral-600 hover:text-primary px-1 pb-3">Offers</a>
-      <a href="/admin/orders" class="text-neutral-600 hover:text-primary px-1 pb-3">Orders ({stats.ordersCount})</a>
-      <a href="/admin/queries" class="text-neutral-600 hover:text-primary px-1 pb-3">Queries ({stats.queriesCount})</a>
-      <a href="/admin/team" class="text-neutral-600 hover:text-primary px-1 pb-3">Team</a>
-      <a href="/admin/services" class="text-neutral-600 hover:text-primary px-1 pb-3">Services</a>
-      <a href="/admin/about" class="text-neutral-600 hover:text-primary px-1 pb-3">About</a>
-      <a href="/admin/bank-details" class="text-neutral-600 hover:text-primary px-1 pb-3">Bank</a>
-      <a href="/admin/business-hours" class="text-neutral-600 hover:text-primary px-1 pb-3">Hours</a>
+      <a data-astro-prefetch="false" href="/admin" class="border-b-2 border-primary text-primary px-1 pb-3">Overview</a>
+      <a data-astro-prefetch="false" href="/admin/products" class="text-neutral-600 hover:text-primary px-1 pb-3">Products</a>
+      <a data-astro-prefetch="false" href="/admin/offers" class="text-neutral-600 hover:text-primary px-1 pb-3">Offers</a>
+      <a data-astro-prefetch="false" href="/admin/orders" class="text-neutral-600 hover:text-primary px-1 pb-3">Orders ({stats.ordersCount})</a>
+      <a data-astro-prefetch="false" href="/admin/queries" class="text-neutral-600 hover:text-primary px-1 pb-3">Queries ({stats.queriesCount})</a>
+      <a data-astro-prefetch="false" href="/admin/team" class="text-neutral-600 hover:text-primary px-1 pb-3">Team</a>
+      <a data-astro-prefetch="false" href="/admin/services" class="text-neutral-600 hover:text-primary px-1 pb-3">Services</a>
+      <a data-astro-prefetch="false" href="/admin/about" class="text-neutral-600 hover:text-primary px-1 pb-3">About</a>
+      <a data-astro-prefetch="false" href="/admin/bank-details" class="text-neutral-600 hover:text-primary px-1 pb-3">Bank</a>
+      <a data-astro-prefetch="false" href="/admin/business-hours" class="text-neutral-600 hover:text-primary px-1 pb-3">Hours</a>
     </nav>
 
     <!-- Stats Grid -->
