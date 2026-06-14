@@ -164,13 +164,13 @@ export const UI_TRANSLATIONS = {
 };
 
 // Content dictionary for translating Dynamic Database entries
-export const CONTENT_TRANSLATIONS: Record<string, Record<string, string>> = {
+export const CONTENT_TRANSLATIONS: Record<string, string> = {
   // Settings
   'Yash Electronics': 'યશ ઇલેક્ટ્રોનિક્સ',
   'Your Trusted Local Electronics Store': 'તમારો વિશ્વસનીય સ્થાનિક ઇલેક્ટ્રોનિક્સ સ્ટોર',
-  'Main Market Road, Near City Bus Stand': 'મેઈન માર્કેટ રોડ, સિટી બસ સ્ટેન્ડ નજીક',
-  'Your City': 'તમારું શહેર',
-  'Maharashtra': 'મહારાષ્ટ્ર',
+  'Yash Electronics, 17, near S.B.I. (ADB), Jodhpur Gate, Navapara': 'યશ ઇલેક્ટ્રોનિક્સ, ૧૭, એસ.બી.આઈ. (ADB) નજીક, જોધપુર ગેટ, નવાપરા',
+  'Khambhalia': 'ખંભાળિયા',
+  'Gujarat': 'ગુજરાત',
   'Electronics & Home Appliances You Can Trust': 'ઇલેક્ટ્રોનિક્સ અને ઘર વપરાશના ઉપકરણો જેના પર તમે વિશ્વાસ કરી શકો',
   'Genuine products from Sony, Samsung, Haier, IFB, Natraj, Daikin & more. Local service, competitive pricing for families across nearby towns.':
     'સોની, સેમસંગ, હાયર, આઈએફબી, નટરાજ, ડાયકિન અને વધુ બ્રાન્ડ્સના અસલી ઉત્પાદનો. નજીકના નગરોના પરિવારો માટે સ્થાનિક સેવા અને સ્પર્ધાત્મક કિંમતો.',

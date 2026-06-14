@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import pg from 'pg';
+import crypto from 'node:crypto';
 
 // 1. Load environment variables from .env
 try {
@@ -30,17 +31,17 @@ const client = new pg.Client({
   ssl: isLocal ? false : { rejectUnauthorized: false },
 });
 
-// Mock Seed Data
+// Mock Seed Data with Correct Store Location & Owner Contact Details
 const settings = {
   businessName: 'Yash Electronics',
   tagline: 'Your Trusted Local Electronics Store',
-  phone: '+91 98765 43210',
-  whatsapp: '919876543210',
+  phone: '+91 98244 17122',
+  whatsapp: '919824417122',
   email: 'info@yashelectronics.in',
-  address: 'Main Market Road, Near City Bus Stand',
-  city: 'Your City',
-  state: 'Maharashtra',
-  pincode: '400001',
+  address: 'Yash Electronics, 17, near S.B.I. (ADB), Jodhpur Gate, Navapara',
+  city: 'Khambhalia',
+  state: 'Gujarat',
+  pincode: '361305',
   googleMapsUrl: 'https://maps.google.com',
   heroTitle: 'Electronics & Home Appliances You Can Trust',
   heroSubtitle: 'Genuine products from Sony, Samsung, Haier, IFB, Natraj, Daikin & more. Local service, competitive pricing for families across nearby towns.',
@@ -276,6 +277,72 @@ const offers = [
   },
 ];
 
+// Helper function to upload images to Cloudinary dynamically using REST API
+async function uploadImage(localPath) {
+  if (!localPath || typeof localPath !== 'string') return localPath;
+  if (!localPath.startsWith('/')) return localPath; // Already Cloudinary public ID
+
+  const cloudName = process.env.PUBLIC_CLOUDINARY_CLOUD_NAME;
+  const apiKey = process.env.CLOUDINARY_API_KEY;
+  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+  if (!cloudName || !apiKey || !apiSecret) {
+    console.warn(`[Seed] Cloudinary config missing for ${localPath}. Using local path fallback.`);
+    return localPath;
+  }
+
+  try {
+    const absolutePath = path.join(process.cwd(), 'public', localPath);
+    if (!fs.existsSync(absolutePath)) {
+      console.warn(`[Seed] Warning: Local file not found at ${absolutePath}`);
+      return localPath;
+    }
+
+    const pathParts = localPath.split('/');
+    let subfolder = 'general';
+    if (pathParts.includes('products')) subfolder = 'products';
+    else if (pathParts.includes('categories')) subfolder = 'categories';
+    else if (pathParts.includes('brands')) subfolder = 'brands';
+    else if (pathParts.includes('offers')) subfolder = 'offers';
+
+    const filenameWithExt = pathParts[pathParts.length - 1];
+    const filename = path.parse(filenameWithExt).name;
+    const publicId = `yash-electronics/${subfolder}/${filename}`;
+
+    const timestamp = Math.round(new Date().getTime() / 1000);
+    const paramString = `public_id=${publicId}&timestamp=${timestamp}${apiSecret}`;
+    const signature = crypto.createHash('sha1').update(paramString).digest('hex');
+
+    const fileBuffer = fs.readFileSync(absolutePath);
+    const base64File = `data:image/${path.extname(absolutePath).slice(1)};base64,${fileBuffer.toString('base64')}`;
+
+    const formData = new URLSearchParams();
+    formData.append('file', base64File);
+    formData.append('public_id', publicId);
+    formData.append('timestamp', String(timestamp));
+    formData.append('api_key', apiKey);
+    formData.append('signature', signature);
+
+    console.log(`[Seed] Uploading ${localPath} to Cloudinary as '${publicId}'...`);
+    const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    const data = await response.json();
+    if (data.secure_url) {
+      console.log(`[Seed] Success! Configured Cloudinary ID: ${data.public_id}`);
+      return data.public_id;
+    } else {
+      console.error(`[Seed] Cloudinary upload failed:`, data.error?.message || data);
+      return localPath;
+    }
+  } catch (error) {
+    console.error(`[Seed] Error uploading to Cloudinary:`, error);
+    return localPath;
+  }
+}
+
 async function seed() {
   console.log('[Seed] Connecting to database...');
   await client.connect();
@@ -295,15 +362,40 @@ async function seed() {
     await client.query('DELETE FROM brands');
     await client.query('DELETE FROM offers');
 
-    console.log('[Seed] Inserting admin user...');
+    // Auto Upload seed images to Cloudinary if configured
+    console.log('[Seed] Checking for Cloudinary configuration to auto-upload images...');
+    
+    settings.heroImage = await uploadImage(settings.heroImage);
+
+    for (const category of categories) {
+      category.image = await uploadImage(category.image);
+    }
+
+    for (const brand of brands) {
+      brand.logo = await uploadImage(brand.logo);
+    }
+
+    for (const product of products) {
+      const uploadedImages = [];
+      for (const img of product.images) {
+        uploadedImages.push(await uploadImage(img));
+      }
+      product.images = uploadedImages;
+    }
+
+    for (const offer of offers) {
+      offer.image = await uploadImage(offer.image);
+    }
+
+    console.log('[Seed] Inserting admin user (Mr. Paresh Mehta)...');
     await client.query(
       `INSERT INTO users (id, name, phone, password, role, referral_code, credits, created_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [
         'admin-id',
-        'Admin',
-        '9999999999',
-        '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918',
+        'Mr. Paresh Mehta',
+        '9824417122',
+        '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', // 'admin' hashed
         'admin',
         'ADMIN',
         0,
