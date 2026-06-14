@@ -1,0 +1,142 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Container from '../../components/ui/Container.astro';
+import { db } from '../../db';
+import { aboutInfo } from '../../db/schema';
+import { getSessionUser, generateId } from '../../lib/auth';
+import { eq } from 'drizzle-orm';
+
+export const prerender = false;
+Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+
+const currentUser = await getSessionUser(Astro.cookies);
+if (!currentUser || currentUser.role !== 'admin') return Astro.redirect('/admin/login');
+
+let message = '';
+let error = '';
+
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const formAction = formData.get('_action')?.toString();
+
+    if (formAction === 'delete') {
+      const deleteId = formData.get('id')?.toString();
+      if (deleteId) { await db.delete(aboutInfo).where(eq(aboutInfo.id, deleteId)); message = 'Entry deleted.'; }
+    } else if (formAction === 'save') {
+      const id = formData.get('id')?.toString();
+      const name = formData.get('name')?.toString().trim() || '';
+      const role = formData.get('role')?.toString() as any || 'founder';
+      const photo = formData.get('photo')?.toString().trim() || null;
+      const description = formData.get('description')?.toString().trim() || null;
+      const sortOrder = Number(formData.get('sortOrder') || '0');
+
+      if (!name) { error = 'Name is required.'; }
+      else if (id) {
+        await db.update(aboutInfo).set({ name, role, photo, description, sortOrder }).where(eq(aboutInfo.id, id));
+        message = 'Entry updated.';
+      } else {
+        await db.insert(aboutInfo).values({ id: generateId(), name, role, photo, description, sortOrder });
+        message = 'Entry added.';
+      }
+    }
+  } catch (e: any) { error = 'Operation failed: ' + (e.message || 'Unknown error'); }
+}
+
+let allEntries: any[] = [];
+try { allEntries = await db.select().from(aboutInfo).orderBy(aboutInfo.sortOrder); } catch (e) { }
+
+const editId = Astro.url.searchParams.get('edit');
+const isAdding = Astro.url.searchParams.get('action') === 'add';
+const editEntry = editId ? allEntries.find(e => e.id === editId) : null;
+const showForm = isAdding || editEntry;
+
+const roleLabels: Record<string, string> = { founder: 'Founder', owner: 'Owner', next_gen: 'Next Generation' };
+---
+
+<BaseLayout title="Admin — About / Leadership" noindex={true}>
+  <Container class="py-6">
+    <div class="flex items-center justify-between border-b border-neutral-200 pb-4 mb-6">
+      <div>
+        <h1 class="text-2xl font-bold text-neutral-900">About / Leadership</h1>
+        <p class="text-xs text-neutral-500">Manage Founder, Owner & Next Gen info</p>
+      </div>
+      <a href="/admin" class="text-xs font-semibold text-neutral-600 border border-neutral-300 bg-white hover:bg-neutral-50 rounded-md px-3 py-1.5 transition-colors">← Dashboard</a>
+    </div>
+
+    <nav class="flex flex-wrap border-b border-neutral-200 gap-x-4 gap-y-1 mb-6 text-sm font-medium">
+      <a href="/admin" class="text-neutral-600 hover:text-primary px-1 pb-3">Overview</a>
+      <a href="/admin/team" class="text-neutral-600 hover:text-primary px-1 pb-3">Team</a>
+      <a href="/admin/services" class="text-neutral-600 hover:text-primary px-1 pb-3">Services</a>
+      <a href="/admin/about" class="border-b-2 border-primary text-primary px-1 pb-3">About</a>
+      <a href="/admin/bank-details" class="text-neutral-600 hover:text-primary px-1 pb-3">Bank</a>
+      <a href="/admin/business-hours" class="text-neutral-600 hover:text-primary px-1 pb-3">Hours</a>
+    </nav>
+
+    {message && <div class="bg-green-50 border border-green-200 text-green-700 text-sm rounded-md p-3 mb-4">{message}</div>}
+    {error && <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md p-3 mb-4">{error}</div>}
+
+    {showForm && (
+      <div class="bg-white border border-neutral-200 rounded-lg p-5 shadow-sm mb-6">
+        <h2 class="text-base font-bold text-neutral-900 mb-4">{editEntry ? 'Edit Entry' : 'Add Entry'}</h2>
+        <form method="post" class="grid gap-4 sm:grid-cols-2">
+          <input type="hidden" name="_action" value="save" />
+          {editEntry && <input type="hidden" name="id" value={editEntry.id} />}
+          <div>
+            <label class="block text-xs font-semibold text-neutral-700 mb-1">Name *</label>
+            <input type="text" name="name" required value={editEntry?.name || ''} class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-neutral-700 mb-1">Role *</label>
+            <select name="role" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none">
+              <option value="founder" selected={editEntry?.role === 'founder'}>Founder</option>
+              <option value="owner" selected={editEntry?.role === 'owner'}>Owner</option>
+              <option value="next_gen" selected={editEntry?.role === 'next_gen'}>Next Generation</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-neutral-700 mb-1">Photo (Cloudinary ID or URL)</label>
+            <input type="text" name="photo" value={editEntry?.photo || ''} class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-neutral-700 mb-1">Sort Order</label>
+            <input type="number" name="sortOrder" value={editEntry?.sortOrder ?? 0} class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none" />
+          </div>
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-semibold text-neutral-700 mb-1">Description</label>
+            <textarea name="description" rows="3" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none">{editEntry?.description || ''}</textarea>
+          </div>
+          <div class="sm:col-span-2 flex gap-2">
+            <button type="submit" class="btn-primary text-xs">{editEntry ? 'Update' : 'Add Entry'}</button>
+            <a href="/admin/about" class="btn-outline text-xs">Cancel</a>
+          </div>
+        </form>
+      </div>
+    )}
+
+    {!showForm && <div class="flex justify-end mb-4"><a href="/admin/about?action=add" class="btn-primary text-xs">+ Add Entry</a></div>}
+
+    <div class="grid gap-4 sm:grid-cols-3">
+      {allEntries.map(entry => (
+        <div class="bg-white border border-neutral-200 rounded-lg p-5 shadow-sm">
+          <span class={`inline-block rounded px-2 py-0.5 text-[10px] font-semibold uppercase border mb-3 ${
+            entry.role === 'founder' ? 'bg-primary-50 text-primary border-primary-200' :
+            entry.role === 'owner' ? 'bg-secondary-50 text-secondary border-secondary-200' :
+            'bg-accent-50 text-accent border-accent-200'
+          }`}>{roleLabels[entry.role] || entry.role}</span>
+          <h3 class="font-bold text-neutral-900 text-lg">{entry.name}</h3>
+          {entry.description && <p class="text-xs text-neutral-500 mt-1 line-clamp-2">{entry.description}</p>}
+          <div class="mt-3 flex gap-2">
+            <a href={`/admin/about?edit=${entry.id}`} class="text-xs font-semibold text-primary hover:underline">Edit</a>
+            <form method="post" class="inline">
+              <input type="hidden" name="_action" value="delete" />
+              <input type="hidden" name="id" value={entry.id} />
+              <button type="button" onclick="confirmDelete(this, 'Delete Entry', 'Are you sure?')" class="text-xs font-semibold text-red-500 hover:underline cursor-pointer">Delete</button>
+            </form>
+          </div>
+        </div>
+      ))}
+      {allEntries.length === 0 && <div class="sm:col-span-3 text-center py-8 text-neutral-500">No entries yet. Add Founder, Owner, and Next Gen leadership info.</div>}
+    </div>
+  </Container>
+</BaseLayout>

@@ -31,10 +31,10 @@ const client = new pg.Client({
   ssl: isLocal ? false : { rejectUnauthorized: false },
 });
 
-// Mock Seed Data with Correct Store Location & Owner Contact Details
+// Mock Seed Data for Yash Electronics - Electronics & Power Solutions
 const settings = {
   businessName: 'Yash Electronics',
-  tagline: 'Your Trusted Local Electronics Store',
+  tagline: 'Your Trusted Power Solutions & DJ Sound Systems Partner',
   phone: '+91 98244 17122',
   whatsapp: '919824417122',
   email: 'info@yashelectronics.in',
@@ -43,238 +43,418 @@ const settings = {
   state: 'Gujarat',
   pincode: '361305',
   googleMapsUrl: 'https://maps.google.com',
-  heroTitle: 'Electronics & Home Appliances You Can Trust',
-  heroSubtitle: 'Genuine products from Sony, Samsung, Haier, IFB, Natraj, Daikin & more. Local service, competitive pricing for families across nearby towns.',
+  heroTitle: 'Genuine Inverters, Batteries & Professional DJ Systems',
+  heroSubtitle: 'Authorized dealer for Luminous, Microtek, Exide, Amaron, Livguard, JBL, Sony, Pioneer & more. Family-owned and service-oriented since 2000.',
   heroImage: '/images/seed/hero.jpg',
-  heroCtaText: 'Browse Products',
+  heroCtaText: 'Browse Catalog',
   heroCtaLink: '/products',
-  workingHours: 'Mon–Sat: 10:00 AM – 8:00 PM | Sun: 10:00 AM – 2:00 PM',
+  workingHours: 'Mon–Sat: 9:30 AM – 9:00 PM | Sun: Occasionally Open, 9:30 AM – 2:00 PM',
   facebookUrl: 'https://facebook.com',
   instagramUrl: 'https://instagram.com',
   youtubeUrl: 'https://youtube.com',
 };
 
 const categories = [
-  { id: '1', name: 'LED TV', slug: 'led-tv', description: 'Smart & HD TVs', icon: 'tv', image: '/images/seed/categories/led-tv.jpg', sortOrder: 1, isActive: true },
-  { id: '2', name: 'Refrigerator', slug: 'refrigerator', description: 'Single & double door', icon: 'fridge', image: '/images/seed/categories/refrigerator.jpg', sortOrder: 2, isActive: true },
-  { id: '3', name: 'Washing Machine', slug: 'washing-machine', description: 'Front & top load', icon: 'washer', image: '/images/seed/categories/washing-machine.jpg', sortOrder: 3, isActive: true },
-  { id: '4', name: 'Microwave', slug: 'microwave', description: 'Solo & convection', icon: 'microwave', image: '/images/seed/categories/microwave.jpg', sortOrder: 4, isActive: true },
-  { id: '5', name: 'Air Fryer', slug: 'air-fryer', description: 'Healthy cooking', icon: 'air-fryer', image: '/images/seed/categories/air-fryer.jpg', sortOrder: 5, isActive: true },
-  { id: '6', name: 'RO System', slug: 'ro-system', description: 'Water purifiers', icon: 'water', image: '/images/seed/categories/ro-system.jpg', sortOrder: 6, isActive: true },
-  { id: '7', name: 'Air Conditioner', slug: 'air-conditioner', description: 'Split & window AC', icon: 'ac', image: '/images/seed/categories/air-conditioner.jpg', sortOrder: 7, isActive: true },
-  { id: '8', name: 'Air Cooler', slug: 'air-cooler', description: 'Desert & personal', icon: 'cooler', image: '/images/seed/categories/air-cooler.jpg', sortOrder: 8, isActive: true },
-  { id: '9', name: 'Gharghanti', slug: 'gharghanti', description: 'Flour mills', icon: 'mill', image: '/images/seed/categories/gharghanti.jpg', sortOrder: 9, isActive: true },
-  { id: '10', name: 'Gas Stove', slug: 'gas-stove', description: '2 & 4 burner', icon: 'stove', image: '/images/seed/categories/gas-stove.jpg', sortOrder: 10, isActive: true },
-  { id: '11', name: 'Chimney', slug: 'chimney', description: 'Kitchen chimneys', icon: 'chimney', image: '/images/seed/categories/chimney.jpg', sortOrder: 11, isActive: true },
-  { id: '12', name: 'Blender', slug: 'blender', description: 'Hand & jar blenders', icon: 'blender', image: '/images/seed/categories/blender.jpg', sortOrder: 12, isActive: true },
-  { id: '13', name: 'Mixer Grinder', slug: 'mixer-grinder', description: 'Juicer mixer grinders', icon: 'mixer', image: '/images/seed/categories/mixer-grinder.jpg', sortOrder: 13, isActive: true },
+  { id: 'cat1', name: 'Home Inverters', slug: 'home-inverters', description: 'High-performance home inverters and UPS for uninterrupted power supply.', icon: 'inverter', image: '/images/seed/categories/led-tv.jpg', sortOrder: 1, isActive: true },
+  { id: 'cat2', name: 'Batteries', slug: 'batteries', description: 'Long-lasting tubular and flat plate batteries for inverters and vehicles.', icon: 'battery', image: '/images/seed/categories/refrigerator.jpg', sortOrder: 2, isActive: true },
+  { id: 'cat3', name: 'Sound Systems', slug: 'sound-systems', description: 'Premium home theatres, soundbars, and consumer audio gear.', icon: 'speaker', image: '/images/seed/categories/washing-machine.jpg', sortOrder: 3, isActive: true },
+  { id: 'cat4', name: 'DJ Speaker Systems', slug: 'dj-speaker-systems', description: 'Professional DJ speakers, amplifiers, mixers, and stage audio gear.', icon: 'dj', image: '/images/seed/categories/microwave.jpg', sortOrder: 4, isActive: true },
 ];
 
 const brands = [
-  { id: '1', name: 'Sony', slug: 'sony', logo: '/images/seed/brands/sony.svg', sortOrder: 1, isActive: true },
-  { id: '2', name: 'Samsung', slug: 'samsung', logo: '/images/seed/brands/samsung.svg', sortOrder: 2, isActive: true },
-  { id: '3', name: 'Haier', slug: 'haier', logo: '/images/seed/brands/haier.svg', sortOrder: 3, isActive: true },
-  { id: '4', name: 'IFB', slug: 'ifb', logo: '/images/seed/brands/ifb.svg', sortOrder: 4, isActive: true },
-  { id: '5', name: 'Iwis', slug: 'iwis', logo: '/images/seed/brands/iwis.svg', sortOrder: 5, isActive: true },
-  { id: '6', name: 'CLT', slug: 'clt', logo: '/images/seed/brands/clt.svg', sortOrder: 6, isActive: true },
-  { id: '7', name: 'Trion', slug: 'trion', logo: '/images/seed/brands/trion.svg', sortOrder: 7, isActive: true },
-  { id: '8', name: 'Komfy', slug: 'komfy', logo: '/images/seed/brands/komfy.svg', sortOrder: 8, isActive: true },
-  { id: '9', name: 'Daikin', slug: 'daikin', logo: '/images/seed/brands/daikin.svg', sortOrder: 9, isActive: true },
-  { id: '10', name: 'Voltas', slug: 'voltas', logo: '/images/seed/brands/voltas.svg', sortOrder: 10, isActive: true },
-  { id: '11', name: 'Mitsubishi Heavy', slug: 'mitsubishi-heavy', logo: '/images/seed/brands/mitsubishi-heavy.svg', sortOrder: 11, isActive: true },
-  { id: '12', name: 'Blue Star', slug: 'blue-star', logo: '/images/seed/brands/blue-star.svg', sortOrder: 12, isActive: true },
-  { id: '13', name: 'Natraj', slug: 'natraj', logo: '/images/seed/brands/natraj.svg', sortOrder: 13, isActive: true },
-  { id: '14', name: 'Ivas', slug: 'ivas', logo: '/images/seed/brands/ivas.svg', sortOrder: 14, isActive: true },
+  { id: 'b1', name: 'Luminous', slug: 'luminous', logo: '/images/seed/brands/sony.svg', sortOrder: 1, isActive: true },
+  { id: 'b2', name: 'Microtek', slug: 'microtek', logo: '/images/seed/brands/samsung.svg', sortOrder: 2, isActive: true },
+  { id: 'b3', name: 'Exide', slug: 'exide', logo: '/images/seed/brands/haier.svg', sortOrder: 3, isActive: true },
+  { id: 'b4', name: 'Amaron', slug: 'amaron', logo: '/images/seed/brands/ifb.svg', sortOrder: 4, isActive: true },
+  { id: 'b5', name: 'Livguard', slug: 'livguard', logo: '/images/seed/brands/iwis.svg', sortOrder: 5, isActive: true },
+  { id: 'b6', name: 'JBL', slug: 'jbl', logo: '/images/seed/brands/clt.svg', sortOrder: 6, isActive: true },
+  { id: 'b7', name: 'Sony', slug: 'sony', logo: '/images/seed/brands/trion.svg', sortOrder: 7, isActive: true },
+  { id: 'b8', name: 'Pioneer', slug: 'pioneer', logo: '/images/seed/brands/komfy.svg', sortOrder: 8, isActive: true },
+  { id: 'b9', name: 'Studio Master', slug: 'studio-master', logo: '/images/seed/brands/daikin.svg', sortOrder: 9, isActive: true },
+  { id: 'b10', name: 'Ahuja', slug: 'ahuja', logo: '/images/seed/brands/voltas.svg', sortOrder: 10, isActive: true },
 ];
 
 const products = [
   {
     id: 'p1',
-    name: 'Sony Bravia 55" 4K Ultra HD Smart LED TV',
-    slug: 'sony-bravia-55-4k-smart-led-tv',
-    brandId: '1',
-    categoryId: '1',
-    modelNumber: 'KD-55X75L',
-    description: 'Experience stunning 4K picture quality with Google TV, Dolby Audio and seamless streaming.',
-    specifications: '{"Screen Size":"55 inch","Resolution":"4K Ultra HD","Smart TV":"Google TV","Refresh Rate":"60Hz","Warranty":"1 Year"}',
-    mrp: 89990,
-    offerPrice: 74990,
-    images: ['/images/seed/products/sony-tv-1.jpg', '/images/seed/products/sony-tv-2.jpg'],
+    name: 'Luminous Zelio+ 1100 Home UPS',
+    slug: 'luminous-zelio-1100',
+    brandId: 'b1',
+    categoryId: 'cat1',
+    modelNumber: 'Zelio+ 1100',
+    description: 'India\'s most intelligent home UPS with LED display for backup and charging time status. Features pure sine wave output for protection of sensitive appliances.',
+    specifications: '{"Capacity":"900 VA","Output Waveform":"Pure Sine Wave","Max Charging Current":"15 A","Battery Support":"12V Single Battery","Warranty":"2 Years"}',
+    mrp: 8500,
+    offerPrice: 6800,
+    images: ['/images/seed/products/sony-tv-1.jpg'],
     isFeatured: true,
     isActive: true,
-    createdAt: '2026-01-15',
-    updatedAt: '2026-03-01',
+    createdAt: '2026-05-15',
+    updatedAt: '2026-06-01',
   },
   {
     id: 'p2',
-    name: 'Samsung 253L Frost Free Double Door Refrigerator',
-    slug: 'samsung-253l-frost-free-refrigerator',
-    brandId: '2',
-    categoryId: '2',
-    modelNumber: 'RT28C3732S8',
-    description: 'Digital Inverter technology with toughened glass shelves and optimal fresh food storage.',
-    specifications: '{"Capacity":"253 Litres","Type":"Double Door","Energy Rating":"3 Star","Cooling":"Frost Free","Warranty":"1 Year"}',
-    mrp: 32990,
-    offerPrice: 27990,
+    name: 'Microtek UPS SEBz 1100 Pure Sine Wave',
+    slug: 'microtek-sebz-1100',
+    brandId: 'b2',
+    categoryId: 'cat1',
+    modelNumber: 'SEBz 1100',
+    description: 'Heavy duty inverter designed with micro-controller based intelligent technology. Delivers standard backup and stable voltage output.',
+    specifications: '{"Capacity":"950 VA","Output Waveform":"Pure Sine Wave","Input Voltage Range":"100V - 300V","Warranty":"2 Years"}',
+    mrp: 7800,
+    offerPrice: 5990,
     images: ['/images/seed/products/samsung-fridge-1.jpg'],
     isFeatured: true,
     isActive: true,
-    createdAt: '2026-01-20',
-    updatedAt: '2026-02-15',
+    createdAt: '2026-05-20',
+    updatedAt: '2026-06-02',
   },
   {
     id: 'p3',
-    name: 'IFB 7 kg Front Load Washing Machine',
-    slug: 'ifb-7kg-front-load-washing-machine',
-    brandId: '4',
-    categoryId: '3',
-    modelNumber: 'SERENA WXN 7012',
-    description: 'Aqua Energie, Cradle Wash for delicates and 15 wash programs for every fabric.',
-    specifications: '{"Capacity":"7 kg","Type":"Front Load","Energy Rating":"5 Star","Programs":"15","Warranty":"4 Years"}',
-    mrp: 42990,
-    offerPrice: 36490,
+    name: 'Luminous Cruze+ 2KVA Heavy Duty Inverter',
+    slug: 'luminous-cruze-2kva',
+    brandId: 'b1',
+    categoryId: 'cat1',
+    modelNumber: 'Cruze+ 2KVA',
+    description: 'High capacity inverter suitable for running high-load appliances like air conditioners, geysers, and refrigerators in homes or offices.',
+    specifications: '{"Capacity":"2000 VA / 24V","Output Waveform":"Pure Sine Wave","Battery Support":"24V Double Battery","Warranty":"2 Years"}',
+    mrp: 18500,
+    offerPrice: 14900,
     images: ['/images/seed/products/ifb-washer-1.jpg'],
-    isFeatured: true,
+    isFeatured: false,
     isActive: true,
-    createdAt: '2026-02-01',
-    updatedAt: '2026-03-10',
+    createdAt: '2026-05-25',
+    updatedAt: '2026-06-03',
   },
   {
     id: 'p4',
-    name: 'Daikin 1.5 Ton 3 Star Split AC',
-    slug: 'daikin-1-5-ton-split-ac',
-    brandId: '9',
-    categoryId: '7',
-    modelNumber: 'FTKL50UV16W',
-    description: 'Power chill operation, Econo mode and copper condenser for efficient cooling.',
-    specifications: '{"Capacity":"1.5 Ton","Type":"Split AC","Energy Rating":"3 Star","Refrigerant":"R-32","Warranty":"1 Year"}',
-    mrp: 45990,
-    offerPrice: 38990,
+    name: 'Exide Instabrite 150Ah Tall Tubular Battery',
+    slug: 'exide-instabrite-150ah',
+    brandId: 'b3',
+    categoryId: 'cat2',
+    modelNumber: 'IB1500',
+    description: 'Low-maintenance tubular battery with hybrid alloy system. Highly reliable and customized for extreme Indian power cut conditions.',
+    specifications: '{"Capacity":"150 Ah","Battery Type":"Tall Tubular","Voltage":"12 V","Warranty":"36 Months"}',
+    mrp: 16500,
+    offerPrice: 12500,
     images: ['/images/seed/products/daikin-ac-1.jpg'],
     isFeatured: true,
     isActive: true,
-    createdAt: '2026-02-10',
-    updatedAt: '2026-03-05',
+    createdAt: '2026-05-10',
+    updatedAt: '2026-06-05',
   },
   {
     id: 'p5',
-    name: 'Haier 20L Convection Microwave Oven',
-    slug: 'haier-20l-convection-microwave',
-    brandId: '3',
-    categoryId: '4',
-    modelNumber: 'HIL2001CBSH',
-    description: 'Convection cooking with auto cook menus and stainless steel cavity.',
-    specifications: '{"Capacity":"20 Litres","Type":"Convection","Power":"1200W","Cavity":"Stainless Steel","Warranty":"1 Year"}',
-    mrp: 12990,
-    offerPrice: 9990,
+    name: 'Amaron Current 150Ah Tall Tubular Battery',
+    slug: 'amaron-current-150ah',
+    brandId: 'b4',
+    categoryId: 'cat2',
+    modelNumber: 'CR150TT',
+    description: 'High durability battery with ultra-low water loss. Made with high-heat-resistant calcium-silver alloy plates for long service life.',
+    specifications: '{"Capacity":"150 Ah","Battery Type":"Tall Tubular","Voltage":"12 V","Warranty":"42 Months"}',
+    mrp: 17200,
+    offerPrice: 13200,
     images: ['/images/seed/products/haier-microwave-1.jpg'],
-    isFeatured: false,
+    isFeatured: true,
     isActive: true,
-    createdAt: '2026-02-15',
-    updatedAt: '2026-02-20',
+    createdAt: '2026-05-15',
+    updatedAt: '2026-06-05',
   },
   {
     id: 'p6',
-    name: 'Voltas 50L Desert Air Cooler',
-    slug: 'voltas-50l-desert-air-cooler',
-    brandId: '10',
-    categoryId: '8',
-    modelNumber: 'Victo 50',
-    description: 'High air delivery with honeycomb pads and 3-speed control for hot summers.',
-    specifications: '{"Tank Capacity":"50 Litres","Type":"Desert Cooler","Speed Levels":"3","Air Delivery":"3650 m³/hr","Warranty":"1 Year"}',
-    mrp: 11990,
-    offerPrice: 9490,
+    name: 'Livguard IT 1560TT 150Ah Battery',
+    slug: 'livguard-150ah',
+    brandId: 'b5',
+    categoryId: 'cat2',
+    modelNumber: 'IT 1560TT',
+    description: 'Superb power backup with 3D grid design for faster charging and high durability. Best-in-class performance under low maintenance.',
+    specifications: '{"Capacity":"150 Ah","Battery Type":"Tall Tubular","Voltage":"12 V","Warranty":"60 Months"}',
+    mrp: 15800,
+    offerPrice: 11990,
     images: ['/images/seed/products/voltas-cooler-1.jpg'],
     isFeatured: false,
     isActive: true,
-    createdAt: '2026-03-01',
-    updatedAt: '2026-03-01',
+    createdAt: '2026-05-18',
+    updatedAt: '2026-06-06',
   },
   {
     id: 'p7',
-    name: 'Blue Star 1 Ton 3 Star Split AC',
-    slug: 'blue-star-1-ton-split-ac',
-    brandId: '12',
-    categoryId: '7',
-    modelNumber: 'IC312YNUR',
-    description: 'Precision cooling with hidden display and turbo cool mode.',
-    specifications: '{"Capacity":"1 Ton","Type":"Split AC","Energy Rating":"3 Star","Refrigerant":"R-32","Warranty":"1 Year"}',
-    mrp: 36990,
-    offerPrice: 31990,
+    name: 'Sony HT-S20R 5.1ch Real Surround Soundbar',
+    slug: 'sony-ht-s20r-5-1ch',
+    brandId: 'b7',
+    categoryId: 'cat3',
+    modelNumber: 'HT-S20R',
+    description: 'Get real 5.1 channel surround sound with rear speakers and external subwoofer. Connect via Bluetooth or USB for instant music playback.',
+    specifications: '{"Total Power":"400 W","Audio Channels":"5.1 ch","Subwoofer Type":"Wired","Connectivity":"Bluetooth, HDMI ARC, Optical, USB","Warranty":"1 Year"}',
+    mrp: 19990,
+    offerPrice: 16990,
     images: ['/images/seed/products/blue-star-ac-1.jpg'],
-    isFeatured: false,
+    isFeatured: true,
     isActive: true,
-    createdAt: '2026-03-05',
-    updatedAt: '2026-03-05',
+    createdAt: '2026-05-22',
+    updatedAt: '2026-06-07',
   },
   {
     id: 'p8',
-    name: 'Samsung 28L Convection Microwave',
-    slug: 'samsung-28l-convection-microwave',
-    brandId: '2',
-    categoryId: '4',
-    modelNumber: 'CE1041DSB2',
-    description: 'Slim fry technology with tandoor and fermentation modes.',
-    specifications: '{"Capacity":"28 Litres","Type":"Convection","Power":"1400W","Features":"Slim Fry","Warranty":"1 Year"}',
-    mrp: 18990,
-    offerPrice: 15490,
+    name: 'JBL Bar 500 Pro 5.1ch Soundbar',
+    slug: 'jbl-bar-500-pro',
+    brandId: 'b6',
+    categoryId: 'cat3',
+    modelNumber: 'BAR 500',
+    description: 'Bring movies and games to life with 590W of total output power and Dolby Atmos. Enjoy thrashing bass from the 10-inch wireless subwoofer.',
+    specifications: '{"Total Power":"590 W","Audio Channels":"5.1 ch","Subwoofer Type":"Wireless 10-inch","Features":"Dolby Atmos, MultiBeam, Chromecast Built-in","Warranty":"1 Year"}',
+    mrp: 54999,
+    offerPrice: 44999,
     images: ['/images/seed/products/samsung-microwave-1.jpg'],
     isFeatured: true,
     isActive: true,
-    createdAt: '2026-03-08',
-    updatedAt: '2026-03-08',
+    createdAt: '2026-05-28',
+    updatedAt: '2026-06-08',
   },
+  {
+    id: 'p9',
+    name: 'JBL Professional EON715 15-inch Powered DJ Speaker',
+    slug: 'jbl-eon715-powered-speaker',
+    brandId: 'b6',
+    categoryId: 'cat4',
+    modelNumber: 'EON715',
+    description: 'High-performance PA speaker with built-in dbx DriveRack DSP, Bluetooth control, and rugged composite enclosure. Perfect for DJs, weddings, and live events.',
+    specifications: '{"Power Rating":"1300 W Peak / 650 W RMS","Woofer Size":"15 inch","Frequency Response":"45 Hz - 20 kHz","Max SPL":"128 dB","Warranty":"3 Years"}',
+    mrp: 62000,
+    offerPrice: 51900,
+    images: ['/images/seed/products/sony-tv-2.jpg'],
+    isFeatured: true,
+    isActive: true,
+    createdAt: '2026-06-01',
+    updatedAt: '2026-06-09',
+  },
+  {
+    id: 'p10',
+    name: 'Studio Master Fire 55 Dual 15-inch DJ Cabinet Speaker',
+    slug: 'studiomaster-fire-55',
+    brandId: 'b9',
+    categoryId: 'cat4',
+    modelNumber: 'Fire 55',
+    description: 'High performance dual 15-inch passive speaker system designed for touring DJ applications and medium-to-large venue sound reinforcement.',
+    specifications: '{"Power Rating":"1200 W RMS / 2400 W Peak","Configuration":"Dual 15-inch Passive","Impedance":"4 Ohms","Max SPL":"134 dB","Warranty":"1 Year"}',
+    mrp: 48000,
+    offerPrice: 39900,
+    images: ['/images/seed/products/sony-tv-1.jpg'],
+    isFeatured: false,
+    isActive: true,
+    createdAt: '2026-06-02',
+    updatedAt: '2026-06-10',
+  },
+  {
+    id: 'p11',
+    name: 'Pioneer DJ DDJ-FLX4 2-Channel DJ Controller',
+    slug: 'pioneer-dj-ddj-flx4',
+    brandId: 'b8',
+    categoryId: 'cat4',
+    modelNumber: 'DDJ-FLX4',
+    description: 'Professional layout 2-channel DJ controller compatible with rekordbox and Serato DJ Lite. Features Smart Fader and Smart CFX for easy mixing.',
+    specifications: '{"Channels":"2","Deck Control":"2","Software":"rekordbox, Serato DJ Lite","Inputs":"1 Mic (1/4 inch)","Outputs":"1 Master (RCA), 1 Phones","Warranty":"1 Year"}',
+    mrp: 34990,
+    offerPrice: 29990,
+    images: ['/images/seed/products/samsung-fridge-1.jpg'],
+    isFeatured: true,
+    isActive: true,
+    createdAt: '2026-06-03',
+    updatedAt: '2026-06-11',
+  },
+  {
+    id: 'p12',
+    name: 'Ahuja SSA-250M PA Amplifier with USB/BT',
+    slug: 'ahuja-ssa-250m-amplifier',
+    brandId: 'b10',
+    categoryId: 'cat4',
+    modelNumber: 'SSA-250M',
+    description: 'India\'s most popular PA mixer amplifier with built-in digital player and Bluetooth. Delivers clear, loud sound for speech and music applications.',
+    specifications: '{"Power Output":"300W Max / 250W RMS","Inputs":"6 Mic, 2 Aux","Speaker Outputs":"4, 8, 70V, 100V","Features":"Built-in MP3 Player, USB, SD, Bluetooth, Remote","Warranty":"1 Year"}',
+    mrp: 24500,
+    offerPrice: 19900,
+    images: ['/images/seed/products/ifb-washer-1.jpg'],
+    isFeatured: false,
+    isActive: true,
+    createdAt: '2026-06-04',
+    updatedAt: '2026-06-12',
+  }
 ];
 
 const offers = [
   {
     id: 'o1',
-    title: 'TV + Soundbar Combo',
-    slug: 'tv-soundbar-combo',
+    title: 'Inverter + Battery Combo Offer',
+    slug: 'inverter-battery-combo',
     type: 'combo',
-    description: 'Buy any 43"+ LED TV and get soundbar at special combo price.',
+    description: 'Buy Luminous Zelio+ Inverter with Exide 150Ah Tubular Battery and get additional discount + free installation.',
     image: '/images/seed/offers/combo-tv.jpg',
-    discountText: 'Save up to ₹8,000',
-    validUntil: '2026-06-30',
+    discountText: 'Save up to ₹3,000',
+    validUntil: '2026-07-31',
     isActive: true,
     sortOrder: 1,
   },
   {
     id: 'o2',
-    title: 'Build Your Kitchen Bundle',
-    slug: 'kitchen-bundle',
+    title: 'Professional DJ Stage Pack',
+    slug: 'dj-stage-pack-offer',
     type: 'bundle',
-    description: 'Mix chimney, gas stove & mixer grinder for extra savings.',
+    description: 'Get two JBL EON715 Powered Speakers, Studio Master Mixer, and mic stands at a bundle price.',
     image: '/images/seed/offers/kitchen-bundle.jpg',
-    discountText: 'Bundle & Save 15%',
-    validUntil: '2026-07-31',
+    discountText: 'Bundle & Save 12%',
+    validUntil: '2026-08-31',
     isActive: true,
     sortOrder: 2,
   },
   {
     id: 'o3',
-    title: 'AC Offer Of The Week',
-    slug: 'ac-offer-week',
+    title: 'Battery Exchange Mela',
+    slug: 'battery-exchange-mela',
     type: 'weekly',
-    description: 'Selected 1.5 Ton split ACs at lowest price this week only.',
+    description: 'Bring your old scrap battery of any brand and get flat ₹2,000 to ₹3,500 off on a new Exide or Amaron battery.',
     image: '/images/seed/offers/ac-weekly.jpg',
-    discountText: 'From ₹32,990',
-    validUntil: '2026-06-21',
+    discountText: 'Up to ₹3,500 Off on Exchange',
+    validUntil: '2026-06-30',
     isActive: true,
     sortOrder: 3,
   },
+];
+
+const teamMembersData = [
   {
-    id: 'o4',
-    title: 'Monsoon Festival Sale',
-    slug: 'monsoon-festival-sale',
-    type: 'festival',
-    description: 'Special discounts on refrigerators, washers & RO systems.',
-    image: '/images/seed/offers/festival.jpg',
-    discountText: 'Up to 25% Off',
-    validUntil: '2026-08-15',
+    id: 'tm1',
+    name: 'Mr. Paresh Mehta',
+    photo: null,
+    phone: '+91 98244 17122',
+    role: 'sales_head',
+    department: 'sales',
+    sortOrder: 1,
     isActive: true,
-    sortOrder: 4,
   },
+  {
+    id: 'tm2',
+    name: 'Hardik Kanajariya',
+    photo: null,
+    phone: '+91 98244 17123',
+    role: 'sales_staff',
+    department: 'sales',
+    sortOrder: 2,
+    isActive: true,
+  },
+  {
+    id: 'tm3',
+    name: 'Sanjay Bhai',
+    photo: null,
+    phone: '+91 98244 17124',
+    role: 'service_head',
+    department: 'service',
+    sortOrder: 1,
+    isActive: true,
+  },
+  {
+    id: 'tm4',
+    name: 'Ramesh Patel',
+    photo: null,
+    phone: '+91 98244 17125',
+    role: 'service_staff',
+    department: 'service',
+    sortOrder: 2,
+    isActive: true,
+  },
+];
+
+const servicesData = [
+  {
+    id: 's1',
+    title: 'Inverter Installation & Setup',
+    slug: 'inverter-installation',
+    description: 'Professional installation of home inverters, UPS systems, and battery setups with neat wiring, protective casing, and overload calculations.',
+    icon: 'tool',
+    image: null,
+    sortOrder: 1,
+    isActive: true,
+  },
+  {
+    id: 's2',
+    title: 'Battery Health Check & Acid Topping',
+    slug: 'battery-health-check',
+    description: 'Periodic maintenance, distilled water topping, specific gravity checking of acid, and load testing to extend your battery life.',
+    icon: 'shield',
+    image: null,
+    sortOrder: 2,
+    isActive: true,
+  },
+  {
+    id: 's3',
+    title: 'Acoustic Sound System Setup',
+    slug: 'acoustic-sound-setup',
+    description: 'Perfect audio calibration, speaker positioning, and cabling setup for home theatres, TV soundbars, banquet halls, and commercial places.',
+    icon: 'badge',
+    image: null,
+    sortOrder: 3,
+    isActive: true,
+  },
+  {
+    id: 's4',
+    title: 'DJ & PA System Service & Rental Support',
+    slug: 'dj-system-service',
+    description: 'On-site technical support, driver replacements, amplifier tuning, and maintenance of professional speaker setups and stage monitors.',
+    icon: 'location',
+    image: null,
+    sortOrder: 4,
+    isActive: true,
+  },
+];
+
+const aboutInfoData = [
+  {
+    id: 'ab1',
+    role: 'founder',
+    name: 'Mr. Yash Mehta',
+    photo: null,
+    description: 'Founded Yash Electronics in 2000 with a commitment to bring reliable power backup solutions and high-quality entertainment sound systems to Khambhalia and nearby regions.',
+    sortOrder: 1,
+  },
+  {
+    id: 'ab2',
+    role: 'owner',
+    name: 'Mr. Paresh Mehta',
+    photo: null,
+    description: 'Over 20 years of hands-on technical expertise in electronics repair, battery maintenance, and professional sound systems. Believes in providing prompt, family-like post-sales service.',
+    sortOrder: 2,
+  },
+  {
+    id: 'ab3',
+    role: 'next_gen',
+    name: 'Hardik Mehta',
+    photo: null,
+    description: 'Expanding the business into digital operations, advanced home automation, solar inverter integrations, and custom acoustic setups for next-generation clients.',
+    sortOrder: 3,
+  },
+];
+
+const bankDetailsData = [
+  {
+    id: 'bk1',
+    bankName: 'State Bank of India',
+    accountHolderName: 'YASH ELECTRONICS',
+    accountNumber: '32145678901',
+    ifscCode: 'SBIN0000312',
+    branchName: 'Khambhalia ADB Branch',
+    upiQrCode: null,
+    bankQrCode: null,
+    isActive: true,
+  },
+];
+
+const businessHoursData = [
+  { id: 'bh0', dayOfWeek: 0, label: 'Sunday', openTime: '09:30', closeTime: '14:00', isOpen: true, note: 'Occasionally Open' },
+  { id: 'bh1', dayOfWeek: 1, label: 'Monday', openTime: '09:30', closeTime: '21:00', isOpen: true, note: null },
+  { id: 'bh2', dayOfWeek: 2, label: 'Tuesday', openTime: '09:30', closeTime: '21:00', isOpen: true, note: null },
+  { id: 'bh3', dayOfWeek: 3, label: 'Wednesday', openTime: '09:30', closeTime: '21:00', isOpen: true, note: null },
+  { id: 'bh4', dayOfWeek: 4, label: 'Thursday', openTime: '09:30', closeTime: '21:00', isOpen: true, note: null },
+  { id: 'bh5', dayOfWeek: 5, label: 'Friday', openTime: '09:30', closeTime: '21:00', isOpen: true, note: null },
+  { id: 'bh6', dayOfWeek: 6, label: 'Saturday', openTime: '09:30', closeTime: '21:00', isOpen: true, note: null },
 ];
 
 // Helper function to upload images to Cloudinary dynamically using REST API
@@ -354,6 +534,7 @@ async function seed() {
     console.log('[Seed] Clearing existing data...');
     await client.query('DELETE FROM order_items');
     await client.query('DELETE FROM orders');
+    await client.query('DELETE FROM referral_history');
     await client.query('DELETE FROM users');
     await client.query('DELETE FROM contact_queries');
     await client.query('DELETE FROM settings');
@@ -361,6 +542,11 @@ async function seed() {
     await client.query('DELETE FROM categories');
     await client.query('DELETE FROM brands');
     await client.query('DELETE FROM offers');
+    await client.query('DELETE FROM team_members');
+    await client.query('DELETE FROM services');
+    await client.query('DELETE FROM about_info');
+    await client.query('DELETE FROM bank_details');
+    await client.query('DELETE FROM business_hours');
 
     // Auto Upload seed images to Cloudinary if configured
     console.log('[Seed] Checking for Cloudinary configuration to auto-upload images...');
@@ -399,6 +585,68 @@ async function seed() {
         'admin',
         'ADMIN',
         0,
+        new Date().toISOString(),
+      ]
+    );
+
+    // Create a regular user who has referred another user for history testing
+    console.log('[Seed] Inserting sample customer user (Rajesh Kumar)...');
+    await client.query(
+      `INSERT INTO users (id, name, phone, password, role, referral_code, referred_by_id, credits, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [
+        'user-rajesh',
+        'Rajesh Kumar',
+        '9876543210',
+        'ef797c8118f02dfb649607dd5d3f8c7623048c9c063d532cc95c5ed7a898a64f', // 'password' hashed
+        'customer',
+        'RAJESH50',
+        null,
+        150,
+        new Date().toISOString(),
+      ]
+    );
+
+    console.log('[Seed] Inserting sample referred user (Vijay Patel)...');
+    await client.query(
+      `INSERT INTO users (id, name, phone, password, role, referral_code, referred_by_id, credits, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [
+        'user-vijay',
+        'Vijay Patel',
+        '9876543211',
+        'ef797c8118f02dfb649607dd5d3f8c7623048c9c063d532cc95c5ed7a898a64f',
+        'customer',
+        'VIJAY22',
+        'user-rajesh',
+        50,
+        new Date().toISOString(),
+      ]
+    );
+
+    console.log('[Seed] Inserting sample referral history...');
+    await client.query(
+      `INSERT INTO referral_history (id, referrer_id, referred_user_id, points_earned, type, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [
+        'ref-h1',
+        'user-rajesh',
+        'user-vijay',
+        100,
+        'referrer_bonus',
+        new Date().toISOString(),
+      ]
+    );
+
+    await client.query(
+      `INSERT INTO referral_history (id, referrer_id, referred_user_id, points_earned, type, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [
+        'ref-h2',
+        'user-rajesh',
+        'user-vijay',
+        50,
+        'signup_bonus',
         new Date().toISOString(),
       ]
     );
@@ -460,6 +708,51 @@ async function seed() {
         `INSERT INTO offers (id, title, slug, type, description, image, discount_text, valid_until, is_active, sort_order)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
         [offer.id, offer.title, offer.slug, offer.type, offer.description, offer.image, offer.discountText, offer.validUntil, offer.isActive, offer.sortOrder]
+      );
+    }
+
+    console.log('[Seed] Inserting team members...');
+    for (const tm of teamMembersData) {
+      await client.query(
+        `INSERT INTO team_members (id, name, photo, phone, role, department, sort_order, is_active)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [tm.id, tm.name, tm.photo, tm.phone, tm.role, tm.department, tm.sortOrder, tm.isActive]
+      );
+    }
+
+    console.log('[Seed] Inserting services...');
+    for (const s of servicesData) {
+      await client.query(
+        `INSERT INTO services (id, title, slug, description, icon, image, sort_order, is_active)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [s.id, s.title, s.slug, s.description, s.icon, s.image, s.sortOrder, s.isActive]
+      );
+    }
+
+    console.log('[Seed] Inserting about info...');
+    for (const ab of aboutInfoData) {
+      await client.query(
+        `INSERT INTO about_info (id, role, name, photo, description, sort_order)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [ab.id, ab.role, ab.name, ab.photo, ab.description, ab.sortOrder]
+      );
+    }
+
+    console.log('[Seed] Inserting bank details...');
+    for (const bk of bankDetailsData) {
+      await client.query(
+        `INSERT INTO bank_details (id, bank_name, account_holder_name, account_number, ifsc_code, branch_name, upi_qr_code, bank_qr_code, is_active)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [bk.id, bk.bankName, bk.accountHolderName, bk.accountNumber, bk.ifscCode, bk.branchName, bk.upiQrCode, bk.bankQrCode, bk.isActive]
+      );
+    }
+
+    console.log('[Seed] Inserting business hours...');
+    for (const bh of businessHoursData) {
+      await client.query(
+        `INSERT INTO business_hours (id, day_of_week, label, open_time, close_time, is_open, note)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [bh.id, bh.dayOfWeek, bh.label, bh.openTime, bh.closeTime, bh.isOpen, bh.note]
       );
     }
 

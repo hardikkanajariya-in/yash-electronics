@@ -17,27 +17,40 @@ export const SORT_OPTIONS = [
 export const TRUST_POINTS = [
   {
     title: 'Genuine Products',
-    description: '100% authentic products with manufacturer warranty.',
+    description: '100% authentic inverters, batteries & sound systems with manufacturer warranty.',
     icon: 'shield',
   },
   {
     title: 'Trusted Brands',
-    description: 'Sony, Samsung, Haier, IFB, Daikin, Natraj and more.',
+    description: 'Luminous, Exide, Amaron, JBL, Ahuja and more top brands.',
     icon: 'badge',
   },
   {
+    title: 'Expert Installation',
+    description: 'Professional on-site installation and setup by trained technicians.',
+    icon: 'tool',
+  },
+  {
     title: 'Local Support',
-    description: 'Friendly assistance from our nearby store team.',
+    description: 'Family-run business with friendly, fast support from our nearby store.',
     icon: 'location',
   },
   {
     title: 'Competitive Pricing',
-    description: 'Best value deals on electronics and appliances.',
+    description: 'Best value deals on power solutions and audio equipment.',
     icon: 'tag',
   },
-  {
-    title: 'Fast Assistance',
-    description: 'Quick responses on WhatsApp and phone.',
-    icon: 'chat',
-  },
 ] as const;
+
+export const TEAM_ROLE_LABELS: Record<string, string> = {
+  sales_head: 'Sales Head',
+  sales_staff: 'Sales Executive',
+  service_head: 'Service Head',
+  service_staff: 'Service Technician',
+};
+
+export const ABOUT_ROLE_LABELS: Record<string, string> = {
+  founder: 'Founder',
+  owner: 'Owner',
+  next_gen: 'Next Generation',
+};

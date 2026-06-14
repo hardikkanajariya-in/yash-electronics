@@ -52,13 +52,17 @@ const currentPath = Astro.url.pathname;
 
   <Container>
     <div class="flex items-center justify-between gap-4 py-3">
-      <a href={getLocalizedPath('/', locale)} class="flex shrink-0 items-center gap-2">
-        <div class="flex h-10 w-10 items-center justify-center rounded-md bg-primary text-lg font-bold text-white">
-          YE
-        </div>
-        <div class="hidden sm:block">
-          <p class="font-display text-lg font-bold leading-tight text-primary">{settings.businessName}</p>
-          <p class="text-xs text-neutral-500">{settings.tagline}</p>
+      <a href={getLocalizedPath('/', locale)} class="flex shrink-0 items-center gap-3">
+        {settings.logoUrl ? (
+          <img src={settings.logoUrl} alt={settings.businessName} class="h-11 w-11 rounded-md object-contain" />
+        ) : (
+          <div class="flex h-11 w-11 items-center justify-center rounded-md bg-gradient-to-br from-primary to-primary-700 text-lg font-bold text-white shadow-sm">
+            YE
+          </div>
+        )}
+        <div>
+          <p class="font-display text-lg font-extrabold leading-tight tracking-tight text-primary sm:text-xl">YASH ELECTRONICS</p>
+          <p class="hidden text-[11px] text-neutral-500 sm:block">{settings.tagline}</p>
         </div>
       </a>
 
@@ -85,8 +89,11 @@ const currentPath = Astro.url.pathname;
         <a href={getLocalizedPath('/products', locale)} class:list={['rounded px-3 py-2 text-sm font-medium transition-colors', currentPath.startsWith(getLocalizedPath('/products', locale)) ? 'text-primary' : 'text-neutral-700 hover:text-primary']}>
           {t('nav.products', locale)}
         </a>
-        <a href={getLocalizedPath('/offers', locale)} class:list={['rounded px-3 py-2 text-sm font-medium transition-colors', currentPath.startsWith(getLocalizedPath('/offers', locale)) ? 'text-primary' : 'text-neutral-700 hover:text-primary']}>
-          {t('nav.offers', locale)}
+        <a href={getLocalizedPath('/services', locale)} class:list={['rounded px-3 py-2 text-sm font-medium transition-colors', currentPath.startsWith(getLocalizedPath('/services', locale)) ? 'text-primary' : 'text-neutral-700 hover:text-primary']}>
+          {t('nav.services', locale)}
+        </a>
+        <a href={getLocalizedPath('/about', locale)} class:list={['rounded px-3 py-2 text-sm font-medium transition-colors', currentPath.startsWith(getLocalizedPath('/about', locale)) ? 'text-primary' : 'text-neutral-700 hover:text-primary']}>
+          {t('nav.about', locale)}
         </a>
         <a href={getLocalizedPath('/contact', locale)} class:list={['rounded px-3 py-2 text-sm font-medium transition-colors', currentPath === getLocalizedPath('/contact', locale) ? 'text-primary' : 'text-neutral-700 hover:text-primary']}>
           {t('nav.contact', locale)}
@@ -147,6 +154,9 @@ const currentPath = Astro.url.pathname;
       <nav class="flex flex-col border-t border-neutral-100 py-2">
         <a href={getLocalizedPath('/', locale)} class="px-2 py-2.5 text-sm font-medium text-neutral-800">{t('nav.home', locale)}</a>
         <a href={getLocalizedPath('/products', locale)} class="px-2 py-2.5 text-sm font-medium text-neutral-800">{t('nav.products', locale)}</a>
+        <a href={getLocalizedPath('/services', locale)} class="px-2 py-2.5 text-sm font-medium text-neutral-800">{t('nav.services', locale)}</a>
+        <a href={getLocalizedPath('/about', locale)} class="px-2 py-2.5 text-sm font-medium text-neutral-800">{t('nav.about', locale)}</a>
+        <a href={getLocalizedPath('/team', locale)} class="px-2 py-2.5 text-sm font-medium text-neutral-800">{t('nav.team', locale)}</a>
         <a href={getLocalizedPath('/offers', locale)} class="px-2 py-2.5 text-sm font-medium text-neutral-800">{t('nav.offers', locale)}</a>
         <a href={getLocalizedPath('/contact', locale)} class="px-2 py-2.5 text-sm font-medium text-neutral-800">{t('nav.contact', locale)}</a>
         <a data-astro-prefetch="false" href={getLocalizedPath('/cart', locale)} class="px-2 py-2.5 text-sm font-medium text-neutral-800 flex items-center justify-between">

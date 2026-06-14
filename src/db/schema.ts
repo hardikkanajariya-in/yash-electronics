@@ -1,4 +1,4 @@
-import { pgTable, text, integer, boolean, varchar } from 'drizzle-orm/pg-core';
+import { pgTable, text, integer, boolean, varchar, primaryKey } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 export const settings = pgTable('settings', {
@@ -91,6 +91,8 @@ export const users = pgTable('users', {
 
 export const usersRelations = relations(users, ({ many }) => ({
   orders: many(orders),
+  referralsMade: many(referralHistory, { relationName: 'referrer' }),
+  referralsReceived: many(referralHistory, { relationName: 'referred' }),
 }));
 
 export const orders = pgTable('orders', {
@@ -141,3 +143,98 @@ export const contactQueries = pgTable('contact_queries', {
   status: text('status').$type<'unread' | 'read' | 'resolved'>().notNull().default('unread'),
   createdAt: text('created_at').notNull(),
 });
+
+// ─── NEW TABLES ──────────────────────────────────────────────
+
+/**
+ * Team Members — Sales & Service staff
+ */
+export const teamMembers = pgTable('team_members', {
+  id: varchar('id', { length: 255 }).primaryKey(),
+  name: text('name').notNull(),
+  photo: text('photo'),
+  phone: text('phone'),
+  role: text('role').$type<'sales_head' | 'sales_staff' | 'service_head' | 'service_staff'>().notNull(),
+  department: text('department').$type<'sales' | 'service'>().notNull(),
+  sortOrder: integer('sort_order').notNull().default(0),
+  isActive: boolean('is_active').notNull().default(true),
+});
+
+/**
+ * Services — Inverter Installation, Battery Replacement, etc.
+ */
+export const services = pgTable('services', {
+  id: varchar('id', { length: 255 }).primaryKey(),
+  title: text('title').notNull(),
+  slug: text('slug').notNull().unique(),
+  description: text('description'),
+  icon: text('icon'),
+  image: text('image'),
+  sortOrder: integer('sort_order').notNull().default(0),
+  isActive: boolean('is_active').notNull().default(true),
+});
+
+/**
+ * About Info — Founder, Owner, Next-Gen leadership
+ */
+export const aboutInfo = pgTable('about_info', {
+  id: varchar('id', { length: 255 }).primaryKey(),
+  role: text('role').$type<'founder' | 'owner' | 'next_gen'>().notNull(),
+  name: text('name').notNull(),
+  photo: text('photo'),
+  description: text('description'),
+  sortOrder: integer('sort_order').notNull().default(0),
+});
+
+/**
+ * Bank Details — Payment information for customers
+ */
+export const bankDetails = pgTable('bank_details', {
+  id: varchar('id', { length: 255 }).primaryKey(),
+  bankName: text('bank_name').notNull(),
+  accountHolderName: text('account_holder_name').notNull(),
+  accountNumber: text('account_number').notNull(),
+  ifscCode: text('ifsc_code').notNull(),
+  branchName: text('branch_name').notNull(),
+  upiQrCode: text('upi_qr_code'),
+  bankQrCode: text('bank_qr_code'),
+  isActive: boolean('is_active').notNull().default(true),
+});
+
+/**
+ * Business Hours — Structured hours per day
+ */
+export const businessHours = pgTable('business_hours', {
+  id: varchar('id', { length: 255 }).primaryKey(),
+  dayOfWeek: integer('day_of_week').notNull(), // 0 = Sunday, 1 = Monday, ...
+  label: text('label').notNull(), // "Monday", "Sunday", etc.
+  openTime: text('open_time'), // "09:30"
+  closeTime: text('close_time'), // "21:00"
+  isOpen: boolean('is_open').notNull().default(true),
+  note: text('note'), // "Occasionally Open"
+});
+
+/**
+ * Referral History — Track individual referral events
+ */
+export const referralHistory = pgTable('referral_history', {
+  id: varchar('id', { length: 255 }).primaryKey(),
+  referrerId: varchar('referrer_id', { length: 255 }).references(() => users.id, { onDelete: 'cascade' }),
+  referredUserId: varchar('referred_user_id', { length: 255 }).references(() => users.id, { onDelete: 'cascade' }),
+  pointsEarned: integer('points_earned').notNull().default(0),
+  type: text('type').$type<'referrer_bonus' | 'signup_bonus'>().notNull(),
+  createdAt: text('created_at').notNull(),
+});
+
+export const referralHistoryRelations = relations(referralHistory, ({ one }) => ({
+  referrer: one(users, {
+    fields: [referralHistory.referrerId],
+    references: [users.id],
+    relationName: 'referrer',
+  }),
+  referredUser: one(users, {
+    fields: [referralHistory.referredUserId],
+    references: [users.id],
+    relationName: 'referred',
+  }),
+}));

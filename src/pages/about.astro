@@ -1,0 +1,201 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Container from '../components/ui/Container.astro';
+import { getAboutInfo, getSettings } from '../services/cms';
+import { translateObject, t } from '../lib/translations';
+import CloudinaryImage from '../components/common/CloudinaryImage.astro';
+
+const locale = Astro.currentLocale || 'gu';
+const rawSettings = await getSettings();
+const settings = translateObject(rawSettings, locale);
+
+let aboutPeople: any[] = [];
+try {
+  aboutPeople = await getAboutInfo();
+} catch (e) {
+  console.error('[About] Failed to load about info:', e);
+}
+
+const founder = aboutPeople.find(p => p.role === 'founder');
+const owner = aboutPeople.find(p => p.role === 'owner');
+const nextGen = aboutPeople.find(p => p.role === 'next_gen');
+---
+
+<BaseLayout
+  title={`${t('about.title', locale)} - ${settings.businessName}`}
+  description={locale === 'gu' ? 'યશ ઇલેક્ટ્રોનિક્સ - પેઢીઓથી વિશ્વાસપાત્ર ઇલેક્ટ્રોનિક્સ અને પાવર સોલ્યુશન્સ' : 'Yash Electronics - Trusted electronics & power solutions across generations'}
+  canonicalUrl="/about"
+>
+  <!-- Hero Section -->
+  <section class="relative bg-gradient-to-br from-primary via-primary-700 to-primary-800 text-white overflow-hidden">
+    <div class="absolute inset-0 opacity-10">
+      <div class="absolute top-10 left-10 w-72 h-72 bg-white rounded-full blur-3xl"></div>
+      <div class="absolute bottom-10 right-10 w-96 h-96 bg-secondary rounded-full blur-3xl"></div>
+    </div>
+    <Container class="relative py-16 md:py-24 text-center">
+      <p class="text-secondary-300 text-xs font-bold uppercase tracking-[0.2em] mb-4">{t('about.ourStory', locale)}</p>
+      <h1 class="font-display text-3xl md:text-5xl font-extrabold mb-4 leading-tight">{t('about.title', locale)}</h1>
+      <p class="text-lg md:text-xl text-white/80 max-w-2xl mx-auto leading-relaxed">
+        {t('about.subtitle', locale)}
+      </p>
+    </Container>
+  </section>
+
+  <!-- Our Story Section -->
+  <section class="section-padding bg-white">
+    <Container class="max-w-4xl">
+      <div class="text-center mb-12">
+        <h2 class="font-display text-2xl md:text-3xl font-bold text-neutral-900 mb-4">
+          {locale === 'gu' ? 'પરિવાર દ્વારા ચાલતો વ્યવસાય, વિશ્વાસ પર બનેલો' : 'A Family-Run Business, Built on Trust'}
+        </h2>
+        <p class="text-neutral-600 leading-relaxed max-w-2xl mx-auto">
+          {locale === 'gu'
+            ? 'યશ ઇલેક્ટ્રોનિક્સ ખંભાળિયા, ગુજરાતમાં એક કૌટુંબિક વ્યવસાય છે. અમે ઇન્વર્ટર, બેટરી, સાઉન્ડ સિસ્ટમ અને DJ સ્પીકર સિસ્ટમમાં અસલી પ્રોડક્ટ્સ અને વ્યાવસાયિક સેવા પ્રદાન કરીએ છીએ.'
+            : 'Yash Electronics is a family-owned business in Khambhalia, Gujarat. We provide genuine products and professional service in Home Inverters, Batteries, Sound Systems, and DJ Speaker Systems.'}
+        </p>
+      </div>
+
+      <div class="grid gap-4 md:grid-cols-3">
+        <div class="bg-gradient-to-br from-primary-50 to-white border border-primary-100 rounded-xl p-6 text-center">
+          <span class="text-3xl mb-3 block">🏪</span>
+          <h3 class="font-display text-lg font-bold text-primary mb-1">{locale === 'gu' ? 'સ્થાનિક દુકાન' : 'Local Store'}</h3>
+          <p class="text-sm text-neutral-600">{locale === 'gu' ? 'ખંભાળિયામાં જોધપુર ગેટ નજીક' : 'Near Jodhpur Gate, Khambhalia'}</p>
+        </div>
+        <div class="bg-gradient-to-br from-secondary-50 to-white border border-secondary-100 rounded-xl p-6 text-center">
+          <span class="text-3xl mb-3 block">🔧</span>
+          <h3 class="font-display text-lg font-bold text-secondary mb-1">{locale === 'gu' ? 'વ્યાવસાયિક સેવા' : 'Expert Service'}</h3>
+          <p class="text-sm text-neutral-600">{locale === 'gu' ? 'ઇન્સ્ટોલેશન, રિપેર અને AMC' : 'Installation, Repair & AMC'}</p>
+        </div>
+        <div class="bg-gradient-to-br from-accent-50 to-white border border-accent-100 rounded-xl p-6 text-center">
+          <span class="text-3xl mb-3 block">✅</span>
+          <h3 class="font-display text-lg font-bold text-accent mb-1">{locale === 'gu' ? 'અસલી પ્રોડક્ટ્સ' : 'Genuine Products'}</h3>
+          <p class="text-sm text-neutral-600">{locale === 'gu' ? 'ઉત્પાદક વોરંટી સાથે' : 'With Manufacturer Warranty'}</p>
+        </div>
+      </div>
+    </Container>
+  </section>
+
+  <!-- Leadership Section -->
+  <section class="section-padding bg-neutral-50">
+    <Container class="max-w-5xl">
+      <div class="text-center mb-12">
+        <p class="text-secondary text-xs font-bold uppercase tracking-[0.15em] mb-2">{t('about.leadershipTitle', locale)}</p>
+        <h2 class="font-display text-2xl md:text-3xl font-bold text-neutral-900">
+          {locale === 'gu' ? 'અમારા નેતાઓ' : 'Meet Our Leadership'}
+        </h2>
+      </div>
+
+      <div class="grid gap-8 md:grid-cols-3">
+        <!-- Founder -->
+        {founder && (
+          <div class="bg-white rounded-2xl border border-neutral-200 shadow-card overflow-hidden text-center group hover:shadow-card-hover transition-shadow duration-300">
+            <div class="relative h-56 bg-gradient-to-br from-primary-100 to-primary-50 flex items-center justify-center overflow-hidden">
+              {founder.photo ? (
+                <CloudinaryImage
+                  src={founder.photo}
+                  alt={founder.name}
+                  class="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  width={400}
+                  height={300}
+                />
+              ) : (
+                <span class="text-6xl opacity-30">👤</span>
+              )}
+              <div class="absolute top-3 left-3">
+                <span class="bg-primary text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full">{t('about.founder', locale)}</span>
+              </div>
+            </div>
+            <div class="p-5">
+              <h3 class="font-display text-xl font-bold text-neutral-900">{founder.name}</h3>
+              {founder.description && (
+                <p class="text-sm text-neutral-600 mt-2 leading-relaxed">{founder.description}</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        <!-- Owner -->
+        {owner && (
+          <div class="bg-white rounded-2xl border border-neutral-200 shadow-card overflow-hidden text-center group hover:shadow-card-hover transition-shadow duration-300">
+            <div class="relative h-56 bg-gradient-to-br from-secondary-100 to-secondary-50 flex items-center justify-center overflow-hidden">
+              {owner.photo ? (
+                <CloudinaryImage
+                  src={owner.photo}
+                  alt={owner.name}
+                  class="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  width={400}
+                  height={300}
+                />
+              ) : (
+                <span class="text-6xl opacity-30">👤</span>
+              )}
+              <div class="absolute top-3 left-3">
+                <span class="bg-secondary text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full">{t('about.owner', locale)}</span>
+              </div>
+            </div>
+            <div class="p-5">
+              <h3 class="font-display text-xl font-bold text-neutral-900">{owner.name}</h3>
+              {owner.description && (
+                <p class="text-sm text-neutral-600 mt-2 leading-relaxed">{owner.description}</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        <!-- Next Gen -->
+        {nextGen && (
+          <div class="bg-white rounded-2xl border border-neutral-200 shadow-card overflow-hidden text-center group hover:shadow-card-hover transition-shadow duration-300">
+            <div class="relative h-56 bg-gradient-to-br from-accent-100 to-accent-50 flex items-center justify-center overflow-hidden">
+              {nextGen.photo ? (
+                <CloudinaryImage
+                  src={nextGen.photo}
+                  alt={nextGen.name}
+                  class="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  width={400}
+                  height={300}
+                />
+              ) : (
+                <span class="text-6xl opacity-30">👤</span>
+              )}
+              <div class="absolute top-3 left-3">
+                <span class="bg-accent text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full">{t('about.nextGen', locale)}</span>
+              </div>
+            </div>
+            <div class="p-5">
+              <h3 class="font-display text-xl font-bold text-neutral-900">{nextGen.name}</h3>
+              {nextGen.description && (
+                <p class="text-sm text-neutral-600 mt-2 leading-relaxed">{nextGen.description}</p>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {aboutPeople.length === 0 && (
+        <div class="text-center py-12 text-neutral-500">
+          <p class="text-sm">{locale === 'gu' ? 'નેતૃત્વ માહિતી ટૂંક સમયમાં ઉમેરવામાં આવશે.' : 'Leadership information will be added soon.'}</p>
+        </div>
+      )}
+    </Container>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="bg-gradient-to-r from-primary to-primary-700 text-white section-padding">
+    <Container class="text-center max-w-2xl">
+      <h2 class="font-display text-2xl md:text-3xl font-bold mb-4">
+        {locale === 'gu' ? 'અમારી દુકાનની મુલાકાત લો' : 'Visit Our Store'}
+      </h2>
+      <p class="text-white/80 mb-6">
+        {locale === 'gu' ? 'ઇન્વર્ટર, બેટરી, સાઉન્ડ સિસ્ટમ અને DJ સ્પીકર સિસ્ટમ માટે અમારો સંપર્ક કરો.' : 'Contact us for Home Inverters, Batteries, Sound Systems and DJ Speaker Systems.'}
+      </p>
+      <div class="flex flex-col sm:flex-row gap-3 justify-center">
+        <a href={`tel:${settings.phone.replace(/\s/g, '')}`} class="btn bg-white text-primary hover:bg-neutral-100 font-bold">
+          📞 {t('contact.callNow', locale)}
+        </a>
+        <a href={`https://wa.me/${settings.whatsapp}`} target="_blank" rel="noopener noreferrer" class="btn-whatsapp font-bold">
+          💬 {t('contact.chatWhatsApp', locale)}
+        </a>
+      </div>
+    </Container>
+  </section>
+</BaseLayout>

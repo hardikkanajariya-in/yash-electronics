@@ -1,0 +1,150 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Container from '../components/ui/Container.astro';
+import { getBankDetailsList, getSettings } from '../services/cms';
+import { translateObject, t } from '../lib/translations';
+import CloudinaryImage from '../components/common/CloudinaryImage.astro';
+
+const locale = Astro.currentLocale || 'gu';
+const rawSettings = await getSettings();
+const settings = translateObject(rawSettings, locale);
+
+let bankDetailsList: any[] = [];
+try {
+  bankDetailsList = await getBankDetailsList();
+} catch (e) {
+  console.error('[BankDetails] Failed to load:', e);
+}
+---
+
+<BaseLayout
+  title={`${t('bank.title', locale)} - ${settings.businessName}`}
+  description={locale === 'gu' ? 'યશ ઇલેક્ટ્રોનિક્સ બેંક ખાતા વિગતો અને QR કોડ' : 'Yash Electronics bank account details and QR codes'}
+  canonicalUrl="/bank-details"
+>
+  <!-- Hero -->
+  <section class="relative bg-gradient-to-br from-primary via-primary-700 to-primary-800 text-white overflow-hidden">
+    <div class="absolute inset-0 opacity-10">
+      <div class="absolute top-10 left-1/2 w-80 h-80 bg-accent rounded-full blur-3xl"></div>
+    </div>
+    <Container class="relative py-14 md:py-18 text-center">
+      <p class="text-secondary-300 text-xs font-bold uppercase tracking-[0.2em] mb-4">
+        {locale === 'gu' ? 'સુરક્ષિત ચૂકવણી' : 'Secure Payment'}
+      </p>
+      <h1 class="font-display text-3xl md:text-4xl font-extrabold mb-3">{t('bank.title', locale)}</h1>
+      <p class="text-white/80 max-w-xl mx-auto">{t('bank.subtitle', locale)}</p>
+    </Container>
+  </section>
+
+  <!-- Bank Details -->
+  <section class="section-padding">
+    <Container class="max-w-4xl">
+      {bankDetailsList.length > 0 ? (
+        <div class="space-y-8">
+          {bankDetailsList.map((bank) => (
+            <div class="bg-white rounded-2xl border border-neutral-200 shadow-card overflow-hidden">
+              {/* Bank Header */}
+              <div class="bg-gradient-to-r from-primary-50 to-white px-6 py-4 border-b border-neutral-100">
+                <div class="flex items-center gap-3">
+                  <div class="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-white text-sm font-bold">🏦</div>
+                  <div>
+                    <h2 class="font-display text-lg font-bold text-neutral-900">{bank.bankName}</h2>
+                    <p class="text-xs text-neutral-500">{bank.branchName}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="grid md:grid-cols-2 gap-6 p-6">
+                {/* Account Details */}
+                <div class="space-y-4">
+                  <div>
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-neutral-400 mb-1">{t('bank.accountHolder', locale)}</p>
+                    <div class="flex items-center gap-2">
+                      <p class="text-sm font-bold text-neutral-900">{bank.accountHolderName}</p>
+                      <button type="button" onclick={`navigator.clipboard.writeText('${bank.accountHolderName}'); window.showToast('${t('bank.copySuccess', locale)}')`} class="text-neutral-400 hover:text-primary text-xs cursor-pointer">📋</button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-neutral-400 mb-1">{t('bank.accountNumber', locale)}</p>
+                    <div class="flex items-center gap-2">
+                      <p class="text-sm font-mono font-bold text-neutral-900 tracking-wider">{bank.accountNumber}</p>
+                      <button type="button" onclick={`navigator.clipboard.writeText('${bank.accountNumber}'); window.showToast('${t('bank.copySuccess', locale)}')`} class="text-neutral-400 hover:text-primary text-xs cursor-pointer">📋</button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-neutral-400 mb-1">{t('bank.ifscCode', locale)}</p>
+                    <div class="flex items-center gap-2">
+                      <p class="text-sm font-mono font-bold text-primary tracking-wider">{bank.ifscCode}</p>
+                      <button type="button" onclick={`navigator.clipboard.writeText('${bank.ifscCode}'); window.showToast('${t('bank.copySuccess', locale)}')`} class="text-neutral-400 hover:text-primary text-xs cursor-pointer">📋</button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-neutral-400 mb-1">{t('bank.branchName', locale)}</p>
+                    <p class="text-sm font-bold text-neutral-900">{bank.branchName}</p>
+                  </div>
+                </div>
+
+                {/* QR Codes */}
+                <div class="flex flex-col sm:flex-row gap-4 items-start">
+                  {bank.upiQrCode && (
+                    <div class="bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-center flex-1">
+                      <p class="text-[10px] font-bold uppercase tracking-wider text-neutral-400 mb-3">{t('bank.upiQr', locale)}</p>
+                      <div class="bg-white rounded-lg p-2 border border-neutral-100 inline-block">
+                        <CloudinaryImage
+                          src={bank.upiQrCode}
+                          alt="UPI QR Code"
+                          class="w-36 h-36 object-contain"
+                          width={200}
+                          height={200}
+                        />
+                      </div>
+                    </div>
+                  )}
+                  {bank.bankQrCode && (
+                    <div class="bg-neutral-50 border border-neutral-200 rounded-xl p-4 text-center flex-1">
+                      <p class="text-[10px] font-bold uppercase tracking-wider text-neutral-400 mb-3">{t('bank.bankQr', locale)}</p>
+                      <div class="bg-white rounded-lg p-2 border border-neutral-100 inline-block">
+                        <CloudinaryImage
+                          src={bank.bankQrCode}
+                          alt="Bank QR Code"
+                          class="w-36 h-36 object-contain"
+                          width={200}
+                          height={200}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div class="text-center py-16">
+          <span class="text-5xl block mb-4">🏦</span>
+          <p class="text-neutral-500">{locale === 'gu' ? 'ચૂકવણી માહિતી ટૂંક સમયમાં ઉમેરવામાં આવશે.' : 'Payment information will be added soon.'}</p>
+        </div>
+      )}
+    </Container>
+  </section>
+
+  <!-- Trust Note -->
+  <section class="bg-neutral-50 section-padding">
+    <Container class="max-w-2xl text-center">
+      <div class="bg-white rounded-xl border border-neutral-200 p-6 shadow-card">
+        <span class="text-3xl block mb-3">🔒</span>
+        <h3 class="font-display text-lg font-bold text-neutral-900 mb-2">
+          {locale === 'gu' ? 'સુરક્ષિત ચૂકવણી' : 'Secure Payment'}
+        </h3>
+        <p class="text-sm text-neutral-600 leading-relaxed">
+          {locale === 'gu'
+            ? 'ચૂકવણી કરતા પહેલા કૃપા કરીને ઓર્ડરની પુષ્ટિ માટે અમારો સંપર્ક કરો. છેતરપિંડીથી સાવધાન રહો — ફક્ત ઉપર દર્શાવેલ બેંક ખાતામાં જ ચૂકવણી કરો.'
+            : 'Please confirm your order with us before making payment. Stay safe from fraud — pay only to the bank account details shown above.'}
+        </p>
+      </div>
+    </Container>
+  </section>
+</BaseLayout>

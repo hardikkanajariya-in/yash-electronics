@@ -3,7 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import Container from '../../components/ui/Container.astro';
 import ProductGrid from '../../components/product/ProductGrid.astro';
 import CatalogFilters from '../../components/product/CatalogFilters.astro';
-import { getCategories, getBrands, getProducts } from '../../services/cms';
+import { getCategories, getBrandsByCategory, getProducts } from '../../services/cms';
 import {
   filterProducts,
   sortProducts,
@@ -25,15 +25,15 @@ const locale = Astro.currentLocale || 'gu';
 const { category: rawCategory } = Astro.props;
 const category = translateObject(rawCategory, locale);
 
-const [rawAllProducts, rawCategories, rawBrands] = await Promise.all([
+const [rawAllProducts, rawCategories, rawCategoryBrands] = await Promise.all([
   getProducts(),
   getCategories(),
-  getBrands(),
+  getBrandsByCategory(rawCategory.slug),
 ]);
 
 const allProducts = translateObject(rawAllProducts, locale);
 const categories = translateObject(rawCategories, locale);
-const brands = translateObject(rawBrands, locale);
+const brands = translateObject(rawCategoryBrands, locale);
 
 const params = Astro.url.searchParams;
 const filters = {

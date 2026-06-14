@@ -1,0 +1,186 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Container from '../../components/ui/Container.astro';
+import { db } from '../../db';
+import { teamMembers } from '../../db/schema';
+import { getSessionUser, generateId } from '../../lib/auth';
+import { eq } from 'drizzle-orm';
+
+export const prerender = false;
+Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+
+const currentUser = await getSessionUser(Astro.cookies);
+if (!currentUser || currentUser.role !== 'admin') return Astro.redirect('/admin/login');
+
+let message = '';
+let error = '';
+
+// Handle POST (Add/Edit/Delete)
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const formAction = formData.get('_action')?.toString();
+
+    if (formAction === 'delete') {
+      const deleteId = formData.get('id')?.toString();
+      if (deleteId) {
+        await db.delete(teamMembers).where(eq(teamMembers.id, deleteId));
+        message = 'Team member deleted.';
+      }
+    } else if (formAction === 'save') {
+      const id = formData.get('id')?.toString();
+      const name = formData.get('name')?.toString().trim() || '';
+      const phone = formData.get('phone')?.toString().trim() || null;
+      const photo = formData.get('photo')?.toString().trim() || null;
+      const role = formData.get('role')?.toString() as any || 'sales_staff';
+      const department = formData.get('department')?.toString() as any || 'sales';
+      const sortOrder = Number(formData.get('sortOrder') || '0');
+
+      if (!name) {
+        error = 'Name is required.';
+      } else if (id) {
+        await db.update(teamMembers).set({ name, phone, photo, role, department, sortOrder }).where(eq(teamMembers.id, id));
+        message = 'Team member updated.';
+      } else {
+        await db.insert(teamMembers).values({ id: generateId(), name, phone, photo, role, department, sortOrder, isActive: true });
+        message = 'Team member added.';
+      }
+    }
+  } catch (e: any) {
+    error = 'Operation failed: ' + (e.message || 'Unknown error');
+  }
+}
+
+// Fetch all team members
+let allMembers: any[] = [];
+try {
+  allMembers = await db.select().from(teamMembers).orderBy(teamMembers.sortOrder);
+} catch (e) { /* table may not exist yet */ }
+
+const editId = Astro.url.searchParams.get('edit');
+const isAdding = Astro.url.searchParams.get('action') === 'add';
+const editMember = editId ? allMembers.find(m => m.id === editId) : null;
+const showForm = isAdding || editMember;
+---
+
+<BaseLayout title="Admin — Team Management" noindex={true}>
+  <Container class="py-6">
+    <div class="flex items-center justify-between border-b border-neutral-200 pb-4 mb-6">
+      <div>
+        <h1 class="text-2xl font-bold text-neutral-900">Team Management</h1>
+        <p class="text-xs text-neutral-500">{allMembers.length} team members</p>
+      </div>
+      <a href="/admin" class="text-xs font-semibold text-neutral-600 border border-neutral-300 bg-white hover:bg-neutral-50 rounded-md px-3 py-1.5 transition-colors">← Dashboard</a>
+    </div>
+
+    <!-- Admin Nav -->
+    <nav class="flex flex-wrap border-b border-neutral-200 gap-x-4 gap-y-1 mb-6 text-sm font-medium">
+      <a href="/admin" class="text-neutral-600 hover:text-primary px-1 pb-3">Overview</a>
+      <a href="/admin/team" class="border-b-2 border-primary text-primary px-1 pb-3">Team</a>
+      <a href="/admin/services" class="text-neutral-600 hover:text-primary px-1 pb-3">Services</a>
+      <a href="/admin/about" class="text-neutral-600 hover:text-primary px-1 pb-3">About</a>
+      <a href="/admin/bank-details" class="text-neutral-600 hover:text-primary px-1 pb-3">Bank</a>
+      <a href="/admin/business-hours" class="text-neutral-600 hover:text-primary px-1 pb-3">Hours</a>
+    </nav>
+
+    {message && <div class="bg-green-50 border border-green-200 text-green-700 text-sm rounded-md p-3 mb-4">{message}</div>}
+    {error && <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md p-3 mb-4">{error}</div>}
+
+    {/* Add/Edit Form */}
+    {showForm && (
+      <div class="bg-white border border-neutral-200 rounded-lg p-5 shadow-sm mb-6">
+        <h2 class="text-base font-bold text-neutral-900 mb-4">{editMember ? 'Edit Team Member' : 'Add Team Member'}</h2>
+        <form method="post" class="grid gap-4 sm:grid-cols-2">
+          <input type="hidden" name="_action" value="save" />
+          {editMember && <input type="hidden" name="id" value={editMember.id} />}
+
+          <div>
+            <label class="block text-xs font-semibold text-neutral-700 mb-1">Name *</label>
+            <input type="text" name="name" required value={editMember?.name || ''} class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-neutral-700 mb-1">Phone</label>
+            <input type="tel" name="phone" value={editMember?.phone || ''} class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-neutral-700 mb-1">Photo (Cloudinary Public ID or URL)</label>
+            <input type="text" name="photo" value={editMember?.photo || ''} class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none" placeholder="e.g. yash-electronics/team/john" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-neutral-700 mb-1">Department *</label>
+            <select name="department" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none">
+              <option value="sales" selected={editMember?.department === 'sales'}>Sales</option>
+              <option value="service" selected={editMember?.department === 'service'}>Service</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-neutral-700 mb-1">Role *</label>
+            <select name="role" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none">
+              <option value="sales_head" selected={editMember?.role === 'sales_head'}>Sales Head</option>
+              <option value="sales_staff" selected={editMember?.role === 'sales_staff'}>Sales Staff</option>
+              <option value="service_head" selected={editMember?.role === 'service_head'}>Service Head</option>
+              <option value="service_staff" selected={editMember?.role === 'service_staff'}>Service Staff</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-neutral-700 mb-1">Sort Order</label>
+            <input type="number" name="sortOrder" value={editMember?.sortOrder ?? 0} class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none" />
+          </div>
+          <div class="sm:col-span-2 flex gap-2">
+            <button type="submit" class="btn-primary text-xs">{editMember ? 'Update' : 'Add Member'}</button>
+            <a href="/admin/team" class="btn-outline text-xs">Cancel</a>
+          </div>
+        </form>
+      </div>
+    )}
+
+    {/* Action Bar */}
+    {!showForm && (
+      <div class="flex justify-end mb-4">
+        <a href="/admin/team?action=add" class="btn-primary text-xs">+ Add Team Member</a>
+      </div>
+    )}
+
+    {/* Team List */}
+    <div class="bg-white border border-neutral-200 rounded-lg shadow-sm overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-neutral-50 border-b border-neutral-200">
+          <tr>
+            <th class="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase">Name</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase hidden sm:table-cell">Department</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase hidden md:table-cell">Role</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase hidden md:table-cell">Phone</th>
+            <th class="text-right px-4 py-3 text-xs font-semibold text-neutral-500 uppercase">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-neutral-100">
+          {allMembers.map(member => (
+            <tr class="hover:bg-neutral-50 transition-colors">
+              <td class="px-4 py-3 font-medium text-neutral-900">{member.name}</td>
+              <td class="px-4 py-3 text-neutral-600 hidden sm:table-cell capitalize">{member.department}</td>
+              <td class="px-4 py-3 text-neutral-600 hidden md:table-cell">
+                <span class={`inline-block rounded px-2 py-0.5 text-[10px] font-semibold uppercase border ${
+                  member.role.includes('head') ? 'bg-primary-50 text-primary border-primary-200' : 'bg-neutral-50 text-neutral-600 border-neutral-200'
+                }`}>{member.role.replace('_', ' ')}</span>
+              </td>
+              <td class="px-4 py-3 text-neutral-500 hidden md:table-cell">{member.phone || '—'}</td>
+              <td class="px-4 py-3 text-right">
+                <div class="flex items-center justify-end gap-2">
+                  <a href={`/admin/team?edit=${member.id}`} class="text-xs font-semibold text-primary hover:underline">Edit</a>
+                  <form method="post" class="inline">
+                    <input type="hidden" name="_action" value="delete" />
+                    <input type="hidden" name="id" value={member.id} />
+                    <button type="button" onclick="confirmDelete(this, 'Delete Member', 'Are you sure you want to delete this team member?')" class="text-xs font-semibold text-red-500 hover:underline cursor-pointer">Delete</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          ))}
+          {allMembers.length === 0 && (
+            <tr><td colspan="5" class="px-4 py-8 text-center text-neutral-500">No team members found. Add your first team member above.</td></tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  </Container>
+</BaseLayout>

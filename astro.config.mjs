@@ -10,7 +10,7 @@ const site = process.env.PUBLIC_SITE_URL || 'https://yashelectronics.in';
 export default defineConfig({
   site,
   adapter: vercel(),
-  output: 'static',
+  output: 'server',
   i18n: {
     defaultLocale: 'gu',
     locales: ['gu', 'en'],

@@ -1,0 +1,152 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Container from '../../components/ui/Container.astro';
+import { db } from '../../db';
+import { bankDetails } from '../../db/schema';
+import { getSessionUser, generateId } from '../../lib/auth';
+import { eq } from 'drizzle-orm';
+
+export const prerender = false;
+Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+
+const currentUser = await getSessionUser(Astro.cookies);
+if (!currentUser || currentUser.role !== 'admin') return Astro.redirect('/admin/login');
+
+let message = '';
+let error = '';
+
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const formAction = formData.get('_action')?.toString();
+
+    if (formAction === 'delete') {
+      const deleteId = formData.get('id')?.toString();
+      if (deleteId) { await db.delete(bankDetails).where(eq(bankDetails.id, deleteId)); message = 'Bank detail deleted.'; }
+    } else if (formAction === 'save') {
+      const id = formData.get('id')?.toString();
+      const bankName = formData.get('bankName')?.toString().trim() || '';
+      const accountHolderName = formData.get('accountHolderName')?.toString().trim() || '';
+      const accountNumber = formData.get('accountNumber')?.toString().trim() || '';
+      const ifscCode = formData.get('ifscCode')?.toString().trim() || '';
+      const branchName = formData.get('branchName')?.toString().trim() || '';
+      const upiQrCode = formData.get('upiQrCode')?.toString().trim() || null;
+      const bankQrCode = formData.get('bankQrCode')?.toString().trim() || null;
+
+      if (!bankName || !accountHolderName || !accountNumber || !ifscCode || !branchName) {
+        error = 'All bank fields are required.';
+      } else if (id) {
+        await db.update(bankDetails).set({ bankName, accountHolderName, accountNumber, ifscCode, branchName, upiQrCode, bankQrCode }).where(eq(bankDetails.id, id));
+        message = 'Bank details updated.';
+      } else {
+        await db.insert(bankDetails).values({ id: generateId(), bankName, accountHolderName, accountNumber, ifscCode, branchName, upiQrCode, bankQrCode, isActive: true });
+        message = 'Bank details added.';
+      }
+    }
+  } catch (e: any) { error = 'Operation failed: ' + (e.message || 'Unknown error'); }
+}
+
+let allBankDetails: any[] = [];
+try { allBankDetails = await db.select().from(bankDetails); } catch (e) { }
+
+const editId = Astro.url.searchParams.get('edit');
+const isAdding = Astro.url.searchParams.get('action') === 'add';
+const editBank = editId ? allBankDetails.find(b => b.id === editId) : null;
+const showForm = isAdding || editBank;
+---
+
+<BaseLayout title="Admin — Bank Details" noindex={true}>
+  <Container class="py-6">
+    <div class="flex items-center justify-between border-b border-neutral-200 pb-4 mb-6">
+      <div>
+        <h1 class="text-2xl font-bold text-neutral-900">Bank Details & QR Codes</h1>
+        <p class="text-xs text-neutral-500">Manage payment information shown to customers</p>
+      </div>
+      <a href="/admin" class="text-xs font-semibold text-neutral-600 border border-neutral-300 bg-white hover:bg-neutral-50 rounded-md px-3 py-1.5 transition-colors">← Dashboard</a>
+    </div>
+
+    <nav class="flex flex-wrap border-b border-neutral-200 gap-x-4 gap-y-1 mb-6 text-sm font-medium">
+      <a href="/admin" class="text-neutral-600 hover:text-primary px-1 pb-3">Overview</a>
+      <a href="/admin/team" class="text-neutral-600 hover:text-primary px-1 pb-3">Team</a>
+      <a href="/admin/services" class="text-neutral-600 hover:text-primary px-1 pb-3">Services</a>
+      <a href="/admin/about" class="text-neutral-600 hover:text-primary px-1 pb-3">About</a>
+      <a href="/admin/bank-details" class="border-b-2 border-primary text-primary px-1 pb-3">Bank</a>
+      <a href="/admin/business-hours" class="text-neutral-600 hover:text-primary px-1 pb-3">Hours</a>
+    </nav>
+
+    {message && <div class="bg-green-50 border border-green-200 text-green-700 text-sm rounded-md p-3 mb-4">{message}</div>}
+    {error && <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md p-3 mb-4">{error}</div>}
+
+    {showForm && (
+      <div class="bg-white border border-neutral-200 rounded-lg p-5 shadow-sm mb-6">
+        <h2 class="text-base font-bold text-neutral-900 mb-4">{editBank ? 'Edit Bank Details' : 'Add Bank Details'}</h2>
+        <form method="post" class="grid gap-4 sm:grid-cols-2">
+          <input type="hidden" name="_action" value="save" />
+          {editBank && <input type="hidden" name="id" value={editBank.id} />}
+          <div>
+            <label class="block text-xs font-semibold text-neutral-700 mb-1">Bank Name *</label>
+            <input type="text" name="bankName" required value={editBank?.bankName || ''} class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none" placeholder="e.g. State Bank of India" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-neutral-700 mb-1">Account Holder Name *</label>
+            <input type="text" name="accountHolderName" required value={editBank?.accountHolderName || ''} class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-neutral-700 mb-1">Account Number *</label>
+            <input type="text" name="accountNumber" required value={editBank?.accountNumber || ''} class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-neutral-700 mb-1">IFSC Code *</label>
+            <input type="text" name="ifscCode" required value={editBank?.ifscCode || ''} class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-neutral-700 mb-1">Branch Name *</label>
+            <input type="text" name="branchName" required value={editBank?.branchName || ''} class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-neutral-700 mb-1">UPI QR Code (Cloudinary ID or URL)</label>
+            <input type="text" name="upiQrCode" value={editBank?.upiQrCode || ''} class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-neutral-700 mb-1">Bank QR Code (Cloudinary ID or URL)</label>
+            <input type="text" name="bankQrCode" value={editBank?.bankQrCode || ''} class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none" />
+          </div>
+          <div class="sm:col-span-2 flex gap-2">
+            <button type="submit" class="btn-primary text-xs">{editBank ? 'Update' : 'Add Bank Details'}</button>
+            <a href="/admin/bank-details" class="btn-outline text-xs">Cancel</a>
+          </div>
+        </form>
+      </div>
+    )}
+
+    {!showForm && <div class="flex justify-end mb-4"><a href="/admin/bank-details?action=add" class="btn-primary text-xs">+ Add Bank Details</a></div>}
+
+    <div class="space-y-4">
+      {allBankDetails.map(bank => (
+        <div class="bg-white border border-neutral-200 rounded-lg p-5 shadow-sm">
+          <div class="flex justify-between items-start mb-3">
+            <div>
+              <h3 class="font-bold text-neutral-900">{bank.bankName}</h3>
+              <p class="text-xs text-neutral-500">{bank.branchName}</p>
+            </div>
+            <div class="flex gap-2">
+              <a href={`/admin/bank-details?edit=${bank.id}`} class="text-xs font-semibold text-primary hover:underline">Edit</a>
+              <form method="post" class="inline">
+                <input type="hidden" name="_action" value="delete" />
+                <input type="hidden" name="id" value={bank.id} />
+                <button type="button" onclick="confirmDelete(this, 'Delete Bank Details', 'Are you sure?')" class="text-xs font-semibold text-red-500 hover:underline cursor-pointer">Delete</button>
+              </form>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div><span class="text-neutral-400 font-semibold">Holder:</span> <span class="text-neutral-700">{bank.accountHolderName}</span></div>
+            <div><span class="text-neutral-400 font-semibold">A/C:</span> <span class="text-neutral-700 font-mono">{bank.accountNumber}</span></div>
+            <div><span class="text-neutral-400 font-semibold">IFSC:</span> <span class="text-neutral-700 font-mono">{bank.ifscCode}</span></div>
+            <div><span class="text-neutral-400 font-semibold">QR:</span> <span class="text-neutral-700">{bank.upiQrCode ? 'UPI ✅' : '—'} {bank.bankQrCode ? 'Bank ✅' : ''}</span></div>
+          </div>
+        </div>
+      ))}
+      {allBankDetails.length === 0 && <div class="text-center py-8 text-neutral-500">No bank details added yet.</div>}
+    </div>
+  </Container>
+</BaseLayout>

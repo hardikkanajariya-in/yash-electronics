@@ -1,7 +1,7 @@
 export const siteConfig = {
   name: 'Yash Electronics',
   defaultDescription:
-    'Genuine electronics and home appliances at competitive prices. Trusted brands, local support across nearby cities and towns.',
+    'Trusted electronics & power solutions — Home Inverters, Batteries, Sound Systems & DJ Speaker Systems. Genuine products, expert installation & local service support.',
   locale: 'en-IN',
   currency: 'INR',
   currencySymbol: '₹',

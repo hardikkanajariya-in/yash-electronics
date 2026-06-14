@@ -1,0 +1,123 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Container from '../components/ui/Container.astro';
+import { getServicesList, getSettings } from '../services/cms';
+import { translateObject, t, getLocalizedPath } from '../lib/translations';
+
+const locale = Astro.currentLocale || 'gu';
+const rawSettings = await getSettings();
+const settings = translateObject(rawSettings, locale);
+
+let servicesList: any[] = [];
+try {
+  servicesList = await getServicesList();
+} catch (e) {
+  console.error('[Services] Failed to load services:', e);
+}
+
+const serviceIcons: Record<string, string> = {
+  inverter: '🔌',
+  battery: '🔋',
+  sound: '🔊',
+  dj: '🎵',
+  repair: '🔧',
+  amc: '📋',
+  installation: '⚙️',
+  support: '🤝',
+  default: '✅',
+};
+
+function getServiceIcon(icon: string | null): string {
+  if (!icon) return serviceIcons.default;
+  return serviceIcons[icon] || serviceIcons.default;
+}
+---
+
+<BaseLayout
+  title={`${t('services.title', locale)} - ${settings.businessName}`}
+  description={locale === 'gu' ? 'ઇન્વર્ટર ઇન્સ્ટોલેશન, બેટરી રિપ્લેસમેન્ટ, સાઉન્ડ સિસ્ટમ સેટઅપ અને વધુ' : 'Inverter Installation, Battery Replacement, Sound System Setup and more'}
+  canonicalUrl="/services"
+>
+  <!-- Hero Section -->
+  <section class="relative bg-gradient-to-br from-primary via-primary-700 to-primary-800 text-white overflow-hidden">
+    <div class="absolute inset-0 opacity-10">
+      <div class="absolute top-20 right-20 w-80 h-80 bg-secondary rounded-full blur-3xl"></div>
+    </div>
+    <Container class="relative py-16 md:py-20 text-center">
+      <p class="text-secondary-300 text-xs font-bold uppercase tracking-[0.2em] mb-4">
+        {locale === 'gu' ? 'વ્યાવસાયિક સેવા' : 'Professional Service'}
+      </p>
+      <h1 class="font-display text-3xl md:text-5xl font-extrabold mb-4 leading-tight">{t('services.title', locale)}</h1>
+      <p class="text-lg text-white/80 max-w-2xl mx-auto">
+        {t('services.subtitle', locale)}
+      </p>
+    </Container>
+  </section>
+
+  <!-- Services Grid -->
+  <section class="section-padding">
+    <Container class="max-w-5xl">
+      {servicesList.length > 0 ? (
+        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {servicesList.map((service, i) => (
+            <div class="bg-white rounded-xl border border-neutral-200 shadow-card hover:shadow-card-hover transition-all duration-300 hover:-translate-y-1 p-6 group">
+              <div class="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-primary-50 to-primary-100 text-2xl mb-4 group-hover:scale-110 transition-transform duration-300">
+                {getServiceIcon(service.icon)}
+              </div>
+              <h3 class="font-display text-lg font-bold text-neutral-900 mb-2">{service.title}</h3>
+              {service.description && (
+                <p class="text-sm text-neutral-600 leading-relaxed mb-4">{service.description}</p>
+              )}
+              <a
+                href={`https://wa.me/${settings.whatsapp}?text=${encodeURIComponent(
+                  locale === 'gu'
+                    ? `હું ${service.title} સેવા વિશે પૂછપરછ કરવા માંગુ છું.`
+                    : `I would like to enquire about ${service.title} service.`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:text-secondary transition-colors"
+              >
+                {t('services.enquire', locale)} →
+              </a>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div class="text-center py-16">
+          <span class="text-5xl block mb-4">🔧</span>
+          <p class="text-neutral-500">
+            {locale === 'gu' ? 'સેવાઓ ટૂંક સમયમાં ઉમેરવામાં આવશે.' : 'Services will be added soon.'}
+          </p>
+        </div>
+      )}
+    </Container>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="bg-neutral-50 section-padding">
+    <Container class="max-w-3xl">
+      <div class="bg-white rounded-2xl border border-neutral-200 p-8 md:p-12 text-center shadow-card">
+        <h2 class="font-display text-2xl font-bold text-neutral-900 mb-3">
+          {locale === 'gu' ? 'સેવા બુક કરવા માંગો છો?' : 'Need a Service?'}
+        </h2>
+        <p class="text-neutral-600 text-sm mb-6 max-w-lg mx-auto">
+          {locale === 'gu'
+            ? 'ઇન્વર્ટર, બેટરી, સાઉન્ડ સિસ્ટમ કે DJ સેટઅપ માટે અમારી ટીમનો સંપર્ક કરો. અમે ઓન-સાઇટ સર્વિસ આપીએ છીએ.'
+            : 'Contact our team for inverter, battery, sound system or DJ setup. We provide on-site service support.'}
+        </p>
+        <div class="flex flex-col sm:flex-row gap-3 justify-center">
+          <a href={`tel:${settings.phone.replace(/\s/g, '')}`} class="btn-primary">
+            📞 {t('contact.callNow', locale)}
+          </a>
+          <a href={`https://wa.me/${settings.whatsapp}`} target="_blank" rel="noopener noreferrer" class="btn-whatsapp">
+            💬 {t('contact.chatWhatsApp', locale)}
+          </a>
+          <a href={getLocalizedPath('/contact', locale)} class="btn-outline">
+            ✉️ {t('contact.contactUs', locale)}
+          </a>
+        </div>
+      </div>
+    </Container>
+  </section>
+</BaseLayout>
