@@ -5,7 +5,6 @@ import { db } from '../../db';
 import { users } from '../../db/schema';
 import { eq, and } from 'drizzle-orm';
 import { hashPassword, setSessionUser, getSessionUser, generateId, generateReferralCode } from '../../lib/auth';
-import { getLocalizedPath } from '../../lib/translations';
 
 export const prerender = false;
 
@@ -15,7 +14,7 @@ const locale = Astro.currentLocale || 'gu';
 const currentUser = await getSessionUser(Astro.cookies);
 if (currentUser) {
   Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-  return Astro.redirect(getLocalizedPath('/account', locale));
+  return Astro.redirect(locale === 'en' ? '/en/account' : '/account');
 }
 
 // Read ref query param
@@ -90,7 +89,7 @@ if (Astro.request.method === 'POST') {
         const isSecure = Astro.url.hostname !== 'localhost' && Astro.url.hostname !== '127.0.0.1';
         setSessionUser(Astro.cookies, user.id, isSecure);
         Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-        return Astro.redirect(getLocalizedPath('/account', locale));
+        return Astro.redirect(locale === 'en' ? '/en/account' : '/account');
       } else {
         error = t.errInvalid;
       }
@@ -155,7 +154,7 @@ if (Astro.request.method === 'POST') {
           const isSecure = Astro.url.hostname !== 'localhost' && Astro.url.hostname !== '127.0.0.1';
           setSessionUser(Astro.cookies, newUserId, isSecure);
           Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-          return Astro.redirect(getLocalizedPath('/account', locale));
+          return Astro.redirect(locale === 'en' ? '/en/account' : '/account');
         }
       }
     }

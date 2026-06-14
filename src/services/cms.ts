@@ -1,6 +1,6 @@
 import type { CmsData } from '../types';
 import { db } from '../db';
-import { settings, categories, brands, products, offers, teamMembers, services, aboutInfo, bankDetails, businessHours, referralHistory } from '../db/schema';
+import { settings, categories, brands, offers, teamMembers, services, aboutInfo, bankDetails, businessHours, referralHistory } from '../db/schema';
 import { eq, asc } from 'drizzle-orm';
 
 const API_URL = import.meta.env.SHEETS_API_URL;
@@ -79,14 +79,23 @@ export async function getCmsData(): Promise<CmsData> {
 
       const dbOffers = await db.select().from(offers);
 
-      cachedData = {
+      const data: CmsData = {
         settings: dbSettingsObj,
-        categories: dbCategories,
-        brands: dbBrands,
+        categories: dbCategories.map((c) => ({
+          ...c,
+          description: c.description ?? '',
+          icon: c.icon ?? '',
+          image: c.image ?? '',
+        })),
+        brands: dbBrands.map((b) => ({
+          ...b,
+          logo: b.logo ?? '',
+        })),
         products: dbProducts,
-        offers: dbOffers as any[],
+        offers: dbOffers as CmsData['offers'],
       };
-      return cachedData;
+      cachedData = data;
+      return data;
     } catch (e) {
       console.error('[CMS] Database fallback error:', e);
       throw e;

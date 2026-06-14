@@ -1,6 +1,9 @@
 ---
 interface Props {
-  publicId: string;
+  /** Cloudinary public ID or local image path */
+  publicId?: string;
+  /** Alias for publicId */
+  src?: string;
   alt: string;
   width?: number;
   height?: number;
@@ -13,7 +16,8 @@ interface Props {
 import { buildCloudinaryUrl, buildSrcSet, isLocalImage } from '../../lib/cloudinary';
 
 const {
-  publicId,
+  publicId: publicIdProp,
+  src,
   alt,
   width = 400,
   height,
@@ -23,13 +27,14 @@ const {
   priority = false,
 } = Astro.props;
 
-const src = buildCloudinaryUrl(publicId, { width, height });
+const publicId = publicIdProp ?? src ?? '';
+const imgSrc = buildCloudinaryUrl(publicId, { width, height });
 const srcSet = isLocalImage(publicId) ? undefined : buildSrcSet(publicId, [320, 480, 640, 768, 1024]);
 const imgLoading = priority ? 'eager' : loading;
 ---
 
 <img
-  src={src}
+  src={imgSrc}
   {...(srcSet ? { srcset: srcSet } : {})}
   sizes={sizes}
   alt={alt}

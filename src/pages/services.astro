@@ -59,7 +59,7 @@ function getServiceIcon(icon: string | null): string {
     <Container class="max-w-5xl">
       {servicesList.length > 0 ? (
         <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {servicesList.map((service, i) => (
+          {servicesList.map((service) => (
             <div class="bg-white rounded-xl border border-neutral-200 shadow-card hover:shadow-card-hover transition-all duration-300 hover:-translate-y-1 p-6 group">
               <div class="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-primary-50 to-primary-100 text-2xl mb-4 group-hover:scale-110 transition-transform duration-300">
                 {getServiceIcon(service.icon)}

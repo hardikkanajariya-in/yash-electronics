@@ -107,6 +107,7 @@ if (action === 'edit' && productId) {
 
 // Fetch all products for list view
 const allProducts = await db.select().from(products);
+const emptySpecifications = '{}';
 ---
 
 <BaseLayout title="Manage Products" noindex={true}>
@@ -333,9 +334,9 @@ const allProducts = await db.select().from(products);
               id="specifications"
               name="specifications"
               rows="3"
-              placeholder={'e.g. {"Screen Size":"55 inch","Resolution":"4K"}'}
+              placeholder='e.g. {"Screen Size":"55 inch","Resolution":"4K"}'
               class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none"
-            >{editProduct?.specifications || '{}'}</textarea>
+            >{editProduct?.specifications || emptySpecifications}</textarea>
           </div>
 
           <div class="flex items-center gap-6 py-2">

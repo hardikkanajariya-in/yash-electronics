@@ -15,7 +15,7 @@ const settings = translateObject(rawSettings, locale);
 
 const groupedOffers = offers.reduce<Record<Offer['type'], Offer[]>>(
   (acc, offer) => {
-    if (!acc[offer.type]) acc[acc.hasOwnProperty(offer.type) ? offer.type : (offer.type as any)] = [];
+    if (!acc[offer.type]) acc[offer.type] = [];
     acc[offer.type].push(offer);
     return acc;
   },

@@ -1,4 +1,4 @@
-import type { Product, ProductFilters, SortOption } from '../types';
+import type { Product, ProductFilters, SortOption } from '../../types';
 
 export function searchProducts(products: Product[], query: string): Product[] {
   const term = query.toLowerCase().trim();

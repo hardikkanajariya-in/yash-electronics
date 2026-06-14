@@ -1,4 +1,4 @@
-import { pgTable, text, integer, boolean, varchar, primaryKey } from 'drizzle-orm/pg-core';
+import { pgTable, text, integer, boolean, varchar } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 export const settings = pgTable('settings', {
