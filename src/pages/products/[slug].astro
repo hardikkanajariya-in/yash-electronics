@@ -4,7 +4,7 @@ import Container from '../../components/ui/Container.astro';
 import ProductGallery from '../../components/product/ProductGallery.astro';
 import Button from '../../components/ui/Button.astro';
 import ProductSchema from '../../components/seo/ProductSchema.astro';
-import { getProducts, getSettings } from '../../services/cms';
+import { getProducts, getSettings, getProductBySlug } from '../../services/cms';
 import {
   formatPrice,
   calculateSavings,
@@ -28,7 +28,17 @@ export async function getStaticPaths() {
 
 const locale = Astro.currentLocale || 'gu';
 
-const { product: rawProduct } = Astro.props;
+const { slug } = Astro.params;
+const { product: propProduct } = Astro.props;
+const rawProduct = propProduct || (slug ? await getProductBySlug(slug) : null);
+
+if (!rawProduct) {
+  return new Response(null, {
+    status: 404,
+    statusText: 'Not Found',
+  });
+}
+
 const product = translateObject(rawProduct, locale);
 
 const rawSettings = await getSettings();

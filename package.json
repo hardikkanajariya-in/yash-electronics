@@ -15,13 +15,15 @@
     "db:seed": "node scripts/db-seed.mjs"
   },
   "dependencies": {
+    "@astrojs/check": "^0.9.9",
     "@astrojs/sitemap": "^3.7.3",
     "@astrojs/tailwind": "^6.0.2",
     "@astrojs/vercel": "^8.1.0",
     "astro": "^6.4.6",
     "drizzle-orm": "^0.45.2",
     "pg": "^8.21.0",
-    "tailwindcss": "^3.4.19"
+    "tailwindcss": "^3.4.19",
+    "typescript": "^6.0.3"
   },
   "devDependencies": {
     "@types/pg": "^8.20.0",

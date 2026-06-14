@@ -3,7 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import Container from '../../components/ui/Container.astro';
 import ProductGrid from '../../components/product/ProductGrid.astro';
 import CatalogFilters from '../../components/product/CatalogFilters.astro';
-import { getCategories, getBrandsByCategory, getProducts } from '../../services/cms';
+import { getCategories, getBrandsByCategory, getProducts, getCategoryBySlug } from '../../services/cms';
 import {
   filterProducts,
   sortProducts,
@@ -22,7 +22,18 @@ export async function getStaticPaths() {
 }
 
 const locale = Astro.currentLocale || 'gu';
-const { category: rawCategory } = Astro.props;
+
+const { slug } = Astro.params;
+const { category: propCategory } = Astro.props;
+const rawCategory = propCategory || (slug ? await getCategoryBySlug(slug) : null);
+
+if (!rawCategory) {
+  return new Response(null, {
+    status: 404,
+    statusText: 'Not Found',
+  });
+}
+
 const category = translateObject(rawCategory, locale);
 
 const [rawAllProducts, rawCategories, rawCategoryBrands] = await Promise.all([
