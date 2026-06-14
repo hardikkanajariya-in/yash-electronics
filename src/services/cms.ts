@@ -1,5 +1,4 @@
 import type { CmsData } from '../types';
-import { mockCmsData } from './mock-data';
 
 const API_URL = import.meta.env.SHEETS_API_URL;
 const API_KEY = import.meta.env.SHEETS_API_KEY;
@@ -37,8 +36,7 @@ export async function getCmsData(): Promise<CmsData> {
         '[CMS] Using mock data. Set SHEETS_API_URL in .env to connect Google Sheets.',
       );
     }
-    cachedData = mockCmsData;
-    return cachedData;
+    return cachedData!;
   }
 
   cachedData = await fetchFromApi();
