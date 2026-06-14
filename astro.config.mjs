@@ -9,7 +9,7 @@ const site = process.env.PUBLIC_SITE_URL || 'https://yashelectronics.in';
 // https://astro.build/config
 export default defineConfig({
   site,
-  adapter: vercel(),
+  adapter: vercel({ entrypointResolution: 'auto' }),
   output: 'server',
   i18n: {
     defaultLocale: 'gu',

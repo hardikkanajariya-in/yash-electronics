@@ -13,19 +13,12 @@ import {
 import type { SortOption } from '../../types';
 import { translateObject, t, getLocalizedPath } from '../../lib/translations';
 
-export async function getStaticPaths() {
-  const categories = await getCategories();
-  return categories.map((category) => ({
-    params: { slug: category.slug },
-    props: { category },
-  }));
-}
+export const prerender = false;
 
 const locale = Astro.currentLocale || 'gu';
 
 const { slug } = Astro.params;
-const { category: propCategory } = Astro.props;
-const rawCategory = propCategory || (slug ? await getCategoryBySlug(slug) : null);
+const rawCategory = slug ? await getCategoryBySlug(slug) : null;
 
 if (!rawCategory) {
   return new Response(null, {

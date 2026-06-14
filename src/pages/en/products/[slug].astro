@@ -1,5 +1,4 @@
 ---
-import Page, { getStaticPaths as getPaths } from '../../products/[slug].astro';
-export const getStaticPaths = getPaths;
+import Page from '../../products/[slug].astro';
 ---
 <Page {...Astro.props} />
