@@ -4,6 +4,7 @@ import Container from '../ui/Container.astro';
 import SectionHeading from '../ui/SectionHeading.astro';
 import OfferCard from '../offer/OfferCard.astro';
 import Button from '../ui/Button.astro';
+import { t, getLocalizedPath } from '../../lib/translations';
 
 interface Props {
   offers: Offer[];
@@ -11,16 +12,17 @@ interface Props {
 }
 
 const { offers, settings } = Astro.props;
+const locale = Astro.currentLocale || 'gu';
 ---
 
 <section class="section-padding bg-white">
   <Container>
     <div class="flex items-end justify-between gap-4">
       <SectionHeading
-        title="Special Offer Zone"
-        subtitle="Combo deals, bundles and festival offers — updated regularly"
+        title={t('offers.title', locale)}
+        subtitle={t('offers.subtitle', locale)}
       />
-      <Button href="/offers" text="All Offers" variant="outline" class="hidden shrink-0 sm:inline-flex" />
+      <Button href={getLocalizedPath('/offers', locale)} text={t('offers.all', locale)} variant="outline" class="hidden shrink-0 sm:inline-flex" />
     </div>
     <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {offers.map((offer) => (

@@ -15,14 +15,23 @@ import {
   getOffers,
 } from '../services/cms';
 import { getFeaturedProducts } from '../features/catalog/filterProducts';
+import { translateObject } from '../lib/translations';
 
-const [settings, categories, brands, products, offers] = await Promise.all([
+const locale = Astro.currentLocale || 'gu';
+
+const [rawSettings, rawCategories, rawBrands, rawProducts, rawOffers] = await Promise.all([
   getSettings(),
   getCategories(),
   getBrands(),
   getProducts(),
   getOffers(),
 ]);
+
+const settings = translateObject(rawSettings, locale);
+const categories = translateObject(rawCategories, locale);
+const brands = translateObject(rawBrands, locale);
+const products = translateObject(rawProducts, locale);
+const offers = translateObject(rawOffers, locale);
 
 const featuredProducts = getFeaturedProducts(products).slice(0, 8);
 ---

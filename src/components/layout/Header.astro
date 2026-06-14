@@ -1,6 +1,7 @@
 ---
 import type { Category, SiteSettings } from '../../types';
 import Container from '../ui/Container.astro';
+import { t, getLocalizedPath, getAlternateLocalePath } from '../../lib/translations';
 
 interface Props {
   settings: SiteSettings;
@@ -8,6 +9,7 @@ interface Props {
 }
 
 const { settings, categories } = Astro.props;
+const locale = Astro.currentLocale || 'gu';
 const currentPath = Astro.url.pathname;
 ---
 
@@ -26,8 +28,23 @@ const currentPath = Astro.url.pathname;
             rel="noopener noreferrer"
             class="font-medium hover:underline"
           >
-            WhatsApp Us
+            {t('contact.chatWhatsApp', locale)}
           </a>
+          <div class="flex items-center gap-1.5 border-l border-white/20 pl-3">
+            <a
+              href={getAlternateLocalePath(currentPath, 'gu')}
+              class:list={['hover:underline transition-colors', locale === 'gu' ? 'font-semibold text-yellow-300' : 'opacity-80']}
+            >
+              ગુજરાતી
+            </a>
+            <span class="opacity-30">|</span>
+            <a
+              href={getAlternateLocalePath(currentPath, 'en')}
+              class:list={['hover:underline transition-colors', locale === 'en' ? 'font-semibold text-yellow-300' : 'opacity-80']}
+            >
+              EN
+            </a>
+          </div>
         </div>
       </div>
     </Container>
@@ -35,7 +52,7 @@ const currentPath = Astro.url.pathname;
 
   <Container>
     <div class="flex items-center justify-between gap-4 py-3">
-      <a href="/" class="flex shrink-0 items-center gap-2">
+      <a href={getLocalizedPath('/', locale)} class="flex shrink-0 items-center gap-2">
         <div class="flex h-10 w-10 items-center justify-center rounded-md bg-primary text-lg font-bold text-white">
           YE
         </div>
@@ -45,12 +62,12 @@ const currentPath = Astro.url.pathname;
         </div>
       </a>
 
-      <form action="/products" method="get" class="hidden flex-1 max-w-md md:block">
+      <form action={getLocalizedPath('/products', locale)} method="get" class="hidden flex-1 max-w-md md:block">
         <div class="relative">
           <input
             type="search"
             name="search"
-            placeholder="Search by name, model or brand..."
+            placeholder={t('search.placeholder', locale)}
             class="w-full rounded-md border border-neutral-300 py-2 pl-4 pr-10 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           />
           <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-primary" aria-label="Search">
@@ -62,17 +79,17 @@ const currentPath = Astro.url.pathname;
       </form>
 
       <nav class="hidden items-center gap-1 lg:flex" aria-label="Main navigation">
-        <a href="/" class:list={['rounded px-3 py-2 text-sm font-medium transition-colors', currentPath === '/' ? 'text-primary' : 'text-neutral-700 hover:text-primary']}>
-          Home
+        <a href={getLocalizedPath('/', locale)} class:list={['rounded px-3 py-2 text-sm font-medium transition-colors', currentPath === getLocalizedPath('/', locale) ? 'text-primary' : 'text-neutral-700 hover:text-primary']}>
+          {t('nav.home', locale)}
         </a>
-        <a href="/products" class:list={['rounded px-3 py-2 text-sm font-medium transition-colors', currentPath.startsWith('/products') ? 'text-primary' : 'text-neutral-700 hover:text-primary']}>
-          Products
+        <a href={getLocalizedPath('/products', locale)} class:list={['rounded px-3 py-2 text-sm font-medium transition-colors', currentPath.startsWith(getLocalizedPath('/products', locale)) ? 'text-primary' : 'text-neutral-700 hover:text-primary']}>
+          {t('nav.products', locale)}
         </a>
-        <a href="/offers" class:list={['rounded px-3 py-2 text-sm font-medium transition-colors', currentPath.startsWith('/offers') ? 'text-primary' : 'text-neutral-700 hover:text-primary']}>
-          Offers
+        <a href={getLocalizedPath('/offers', locale)} class:list={['rounded px-3 py-2 text-sm font-medium transition-colors', currentPath.startsWith(getLocalizedPath('/offers', locale)) ? 'text-primary' : 'text-neutral-700 hover:text-primary']}>
+          {t('nav.offers', locale)}
         </a>
-        <a href="/contact" class:list={['rounded px-3 py-2 text-sm font-medium transition-colors', currentPath === '/contact' ? 'text-primary' : 'text-neutral-700 hover:text-primary']}>
-          Contact
+        <a href={getLocalizedPath('/contact', locale)} class:list={['rounded px-3 py-2 text-sm font-medium transition-colors', currentPath === getLocalizedPath('/contact', locale) ? 'text-primary' : 'text-neutral-700 hover:text-primary']}>
+          {t('nav.contact', locale)}
         </a>
       </nav>
 
@@ -95,14 +112,14 @@ const currentPath = Astro.url.pathname;
       <nav class="flex gap-1 overflow-x-auto py-2" aria-label="Categories">
         {categories.slice(0, 8).map((cat) => (
           <a
-            href={`/category/${cat.slug}`}
+            href={getLocalizedPath(`/category/${cat.slug}`, locale)}
             class="shrink-0 rounded px-3 py-1.5 text-xs font-medium text-neutral-700 transition-colors hover:bg-white hover:text-primary"
           >
             {cat.name}
           </a>
         ))}
-        <a href="/products" class="shrink-0 rounded px-3 py-1.5 text-xs font-medium text-secondary hover:underline">
-          View All →
+        <a href={getLocalizedPath('/products', locale)} class="shrink-0 rounded px-3 py-1.5 text-xs font-medium text-secondary hover:underline">
+          {t('nav.viewAll', locale)} →
         </a>
       </nav>
     </Container>
@@ -110,25 +127,25 @@ const currentPath = Astro.url.pathname;
 
   <div id="mobile-menu" class="hidden border-t border-neutral-200 bg-white lg:hidden">
     <Container>
-      <form action="/products" method="get" class="py-3">
+      <form action={getLocalizedPath('/products', locale)} method="get" class="py-3">
         <input
           type="search"
           name="search"
-          placeholder="Search products..."
+          placeholder={t('search.shortPlaceholder', locale)}
           class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
         />
       </form>
       <nav class="flex flex-col border-t border-neutral-100 py-2">
-        <a href="/" class="px-2 py-2.5 text-sm font-medium text-neutral-800">Home</a>
-        <a href="/products" class="px-2 py-2.5 text-sm font-medium text-neutral-800">Products</a>
-        <a href="/offers" class="px-2 py-2.5 text-sm font-medium text-neutral-800">Offers</a>
-        <a href="/contact" class="px-2 py-2.5 text-sm font-medium text-neutral-800">Contact</a>
+        <a href={getLocalizedPath('/', locale)} class="px-2 py-2.5 text-sm font-medium text-neutral-800">{t('nav.home', locale)}</a>
+        <a href={getLocalizedPath('/products', locale)} class="px-2 py-2.5 text-sm font-medium text-neutral-800">{t('nav.products', locale)}</a>
+        <a href={getLocalizedPath('/offers', locale)} class="px-2 py-2.5 text-sm font-medium text-neutral-800">{t('nav.offers', locale)}</a>
+        <a href={getLocalizedPath('/contact', locale)} class="px-2 py-2.5 text-sm font-medium text-neutral-800">{t('nav.contact', locale)}</a>
       </nav>
       <div class="border-t border-neutral-100 py-3">
-        <p class="mb-2 text-xs font-semibold uppercase text-neutral-500">Categories</p>
+        <p class="mb-2 text-xs font-semibold uppercase text-neutral-500">{t('filter.category', locale)}</p>
         <div class="grid grid-cols-2 gap-1">
           {categories.map((cat) => (
-            <a href={`/category/${cat.slug}`} class="rounded px-2 py-1.5 text-sm text-neutral-700 hover:bg-neutral-50">
+            <a href={getLocalizedPath(`/category/${cat.slug}`, locale)} class="rounded px-2 py-1.5 text-sm text-neutral-700 hover:bg-neutral-50">
               {cat.name}
             </a>
           ))}

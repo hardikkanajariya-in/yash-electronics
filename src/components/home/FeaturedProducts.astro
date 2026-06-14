@@ -4,28 +4,30 @@ import Container from '../ui/Container.astro';
 import SectionHeading from '../ui/SectionHeading.astro';
 import ProductGrid from '../product/ProductGrid.astro';
 import Button from '../ui/Button.astro';
+import { t, getLocalizedPath } from '../../lib/translations';
 
 interface Props {
   products: Product[];
 }
 
 const { products } = Astro.props;
+const locale = Astro.currentLocale || 'gu';
 ---
 
 <section class="section-padding bg-white">
   <Container>
     <div class="flex items-end justify-between gap-4">
       <SectionHeading
-        title="Featured Products"
-        subtitle="Handpicked deals on popular electronics and appliances"
+        title={locale === 'gu' ? 'નવા અને લોકપ્રિય ઉત્પાદનો' : 'Featured Products'}
+        subtitle={locale === 'gu' ? 'લોકપ્રિય ઇલેક્ટ્રોનિક્સ અને ઘર વપરાશના ઉપકરણો પર ખાસ ઓફર્સ' : 'Handpicked deals on popular electronics and appliances'}
       />
-      <Button href="/products" text="View All" variant="outline" class="hidden shrink-0 sm:inline-flex" />
+      <Button href={getLocalizedPath('/products', locale)} text={t('nav.viewAll', locale)} variant="outline" class="hidden shrink-0 sm:inline-flex" />
     </div>
     <div class="mt-6">
       <ProductGrid products={products} />
     </div>
     <div class="mt-6 text-center sm:hidden">
-      <Button href="/products" text="View All Products" variant="outline" />
+      <Button href={getLocalizedPath('/products', locale)} text={t('nav.viewAllProducts', locale)} variant="outline" />
     </div>
   </Container>
 </section>

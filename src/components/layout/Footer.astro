@@ -1,6 +1,7 @@
 ---
 import type { Category, SiteSettings } from '../../types';
 import Container from '../ui/Container.astro';
+import { t, getLocalizedPath } from '../../lib/translations';
 
 interface Props {
   settings: SiteSettings;
@@ -8,6 +9,7 @@ interface Props {
 }
 
 const { settings, categories } = Astro.props;
+const locale = Astro.currentLocale || 'gu';
 const year = new Date().getFullYear();
 ---
 
@@ -24,27 +26,27 @@ const year = new Date().getFullYear();
       </div>
 
       <div>
-        <p class="font-semibold text-white">Quick Links</p>
+        <p class="font-semibold text-white">{t('nav.quickLinks', locale) || 'Quick Links'}</p>
         <ul class="mt-3 space-y-2 text-sm">
-          <li><a href="/products" class="hover:text-white">All Products</a></li>
-          <li><a href="/offers" class="hover:text-white">Special Offers</a></li>
-          <li><a href="/contact" class="hover:text-white">Contact Us</a></li>
+          <li><a href={getLocalizedPath('/products', locale)} class="hover:text-white">{t('nav.viewAllProducts', locale)}</a></li>
+          <li><a href={getLocalizedPath('/offers', locale)} class="hover:text-white">{t('offers.specialOffers', locale) || 'Special Offers'}</a></li>
+          <li><a href={getLocalizedPath('/contact', locale)} class="hover:text-white">{t('contact.contactUs', locale) || 'Contact Us'}</a></li>
         </ul>
       </div>
 
       <div>
-        <p class="font-semibold text-white">Categories</p>
+        <p class="font-semibold text-white">{t('filter.category', locale)}</p>
         <ul class="mt-3 space-y-2 text-sm">
           {categories.slice(0, 6).map((cat) => (
             <li>
-              <a href={`/category/${cat.slug}`} class="hover:text-white">{cat.name}</a>
+              <a href={getLocalizedPath(`/category/${cat.slug}`, locale)} class="hover:text-white">{cat.name}</a>
             </li>
           ))}
         </ul>
       </div>
 
       <div>
-        <p class="font-semibold text-white">Contact</p>
+        <p class="font-semibold text-white">{t('nav.contact', locale)}</p>
         <ul class="mt-3 space-y-2 text-sm">
           <li>
             <a href={`tel:${settings.phone.replace(/\s/g, '')}`} class="hover:text-white">{settings.phone}</a>
@@ -69,7 +71,7 @@ const year = new Date().getFullYear();
     </div>
 
     <div class="border-t border-neutral-800 py-4 text-center text-xs text-neutral-500">
-      <p>© {year} {settings.businessName}. All rights reserved. Genuine products. Local support.</p>
+      <p>{locale === 'gu' ? `© ${year} ${settings.businessName}. સર્વાધિકાર સુરક્ષિત. અસલી પ્રોડક્ટ્સ. સ્થાનિક સપોર્ટ.` : `© ${year} ${settings.businessName}. All rights reserved. Genuine products. Local support.`}</p>
     </div>
   </Container>
 </footer>

@@ -1,12 +1,14 @@
 ---
 import type { Category } from '../../types';
 import CloudinaryImage from '../common/CloudinaryImage.astro';
+import { getLocalizedPath } from '../../lib/translations';
 
 interface Props {
   category: Category;
 }
 
 const { category } = Astro.props;
+const locale = Astro.currentLocale || 'gu';
 
 const iconPaths: Record<string, string> = {
   tv: 'M3 5h18v12H3V5zm0 14h18v2H3v-2z',
@@ -26,7 +28,7 @@ const iconPaths: Record<string, string> = {
 ---
 
 <a
-  href={`/category/${category.slug}`}
+  href={getLocalizedPath(`/category/${category.slug}`, locale)}
   class="retail-card group flex flex-col overflow-hidden"
 >
   <div class="relative aspect-[4/3] overflow-hidden bg-neutral-100">

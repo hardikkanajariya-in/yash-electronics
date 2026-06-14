@@ -2,12 +2,15 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ContactSection from '../components/home/ContactSection.astro';
 import { getSettings } from '../services/cms';
+import { translateObject, t } from '../lib/translations';
 
-const settings = await getSettings();
+const locale = Astro.currentLocale || 'gu';
+const rawSettings = await getSettings();
+const settings = translateObject(rawSettings, locale);
 ---
 
 <BaseLayout
-  title="Contact Us"
+  title={t('contact.contactUs', locale)}
   description={`Contact ${settings.businessName} for product enquiries, pricing and store directions.`}
   canonicalUrl="/contact"
 >

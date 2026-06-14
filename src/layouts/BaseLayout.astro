@@ -5,6 +5,7 @@ import OrganizationSchema from '../components/seo/OrganizationSchema.astro';
 import Header from '../components/layout/Header.astro';
 import Footer from '../components/layout/Footer.astro';
 import { getCategories, getSettings } from '../services/cms';
+import { translateObject, getLocalizedPath } from '../lib/translations';
 import '../styles/global.css';
 
 interface Props {
@@ -16,17 +17,20 @@ interface Props {
 }
 
 const { title, description, canonicalUrl, ogImage, noindex } = Astro.props;
+const locale = Astro.currentLocale || 'gu';
 
-const [settings, categories] = await Promise.all([getSettings(), getCategories()]);
+const [rawSettings, rawCategories] = await Promise.all([getSettings(), getCategories()]);
+const settings = translateObject(rawSettings, locale);
+const categories = translateObject(rawCategories, locale);
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang={locale}>
   <head>
     <MetaTags
       title={title}
       description={description}
-      canonicalUrl={canonicalUrl}
+      canonicalUrl={canonicalUrl ? getLocalizedPath(canonicalUrl, locale) : undefined}
       ogImage={ogImage}
       noindex={noindex}
     />

@@ -9,10 +9,15 @@ interface Props {
 }
 
 import { siteConfig } from '../../config/site';
+import { translate } from '../../lib/translations';
+
+const locale = Astro.currentLocale || 'gu';
+const localizedSiteName = translate(siteConfig.name, locale);
+const localizedDefaultDescription = translate(siteConfig.defaultDescription, locale);
 
 const {
   title,
-  description = siteConfig.defaultDescription,
+  description = localizedDefaultDescription,
   canonicalUrl,
   ogImage,
   type = 'website',
@@ -20,7 +25,7 @@ const {
 } = Astro.props;
 
 const siteUrl = import.meta.env.PUBLIC_SITE_URL || Astro.url.origin;
-const fullTitle = title.includes(siteConfig.name) ? title : `${title} | ${siteConfig.name}`;
+const fullTitle = title.includes(localizedSiteName) ? title : `${title} | ${localizedSiteName}`;
 const canonical = canonicalUrl ? new URL(canonicalUrl, siteUrl).href : Astro.url.href;
 const image = ogImage || `${siteUrl}/og-default.jpg`;
 ---

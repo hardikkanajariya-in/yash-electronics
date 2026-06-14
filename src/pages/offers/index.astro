@@ -4,36 +4,47 @@ import Container from '../../components/ui/Container.astro';
 import SectionHeading from '../../components/ui/SectionHeading.astro';
 import OfferCard from '../../components/offer/OfferCard.astro';
 import { getOffers, getSettings } from '../../services/cms';
-import { OFFER_TYPE_LABELS } from '../../lib/constants';
 import type { Offer } from '../../types';
+import { translateObject, t } from '../../lib/translations';
 
-const [offers, settings] = await Promise.all([getOffers(), getSettings()]);
+const locale = Astro.currentLocale || 'gu';
+
+const [rawOffers, rawSettings] = await Promise.all([getOffers(), getSettings()]);
+const offers = translateObject(rawOffers, locale);
+const settings = translateObject(rawSettings, locale);
 
 const groupedOffers = offers.reduce<Record<Offer['type'], Offer[]>>(
   (acc, offer) => {
-    if (!acc[offer.type]) acc[offer.type] = [];
+    if (!acc[offer.type]) acc[acc.hasOwnProperty(offer.type) ? offer.type : (offer.type as any)] = [];
     acc[offer.type].push(offer);
     return acc;
   },
   {} as Record<Offer['type'], Offer[]>,
 );
+
+const offerTypeLabels: Record<string, string> = {
+  combo: locale === 'gu' ? 'કોમ્બો ઓફર્સ' : 'Combo Offers',
+  bundle: locale === 'gu' ? 'બંડલ ઓફર્સ' : 'Build Your Bundle',
+  weekly: locale === 'gu' ? 'સાપ્તાહિક ઓફર્સ' : 'Offer Of The Week',
+  festival: locale === 'gu' ? 'તહેવારની ઓફરો' : 'Festival Offers',
+};
 ---
 
 <BaseLayout
-  title="Special Offers"
-  description="Combo offers, build your bundle deals, weekly specials and festival discounts on electronics and appliances."
+  title={t('offers.specialOffers', locale)}
+  description={locale === 'gu' ? 'કોમ્બો ઓફર્સ, બંડલ ડીલ્સ, સાપ્તાહિક ઓફર્સ અને ઇલેક્ટ્રોનિક્સ અને અપ્લાયન્સીસ પર વિશેષ ડિસ્કાઉન્ટ.' : 'Combo offers, build your bundle deals, weekly specials and festival discounts on electronics and appliances.'}
   canonicalUrl="/offers"
 >
   <Container class="py-6">
     <SectionHeading
-      title="Special Offer Zone"
-      subtitle="Limited-time deals on electronics and home appliances"
+      title={t('offers.title', locale)}
+      subtitle={t('offers.subtitle', locale)}
     />
 
     {Object.entries(groupedOffers).map(([type, typeOffers]) => (
       <section class="mt-8">
         <h2 class="text-lg font-semibold text-neutral-900">
-          {OFFER_TYPE_LABELS[type as Offer['type']]}
+          {offerTypeLabels[type]}
         </h2>
         <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {typeOffers.map((offer) => (
@@ -44,7 +55,9 @@ const groupedOffers = offers.reduce<Record<Offer['type'], Offer[]>>(
     ))}
 
     {offers.length === 0 && (
-      <p class="mt-8 text-center text-neutral-600">No active offers at the moment. Check back soon!</p>
+      <p class="mt-8 text-center text-neutral-600">
+        {locale === 'gu' ? 'હાલમાં કોઈ સક્રિય ઓફર નથી. કૃપા કરીને થોડા સમય પછી ફરી તપાસો!' : 'No active offers at the moment. Check back soon!'}
+      </p>
     )}
   </Container>
 </BaseLayout>

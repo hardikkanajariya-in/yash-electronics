@@ -1,7 +1,37 @@
 ---
 import Container from '../ui/Container.astro';
 import SectionHeading from '../ui/SectionHeading.astro';
-import { TRUST_POINTS } from '../../lib/constants';
+import { t } from '../../lib/translations';
+
+const locale = Astro.currentLocale || 'gu';
+
+const localizedTrustPoints = [
+  {
+    title: t('why.point1.title', locale),
+    description: t('why.point1.desc', locale),
+    icon: 'shield',
+  },
+  {
+    title: t('why.point2.title', locale),
+    description: t('why.point2.desc', locale),
+    icon: 'badge',
+  },
+  {
+    title: t('why.point3.title', locale),
+    description: t('why.point3.desc', locale),
+    icon: 'location',
+  },
+  {
+    title: t('why.point4.title', locale),
+    description: t('why.point4.desc', locale),
+    icon: 'tag',
+  },
+  {
+    title: t('why.point5.title', locale),
+    description: t('why.point5.desc', locale),
+    icon: 'chat',
+  },
+];
 
 const icons: Record<string, string> = {
   shield: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z',
@@ -15,13 +45,13 @@ const icons: Record<string, string> = {
 <section class="section-padding bg-primary text-white">
   <Container>
     <SectionHeading
-      title="Why Choose Yash Electronics"
-      subtitle="Trusted by families across nearby cities and towns"
+      title={t('why.title', locale)}
+      subtitle={t('why.subtitle', locale)}
       align="center"
       class="[&_h2]:text-white [&_p]:text-primary-100"
     />
     <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-      {TRUST_POINTS.map((point) => (
+      {localizedTrustPoints.map((point) => (
         <div class="rounded-lg border border-primary-400/30 bg-primary-700/50 p-4 text-center">
           <div class="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-secondary">
             <svg class="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">

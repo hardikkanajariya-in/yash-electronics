@@ -11,6 +11,7 @@ import {
   getProductsByCategory,
 } from '../../features/catalog/filterProducts';
 import type { SortOption } from '../../types';
+import { translateObject, t, getLocalizedPath } from '../../lib/translations';
 
 export async function getStaticPaths() {
   const categories = await getCategories();
@@ -20,12 +21,19 @@ export async function getStaticPaths() {
   }));
 }
 
-const { category } = Astro.props;
-const [allProducts, categories, brands] = await Promise.all([
+const locale = Astro.currentLocale || 'gu';
+const { category: rawCategory } = Astro.props;
+const category = translateObject(rawCategory, locale);
+
+const [rawAllProducts, rawCategories, rawBrands] = await Promise.all([
   getProducts(),
   getCategories(),
   getBrands(),
 ]);
+
+const allProducts = translateObject(rawAllProducts, locale);
+const categories = translateObject(rawCategories, locale);
+const brands = translateObject(rawBrands, locale);
 
 const params = Astro.url.searchParams;
 const filters = {
@@ -44,15 +52,15 @@ products = sortProducts(products, filters.sort);
 ---
 
 <BaseLayout
-  title={`${category.name} - Electronics & Appliances`}
-  description={category.description || `Shop ${category.name} at Yash Electronics. Genuine products with local support.`}
+  title={`${category.name} - ${locale === 'gu' ? 'ઇલેક્ટ્રોનિક્સ અને અપ્લાયન્સીસ' : 'Electronics & Appliances'}`}
+  description={category.description || (locale === 'gu' ? `યશ ઇલેક્ટ્રોનિક્સ પર ${category.name} ખરીદો. અસલી પ્રોડક્ટ્સ અને સ્થાનિક સપોર્ટ.` : `Shop ${category.name} at Yash Electronics. Genuine products with local support.`)}
   canonicalUrl={`/category/${category.slug}`}
 >
   <Container class="py-6">
     <nav class="mb-4 text-sm text-neutral-500" aria-label="Breadcrumb">
-      <a href="/" class="hover:text-primary">Home</a>
+      <a href={getLocalizedPath('/', locale)} class="hover:text-primary">{t('nav.home', locale)}</a>
       <span class="mx-1">/</span>
-      <a href="/products" class="hover:text-primary">Products</a>
+      <a href={getLocalizedPath('/products', locale)} class="hover:text-primary">{t('nav.products', locale)}</a>
       <span class="mx-1">/</span>
       <span class="text-neutral-800">{category.name}</span>
     </nav>
@@ -63,7 +71,7 @@ products = sortProducts(products, filters.sort);
         <p class="mt-1 text-sm text-neutral-600">{category.description}</p>
       )}
       <p class="mt-1 text-sm text-neutral-500">
-        {products.length} product{products.length !== 1 ? 's' : ''}
+        {t('search.found', locale).replace('{count}', String(products.length))}
       </p>
     </div>
 

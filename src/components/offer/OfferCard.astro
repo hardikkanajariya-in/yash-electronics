@@ -1,8 +1,8 @@
 ---
 import type { Offer, SiteSettings } from '../../types';
 import CloudinaryImage from '../common/CloudinaryImage.astro';
-import { OFFER_TYPE_LABELS } from '../../lib/constants';
 import { buildWhatsAppUrl, generateOfferInquiryMessage } from '../../features/whatsapp/generateMessage';
+import { t } from '../../lib/translations';
 
 interface Props {
   offer: Offer;
@@ -10,10 +10,19 @@ interface Props {
 }
 
 const { offer, settings } = Astro.props;
+const locale = Astro.currentLocale || 'gu';
+
 const whatsappUrl = buildWhatsAppUrl(
   settings.whatsapp,
-  generateOfferInquiryMessage(offer.title, settings),
+  generateOfferInquiryMessage(offer.title, settings, locale),
 );
+
+const offerTypeLabels: Record<string, string> = {
+  combo: locale === 'gu' ? 'કોમ્બો ઓફર્સ' : 'Combo Offers',
+  bundle: locale === 'gu' ? 'બંડલ ઓફર્સ' : 'Build Your Bundle',
+  weekly: locale === 'gu' ? 'સાપ્તાહિક ઓફર્સ' : 'Offer Of The Week',
+  festival: locale === 'gu' ? 'તહેવારની ઓફરો' : 'Festival Offers',
+};
 ---
 
 <article class="retail-card flex flex-col overflow-hidden">
@@ -27,16 +36,16 @@ const whatsappUrl = buildWhatsAppUrl(
       sizes="(max-width: 768px) 100vw, 25vw"
     />
     <span class="absolute left-2 top-2 rounded bg-secondary px-2 py-0.5 text-xs font-semibold text-white">
-      {OFFER_TYPE_LABELS[offer.type]}
+      {offerTypeLabels[offer.type]}
     </span>
   </div>
   <div class="flex flex-1 flex-col p-4">
     <h3 class="font-semibold text-neutral-900">{offer.title}</h3>
     <p class="mt-1 line-clamp-2 text-sm text-neutral-600">{offer.description}</p>
     <p class="mt-2 text-sm font-bold text-accent">{offer.discountText}</p>
-    <p class="mt-1 text-xs text-neutral-500">Valid till {offer.validUntil}</p>
+    <p class="mt-1 text-xs text-neutral-500">{t('offers.validUntil', locale).replace('{date}', offer.validUntil)}</p>
     <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" class="btn-whatsapp mt-3 w-full text-sm">
-      Enquire Now
+      {locale === 'gu' ? 'હમણાં પૂછપરછ કરો' : 'Enquire Now'}
     </a>
   </div>
 </article>

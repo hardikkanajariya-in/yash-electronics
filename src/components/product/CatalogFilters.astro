@@ -1,6 +1,7 @@
 ---
 import type { Brand, Category } from '../../types';
 import { SORT_OPTIONS } from '../../lib/constants';
+import { t } from '../../lib/translations';
 
 interface Props {
   categories: Category[];
@@ -17,11 +18,19 @@ interface Props {
 }
 
 const { categories, brands, currentFilters, priceRange } = Astro.props;
+const locale = Astro.currentLocale || 'gu';
 const baseUrl = Astro.url.pathname;
+
+const sortLabelKeys: Record<string, string> = {
+  featured: 'sort.featured',
+  latest: 'sort.latest',
+  'price-asc': 'sort.priceAsc',
+  'price-desc': 'sort.priceDesc',
+};
 ---
 
 <aside class="rounded-lg border border-neutral-200 bg-white p-4">
-  <h2 class="font-semibold text-neutral-900">Filters</h2>
+  <h2 class="font-semibold text-neutral-900">{t('filter.title', locale)}</h2>
 
   <form method="get" action={baseUrl} class="mt-4 space-y-5">
     {currentFilters.search && (
@@ -29,13 +38,13 @@ const baseUrl = Astro.url.pathname;
     )}
 
     <div>
-      <label for="category" class="block text-sm font-medium text-neutral-700">Category</label>
+      <label for="category" class="block text-sm font-medium text-neutral-700">{t('filter.category', locale)}</label>
       <select
         id="category"
         name="category"
         class="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
       >
-        <option value="">All Categories</option>
+        <option value="">{t('filter.allCategories', locale)}</option>
         {categories.map((cat) => (
           <option value={cat.slug} selected={currentFilters.category === cat.slug}>
             {cat.name}
@@ -45,13 +54,13 @@ const baseUrl = Astro.url.pathname;
     </div>
 
     <div>
-      <label for="brand" class="block text-sm font-medium text-neutral-700">Brand</label>
+      <label for="brand" class="block text-sm font-medium text-neutral-700">{t('filter.brand', locale)}</label>
       <select
         id="brand"
         name="brand"
         class="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
       >
-        <option value="">All Brands</option>
+        <option value="">{t('filter.allBrands', locale)}</option>
         {brands.map((brand) => (
           <option value={brand.slug} selected={currentFilters.brand === brand.slug}>
             {brand.name}
@@ -62,7 +71,7 @@ const baseUrl = Astro.url.pathname;
 
     <div class="grid grid-cols-2 gap-2">
       <div>
-        <label for="minPrice" class="block text-sm font-medium text-neutral-700">Min Price</label>
+        <label for="minPrice" class="block text-sm font-medium text-neutral-700">{t('filter.minPrice', locale)}</label>
         <input
           type="number"
           id="minPrice"
@@ -75,7 +84,7 @@ const baseUrl = Astro.url.pathname;
         />
       </div>
       <div>
-        <label for="maxPrice" class="block text-sm font-medium text-neutral-700">Max Price</label>
+        <label for="maxPrice" class="block text-sm font-medium text-neutral-700">{t('filter.maxPrice', locale)}</label>
         <input
           type="number"
           id="maxPrice"
@@ -90,7 +99,7 @@ const baseUrl = Astro.url.pathname;
     </div>
 
     <div>
-      <label for="sort" class="block text-sm font-medium text-neutral-700">Sort By</label>
+      <label for="sort" class="block text-sm font-medium text-neutral-700">{t('filter.sortBy', locale)}</label>
       <select
         id="sort"
         name="sort"
@@ -98,15 +107,15 @@ const baseUrl = Astro.url.pathname;
       >
         {SORT_OPTIONS.map((opt) => (
           <option value={opt.value} selected={currentFilters.sort === opt.value}>
-            {opt.label}
+            {t(sortLabelKeys[opt.value] || opt.label, locale)}
           </option>
         ))}
       </select>
     </div>
 
     <div class="flex gap-2">
-      <button type="submit" class="btn-primary flex-1 text-sm">Apply</button>
-      <a href={baseUrl} class="btn-outline flex-1 text-center text-sm">Clear</a>
+      <button type="submit" class="btn-primary flex-1 text-sm">{t('filter.apply', locale)}</button>
+      <a href={baseUrl} class="btn-outline flex-1 text-center text-sm">{t('filter.clear', locale)}</a>
     </div>
   </form>
 </aside>

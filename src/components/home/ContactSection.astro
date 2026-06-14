@@ -3,15 +3,18 @@ import type { SiteSettings } from '../../types';
 import Container from '../ui/Container.astro';
 import Button from '../ui/Button.astro';
 import { buildWhatsAppUrl, generateGeneralInquiryMessage } from '../../features/whatsapp/generateMessage';
+import { t } from '../../lib/translations';
 
 interface Props {
   settings: SiteSettings;
 }
 
 const { settings } = Astro.props;
+const locale = Astro.currentLocale || 'gu';
+
 const whatsappUrl = buildWhatsAppUrl(
   settings.whatsapp,
-  generateGeneralInquiryMessage(settings),
+  generateGeneralInquiryMessage(settings, locale),
 );
 ---
 
@@ -20,19 +23,19 @@ const whatsappUrl = buildWhatsAppUrl(
     <div class="rounded-lg border border-neutral-200 bg-white p-6 md:p-8">
       <div class="grid gap-6 md:grid-cols-2">
         <div>
-          <h2 class="text-xl font-bold text-neutral-900 md:text-2xl">Visit Our Store or Enquire Online</h2>
+          <h2 class="text-xl font-bold text-neutral-900 md:text-2xl">{t('contact.title', locale)}</h2>
           <p class="mt-2 text-neutral-600">
-            Have questions about a product, price or availability? Our team is ready to help on phone or WhatsApp.
+            {t('contact.desc', locale)}
           </p>
           <dl class="mt-4 space-y-3 text-sm">
             <div>
-              <dt class="font-semibold text-neutral-800">Address</dt>
+              <dt class="font-semibold text-neutral-800">{t('contact.address', locale)}</dt>
               <dd class="text-neutral-600">
                 {settings.address}, {settings.city}, {settings.state} - {settings.pincode}
               </dd>
             </div>
             <div>
-              <dt class="font-semibold text-neutral-800">Phone</dt>
+              <dt class="font-semibold text-neutral-800">{t('contact.phone', locale)}</dt>
               <dd>
                 <a href={`tel:${settings.phone.replace(/\s/g, '')}`} class="text-primary hover:underline">
                   {settings.phone}
@@ -40,7 +43,7 @@ const whatsappUrl = buildWhatsAppUrl(
               </dd>
             </div>
             <div>
-              <dt class="font-semibold text-neutral-800">Email</dt>
+              <dt class="font-semibold text-neutral-800">{t('contact.email', locale)}</dt>
               <dd>
                 <a href={`mailto:${settings.email}`} class="text-primary hover:underline">
                   {settings.email}
@@ -48,16 +51,16 @@ const whatsappUrl = buildWhatsAppUrl(
               </dd>
             </div>
             <div>
-              <dt class="font-semibold text-neutral-800">Working Hours</dt>
+              <dt class="font-semibold text-neutral-800">{t('contact.hours', locale)}</dt>
               <dd class="text-neutral-600">{settings.workingHours}</dd>
             </div>
           </dl>
         </div>
         <div class="flex flex-col justify-center gap-4">
-          <Button href={whatsappUrl} text="Chat on WhatsApp" variant="whatsapp" external class="w-full text-base py-3" />
-          <Button href={`tel:${settings.phone.replace(/\s/g, '')}`} text="Call Now" variant="primary" class="w-full text-base py-3" />
+          <Button href={whatsappUrl} text={t('contact.chatWhatsApp', locale)} variant="whatsapp" external class="w-full text-base py-3" />
+          <Button href={`tel:${settings.phone.replace(/\s/g, '')}`} text={t('contact.callNow', locale)} variant="primary" class="w-full text-base py-3" />
           {settings.googleMapsUrl && (
-            <Button href={settings.googleMapsUrl} text="Get Directions" variant="outline" external class="w-full" />
+            <Button href={settings.googleMapsUrl} text={t('contact.directions', locale)} variant="outline" external class="w-full" />
           )}
         </div>
       </div>

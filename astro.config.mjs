@@ -8,6 +8,13 @@ const site = process.env.PUBLIC_SITE_URL || 'https://yashelectronics.in';
 // https://astro.build/config
 export default defineConfig({
   site,
+  i18n: {
+    defaultLocale: 'gu',
+    locales: ['gu', 'en'],
+    routing: {
+      prefixDefaultLocale: false,
+    },
+  },
   integrations: [
     tailwind({
       applyBaseStyles: false,

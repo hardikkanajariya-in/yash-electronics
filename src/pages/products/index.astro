@@ -10,12 +10,19 @@ import {
   getPriceRange,
 } from '../../features/catalog/filterProducts';
 import type { SortOption } from '../../types';
+import { translateObject, t, getLocalizedPath } from '../../lib/translations';
 
-const [allProducts, categories, brands] = await Promise.all([
+const locale = Astro.currentLocale || 'gu';
+
+const [rawAllProducts, rawCategories, rawBrands] = await Promise.all([
   getProducts(),
   getCategories(),
   getBrands(),
 ]);
+
+const allProducts = translateObject(rawAllProducts, locale);
+const categories = translateObject(rawCategories, locale);
+const brands = translateObject(rawBrands, locale);
 
 const params = Astro.url.searchParams;
 const filters = {
@@ -32,8 +39,8 @@ let products = filterProducts(allProducts, filters);
 products = sortProducts(products, filters.sort);
 
 const pageTitle = filters.search
-  ? `Search: ${filters.search}`
-  : 'All Products';
+  ? `${t('search.title', locale).replace('{query}', filters.search)}`
+  : t('nav.viewAllProducts', locale);
 ---
 
 <BaseLayout
@@ -45,7 +52,7 @@ const pageTitle = filters.search
     <div class="mb-6">
       <h1 class="text-2xl font-bold text-neutral-900">{pageTitle}</h1>
       <p class="mt-1 text-sm text-neutral-600">
-        {products.length} product{products.length !== 1 ? 's' : ''} found
+        {t('search.found', locale).replace('{count}', String(products.length))}
       </p>
     </div>
 
@@ -57,12 +64,12 @@ const pageTitle = filters.search
         priceRange={priceRange}
       />
       <div>
-        <form action="/products" method="get" class="mb-4 lg:hidden">
+        <form action={getLocalizedPath('/products', locale)} method="get" class="mb-4 lg:hidden">
           <input
             type="search"
             name="search"
             value={filters.search || ''}
-            placeholder="Search by name, model or brand..."
+            placeholder={t('search.placeholder', locale)}
             class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
           />
         </form>
