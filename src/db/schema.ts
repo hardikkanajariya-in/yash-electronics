@@ -75,3 +75,69 @@ export const offers = pgTable('offers', {
   isActive: boolean('is_active').notNull().default(true),
   sortOrder: integer('sort_order').notNull().default(0),
 });
+
+export const users = pgTable('users', {
+  id: varchar('id', { length: 255 }).primaryKey(),
+  name: text('name').notNull(),
+  phone: text('phone').notNull().unique(),
+  email: text('email').unique(),
+  password: text('password').notNull(),
+  role: text('role').$type<'admin' | 'customer'>().notNull().default('customer'),
+  referralCode: text('referral_code').notNull().unique(),
+  referredById: varchar('referred_by_id', { length: 255 }),
+  credits: integer('credits').notNull().default(0),
+  createdAt: text('created_at').notNull(),
+});
+
+export const usersRelations = relations(users, ({ many }) => ({
+  orders: many(orders),
+}));
+
+export const orders = pgTable('orders', {
+  id: varchar('id', { length: 255 }).primaryKey(),
+  userId: varchar('user_id', { length: 255 }).references(() => users.id, { onDelete: 'cascade' }),
+  customerName: text('customer_name').notNull(),
+  customerPhone: text('customer_phone').notNull(),
+  shippingAddress: text('shipping_address').notNull(),
+  creditsUsed: integer('credits_used').notNull().default(0),
+  totalAmount: integer('total_amount').notNull().default(0),
+  status: text('status').$type<'pending' | 'processing' | 'delivered' | 'cancelled'>().notNull().default('pending'),
+  createdAt: text('created_at').notNull(),
+});
+
+export const ordersRelations = relations(orders, ({ one, many }) => ({
+  user: one(users, {
+    fields: [orders.userId],
+    references: [users.id],
+  }),
+  items: many(orderItems),
+}));
+
+export const orderItems = pgTable('order_items', {
+  id: varchar('id', { length: 255 }).primaryKey(),
+  orderId: varchar('order_id', { length: 255 }).references(() => orders.id, { onDelete: 'cascade' }),
+  productId: varchar('product_id', { length: 255 }).references(() => products.id),
+  quantity: integer('quantity').notNull().default(1),
+  price: integer('price').notNull().default(0),
+});
+
+export const orderItemsRelations = relations(orderItems, ({ one }) => ({
+  order: one(orders, {
+    fields: [orderItems.orderId],
+    references: [orders.id],
+  }),
+  product: one(products, {
+    fields: [orderItems.productId],
+    references: [products.id],
+  }),
+}));
+
+export const contactQueries = pgTable('contact_queries', {
+  id: varchar('id', { length: 255 }).primaryKey(),
+  name: text('name').notNull(),
+  email: text('email'),
+  phone: text('phone').notNull(),
+  message: text('message').notNull(),
+  status: text('status').$type<'unread' | 'read' | 'resolved'>().notNull().default('unread'),
+  createdAt: text('created_at').notNull(),
+});

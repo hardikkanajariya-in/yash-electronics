@@ -285,11 +285,31 @@ async function seed() {
     await client.query('BEGIN');
 
     console.log('[Seed] Clearing existing data...');
+    await client.query('DELETE FROM order_items');
+    await client.query('DELETE FROM orders');
+    await client.query('DELETE FROM users');
+    await client.query('DELETE FROM contact_queries');
     await client.query('DELETE FROM settings');
     await client.query('DELETE FROM products');
     await client.query('DELETE FROM categories');
     await client.query('DELETE FROM brands');
     await client.query('DELETE FROM offers');
+
+    console.log('[Seed] Inserting admin user...');
+    await client.query(
+      `INSERT INTO users (id, name, phone, password, role, referral_code, credits, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [
+        'admin-id',
+        'Admin',
+        '9999999999',
+        '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918',
+        'admin',
+        'ADMIN',
+        0,
+        new Date().toISOString(),
+      ]
+    );
 
     console.log('[Seed] Inserting settings...');
     for (const [key, value] of Object.entries(settings)) {

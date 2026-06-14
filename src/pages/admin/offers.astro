@@ -1,0 +1,305 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Container from '../../components/ui/Container.astro';
+import { db } from '../../db';
+import { offers } from '../../db/schema';
+import { eq } from 'drizzle-orm';
+import { getSessionUser, generateId } from '../../lib/auth';
+
+export const prerender = false;
+
+// Authenticate
+const currentUser = await getSessionUser(Astro.cookies);
+if (!currentUser || currentUser.role !== 'admin') {
+  return Astro.redirect('/admin/login');
+}
+
+const action = Astro.url.searchParams.get('action') || 'list';
+const offerId = Astro.url.searchParams.get('id') || '';
+
+let error = '';
+let success = '';
+
+// Handle POST actions
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const formAction = formData.get('formAction')?.toString() || '';
+
+    if (formAction === 'delete') {
+      const idToDelete = formData.get('id')?.toString() || '';
+      await db.delete(offers).where(eq(offers.id, idToDelete));
+      success = 'Offer deleted successfully!';
+    } else if (formAction === 'save') {
+      const title = formData.get('title')?.toString() || '';
+      const slug = formData.get('slug')?.toString() || '';
+      const type = formData.get('type')?.toString() as any || 'combo';
+      const description = formData.get('description')?.toString() || '';
+      const image = formData.get('image')?.toString() || '';
+      const discountText = formData.get('discountText')?.toString() || '';
+      const validUntil = formData.get('validUntil')?.toString() || '';
+      const isActive = formData.get('isActive') === 'on';
+      const sortOrder = Number(formData.get('sortOrder') || 0);
+
+      if (offerId) {
+        // Edit existing
+        await db.update(offers).set({
+          title,
+          slug,
+          type,
+          description,
+          image,
+          discountText,
+          validUntil,
+          isActive,
+          sortOrder,
+        }).where(eq(offers.id, offerId));
+        success = 'Offer updated successfully!';
+      } else {
+        // Create new
+        const newId = generateId();
+        await db.insert(offers).values({
+          id: newId,
+          title,
+          slug,
+          type,
+          description,
+          image,
+          discountText,
+          validUntil,
+          isActive,
+          sortOrder,
+        });
+        success = 'Offer added successfully!';
+      }
+    }
+  } catch (e: any) {
+    error = e.message || 'Failed to save offer. Ensure slug is unique.';
+  }
+}
+
+// Fetch single offer if editing
+let editOffer: any = null;
+if (action === 'edit' && offerId) {
+  const [found] = await db.select().from(offers).where(eq(offers.id, offerId));
+  editOffer = found;
+}
+
+// Fetch all offers for list view
+const allOffers = await db.select().from(offers);
+---
+
+<BaseLayout title="Manage Offers" noindex={true}>
+  <Container class="py-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between border-b border-neutral-200 pb-4 mb-6">
+      <div>
+        <h1 class="text-2xl font-bold text-neutral-900">Manage Offers</h1>
+        <p class="text-xs text-neutral-500">Create or edit special deals & promotions</p>
+      </div>
+      <div class="flex gap-2">
+        <a href="/admin" class="text-xs font-semibold text-neutral-600 border border-neutral-300 rounded-md px-3 py-1.5 hover:bg-neutral-50 transition-colors">
+          ← Dashboard
+        </a>
+        {action === 'list' && (
+          <a href="/admin/offers?action=add" class="text-xs font-semibold text-white bg-primary hover:bg-primary/95 rounded-md px-3 py-1.5 transition-colors">
+            + Create Offer
+          </a>
+        )}
+      </div>
+    </div>
+
+    {error && (
+      <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md p-3 mb-4">
+        {error}
+      </div>
+    )}
+    {success && (
+      <div class="bg-green-50 border border-green-200 text-green-700 text-sm rounded-md p-3 mb-4">
+        {success}
+      </div>
+    )}
+
+    <!-- LIST VIEW -->
+    {action === 'list' && (
+      <div class="bg-white border border-neutral-200 rounded-lg shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm text-neutral-700 border-collapse">
+            <thead>
+              <tr class="bg-neutral-50 border-b border-neutral-200 font-semibold text-neutral-900">
+                <th class="p-3">Offer Title</th>
+                <th class="p-3">Type</th>
+                <th class="p-3">Discount Text</th>
+                <th class="p-3">Valid Until</th>
+                <th class="p-3">Status</th>
+                <th class="p-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {allOffers.map((off) => (
+                <tr class="border-b border-neutral-100 hover:bg-neutral-50/50">
+                  <td class="p-3 font-medium text-neutral-900">{off.title}</td>
+                  <td class="p-3 text-xs capitalize text-neutral-500">{off.type}</td>
+                  <td class="p-3 font-semibold text-accent">{off.discountText || '-'}</td>
+                  <td class="p-3 text-xs text-neutral-500">{off.validUntil || '-'}</td>
+                  <td class="p-3">
+                    <span class={`inline-block rounded px-2 py-0.5 text-xs font-medium ${off.isActive ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+                      {off.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
+                  <td class="p-3 text-right flex justify-end gap-2">
+                    <a href={`/admin/offers?action=edit&id=${off.id}`} class="text-xs font-semibold text-primary hover:underline">
+                      Edit
+                    </a>
+                    <form method="post" onSubmit="return confirm('Are you sure you want to delete this offer?');" class="inline">
+                      <input type="hidden" name="formAction" value="delete" />
+                      <input type="hidden" name="id" value={off.id} />
+                      <button type="submit" class="text-xs font-semibold text-red-600 hover:underline bg-none border-none cursor-pointer">
+                        Delete
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+              ))}
+              {allOffers.length === 0 && (
+                <tr>
+                  <td colspan="6" class="p-8 text-center text-neutral-500">No offers found. Create one to get started.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    )}
+
+    <!-- FORM VIEW -->
+    {(action === 'add' || action === 'edit') && (
+      <div class="bg-white border border-neutral-200 rounded-lg p-6 shadow-sm max-w-2xl mx-auto">
+        <h2 class="text-lg font-bold text-neutral-900 mb-6">{action === 'edit' ? 'Edit Offer' : 'Create Offer'}</h2>
+        
+        <form method="post" class="space-y-4">
+          <input type="hidden" name="formAction" value="save" />
+
+          <div>
+            <label for="title" class="block text-sm font-semibold text-neutral-700 mb-1">Offer Title *</label>
+            <input
+              type="text"
+              id="title"
+              name="title"
+              required
+              value={editOffer?.title || ''}
+              placeholder="e.g. TV + Soundbar Combo"
+              class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none"
+            />
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label for="slug" class="block text-sm font-semibold text-neutral-700 mb-1">Slug *</label>
+              <input
+                type="text"
+                id="slug"
+                name="slug"
+                required
+                value={editOffer?.slug || ''}
+                placeholder="e.g. tv-soundbar-combo"
+                class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              />
+            </div>
+            <div>
+              <label for="type" class="block text-sm font-semibold text-neutral-700 mb-1">Offer Type *</label>
+              <select
+                id="type"
+                name="type"
+                required
+                class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              >
+                <option value="combo" selected={editOffer?.type === 'combo'}>Combo Offer</option>
+                <option value="bundle" selected={editOffer?.type === 'bundle'}>Build Your Bundle</option>
+                <option value="weekly" selected={editOffer?.type === 'weekly'}>Offer Of The Week</option>
+                <option value="festival" selected={editOffer?.type === 'festival'}>Festival Offer</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label for="discountText" class="block text-sm font-semibold text-neutral-700 mb-1">Discount Text</label>
+              <input
+                type="text"
+                id="discountText"
+                name="discountText"
+                value={editOffer?.discountText || ''}
+                placeholder="e.g. Save up to ₹8,000"
+                class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              />
+            </div>
+            <div>
+              <label for="validUntil" class="block text-sm font-semibold text-neutral-700 mb-1">Valid Until (Expiry Date)</label>
+              <input
+                type="text"
+                id="validUntil"
+                name="validUntil"
+                value={editOffer?.validUntil || ''}
+                placeholder="e.g. 2026-06-30"
+                class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label for="image" class="block text-sm font-semibold text-neutral-700 mb-1">Cloudinary Image Public ID</label>
+              <input
+                type="text"
+                id="image"
+                name="image"
+                value={editOffer?.image || ''}
+                placeholder="e.g. yash-electronics/offers/combo-tv"
+                class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              />
+            </div>
+            <div>
+              <label for="sortOrder" class="block text-sm font-semibold text-neutral-700 mb-1">Sort Order</label>
+              <input
+                type="number"
+                id="sortOrder"
+                name="sortOrder"
+                value={editOffer?.sortOrder || 0}
+                placeholder="0"
+                class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label for="description" class="block text-sm font-semibold text-neutral-700 mb-1">Description</label>
+            <textarea
+              id="description"
+              name="description"
+              rows="3"
+              placeholder="Enter offer details..."
+              class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none"
+            >{editOffer?.description || ''}</textarea>
+          </div>
+
+          <div class="py-2">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" name="isActive" checked={editOffer ? editOffer.isActive : true} class="rounded border-neutral-300 text-primary focus:ring-primary" />
+              <span class="text-sm font-semibold text-neutral-700">Offer Active</span>
+            </label>
+          </div>
+
+          <div class="flex justify-end gap-3 pt-4 border-t border-neutral-200">
+            <a href="/admin/offers" class="btn-outline px-4 py-2 text-sm">
+              Cancel
+            </a>
+            <button type="submit" class="btn-primary px-6 py-2 text-sm font-medium">
+              Save Offer
+            </button>
+          </div>
+        </form>
+      </div>
+    )}
+  </Container>
+</BaseLayout>

@@ -7,61 +7,162 @@ import { t } from '../../lib/translations';
 
 interface Props {
   settings: SiteSettings;
+  success?: boolean;
+  error?: string;
 }
 
-const { settings } = Astro.props;
+const { settings, success, error } = Astro.props;
 const locale = Astro.currentLocale || 'gu';
 
 const whatsappUrl = buildWhatsAppUrl(
   settings.whatsapp,
   generateGeneralInquiryMessage(settings, locale),
 );
+
+// Form translations
+const formT = {
+  gu: {
+    formTitle: 'અમને સંદેશો મોકલો',
+    nameLabel: 'તમારું નામ *',
+    phoneLabel: 'ફોન નંબર *',
+    emailLabel: 'ઇમેઇલ (વૈકલ્પિક)',
+    msgLabel: 'સંદેશો *',
+    submitBtn: 'સંદેશો મોકલો',
+    successMsg: 'સંદેશો સફળતાપૂર્વક મોકલવામાં આવ્યો છે! અમારી ટીમ ટૂંક સમયમાં તમારો સંપર્ક કરશે.',
+    errorMsg: 'કંઈક ખોટું થયું. કૃપા કરીને ફરી પ્રયાસ કરો.',
+  },
+  en: {
+    formTitle: 'Send Us a Message',
+    nameLabel: 'Your Name *',
+    phoneLabel: 'Phone Number *',
+    emailLabel: 'Email (Optional)',
+    msgLabel: 'Message *',
+    submitBtn: 'Send Message',
+    successMsg: 'Message sent successfully! Our team will contact you shortly.',
+    errorMsg: 'Something went wrong. Please try again.',
+  }
+}[locale === 'en' ? 'en' : 'gu'];
 ---
 
 <section class="section-padding bg-neutral-50">
   <Container>
-    <div class="rounded-lg border border-neutral-200 bg-white p-6 md:p-8">
-      <div class="grid gap-6 md:grid-cols-2">
+    <div class="rounded-lg border border-neutral-200 bg-white p-6 md:p-8 shadow-sm">
+      <div class="grid gap-8 md:grid-cols-2">
+        {/* Left Column: Store Details & Quick Links */}
         <div>
           <h2 class="text-xl font-bold text-neutral-900 md:text-2xl">{t('contact.title', locale)}</h2>
-          <p class="mt-2 text-neutral-600">
+          <p class="mt-2 text-sm text-neutral-600">
             {t('contact.desc', locale)}
           </p>
-          <dl class="mt-4 space-y-3 text-sm">
+          
+          <dl class="mt-6 space-y-4 text-sm">
             <div>
-              <dt class="font-semibold text-neutral-800">{t('contact.address', locale)}</dt>
-              <dd class="text-neutral-600">
+              <dt class="font-bold text-neutral-800">{t('contact.address', locale)}</dt>
+              <dd class="text-neutral-600 mt-0.5">
                 {settings.address}, {settings.city}, {settings.state} - {settings.pincode}
               </dd>
             </div>
             <div>
-              <dt class="font-semibold text-neutral-800">{t('contact.phone', locale)}</dt>
-              <dd>
-                <a href={`tel:${settings.phone.replace(/\s/g, '')}`} class="text-primary hover:underline">
+              <dt class="font-bold text-neutral-800">{t('contact.phone', locale)}</dt>
+              <dd class="mt-0.5">
+                <a href={`tel:${settings.phone.replace(/\s/g, '')}`} class="text-primary hover:underline font-semibold">
                   {settings.phone}
                 </a>
               </dd>
             </div>
             <div>
-              <dt class="font-semibold text-neutral-800">{t('contact.email', locale)}</dt>
-              <dd>
+              <dt class="font-bold text-neutral-800">{t('contact.email', locale)}</dt>
+              <dd class="mt-0.5">
                 <a href={`mailto:${settings.email}`} class="text-primary hover:underline">
                   {settings.email}
                 </a>
               </dd>
             </div>
             <div>
-              <dt class="font-semibold text-neutral-800">{t('contact.hours', locale)}</dt>
-              <dd class="text-neutral-600">{settings.workingHours}</dd>
+              <dt class="font-bold text-neutral-800">{t('contact.hours', locale)}</dt>
+              <dd class="text-neutral-600 mt-0.5">{settings.workingHours}</dd>
             </div>
           </dl>
+
+          <div class="flex flex-col sm:flex-row gap-3 mt-6 pt-6 border-t border-neutral-100">
+            <Button href={whatsappUrl} text={t('contact.chatWhatsApp', locale)} variant="whatsapp" external class="text-xs py-2 px-4" />
+            <Button href={`tel:${settings.phone.replace(/\s/g, '')}`} text={t('contact.callNow', locale)} variant="primary" class="text-xs py-2 px-4" />
+          </div>
         </div>
-        <div class="flex flex-col justify-center gap-4">
-          <Button href={whatsappUrl} text={t('contact.chatWhatsApp', locale)} variant="whatsapp" external class="w-full text-base py-3" />
-          <Button href={`tel:${settings.phone.replace(/\s/g, '')}`} text={t('contact.callNow', locale)} variant="primary" class="w-full text-base py-3" />
-          {settings.googleMapsUrl && (
-            <Button href={settings.googleMapsUrl} text={t('contact.directions', locale)} variant="outline" external class="w-full" />
+
+        {/* Right Column: Contact Query Form */}
+        <div class="bg-neutral-50 rounded-lg p-5 border border-neutral-200">
+          <h3 class="text-base font-bold text-neutral-900 mb-4">{formT.formTitle}</h3>
+          
+          {success && (
+            <div class="bg-green-50 border border-green-200 text-green-700 text-xs rounded-md p-3 mb-4 font-medium">
+              {formT.successMsg}
+            </div>
           )}
+
+          {error && (
+            <div class="bg-red-50 border border-red-200 text-red-700 text-xs rounded-md p-3 mb-4">
+              {error || formT.errorMsg}
+            </div>
+          )}
+
+          <form method="post" class="space-y-3">
+            <div>
+              <label for="contact-name" class="block text-xs font-semibold text-neutral-700 mb-1">{formT.nameLabel}</label>
+              <input
+                type="text"
+                id="contact-name"
+                name="name"
+                required
+                placeholder="e.g. Hardik"
+                class="w-full rounded border border-neutral-300 px-3 py-1.5 text-xs focus:border-primary focus:outline-none"
+              />
+            </div>
+
+            <div class="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label for="contact-phone" class="block text-xs font-semibold text-neutral-700 mb-1">{formT.phoneLabel}</label>
+                <input
+                  type="tel"
+                  id="contact-phone"
+                  name="phone"
+                  required
+                  placeholder="e.g. 9876543210"
+                  class="w-full rounded border border-neutral-300 px-3 py-1.5 text-xs focus:border-primary focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label for="contact-email" class="block text-xs font-semibold text-neutral-700 mb-1">{formT.emailLabel}</label>
+                <input
+                  type="email"
+                  id="contact-email"
+                  name="email"
+                  placeholder="e.g. name@domain.com"
+                  class="w-full rounded border border-neutral-300 px-3 py-1.5 text-xs focus:border-primary focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label for="contact-message" class="block text-xs font-semibold text-neutral-700 mb-1">{formT.msgLabel}</label>
+              <textarea
+                id="contact-message"
+                name="message"
+                required
+                rows="4"
+                placeholder="Write your query here..."
+                class="w-full rounded border border-neutral-300 px-3 py-1.5 text-xs focus:border-primary focus:outline-none"
+              ></textarea>
+            </div>
+
+            <button
+              type="submit"
+              class="w-full btn-primary py-2 text-xs font-bold transition-all"
+            >
+              {formT.submitBtn}
+            </button>
+          </form>
         </div>
       </div>
     </div>

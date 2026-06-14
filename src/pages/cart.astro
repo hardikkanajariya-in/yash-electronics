@@ -1,0 +1,452 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Container from '../components/ui/Container.astro';
+import { db } from '../db';
+import { products, orders, orderItems, users } from '../db/schema';
+import { eq, inArray } from 'drizzle-orm';
+import { getSessionUser, generateId } from '../lib/auth';
+import { getLocalizedPath } from '../lib/translations';
+
+export const prerender = false;
+
+const locale = Astro.currentLocale || 'gu';
+
+// Authenticate user to check for credits
+const currentUser = await getSessionUser(Astro.cookies);
+
+let error = '';
+let successOrderId = '';
+
+// Handle Checkout Form Submission
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const customerName = formData.get('name')?.toString().trim() || '';
+    const customerPhone = formData.get('phone')?.toString().trim() || '';
+    const shippingAddress = formData.get('address')?.toString().trim() || '';
+    const cartItemsRaw = formData.get('cartItems')?.toString() || '[]';
+    const applyCredits = formData.get('applyCredits') === 'on';
+
+    const cart = JSON.parse(cartItemsRaw);
+
+    if (!customerName || !customerPhone || !shippingAddress || cart.length === 0) {
+      error = locale === 'en' ? 'Please fill in all details and add items to cart.' : 'કૃપા કરીને બધી વિગતો ભરો અને કાર્ટમાં આઇટમ ઉમેરો.';
+    } else {
+      // 1. Gather product IDs and verify prices from DB
+      const productIds = cart.map((item: any) => item.id);
+      const dbProducts = await db.select().from(products).where(inArray(products.id, productIds));
+      
+      let subtotal = 0;
+      const orderLines: { productId: string; quantity: number; price: number }[] = [];
+
+      cart.forEach((cartItem: any) => {
+        const dbProduct = dbProducts.find((p) => p.id === cartItem.id);
+        if (dbProduct) {
+          const price = dbProduct.offerPrice > 0 ? dbProduct.offerPrice : dbProduct.mrp;
+          subtotal += price * cartItem.quantity;
+          orderLines.push({
+            productId: dbProduct.id,
+            quantity: cartItem.quantity,
+            price,
+          });
+        }
+      });
+
+      if (orderLines.length === 0) {
+        error = locale === 'en' ? 'Cart contains invalid products.' : 'કાર્ટમાં અમાન્ય પ્રોડક્ટ્સ છે.';
+      } else {
+        // 2. Resolve store credits usage
+        let creditsToUse = 0;
+        if (currentUser && applyCredits && currentUser.credits > 0) {
+          // Re-fetch user to get fresh credits balance
+          const [userRecord] = await db.select().from(users).where(eq(users.id, currentUser.id));
+          if (userRecord && userRecord.credits > 0) {
+            creditsToUse = Math.min(userRecord.credits, subtotal);
+          }
+        }
+
+        const totalAmount = subtotal - creditsToUse;
+        const newOrderId = generateId();
+
+        // 3. Insert into orders table
+        await db.insert(orders).values({
+          id: newOrderId,
+          userId: currentUser ? currentUser.id : null,
+          customerName,
+          customerPhone,
+          shippingAddress,
+          creditsUsed: creditsToUse,
+          totalAmount,
+          status: 'pending',
+          createdAt: new Date().toISOString(),
+        });
+
+        // 4. Insert order items
+        for (const line of orderLines) {
+          await db.insert(orderItems).values({
+            id: generateId(),
+            orderId: newOrderId,
+            productId: line.productId,
+            quantity: line.quantity,
+            price: line.price,
+          });
+        }
+
+        // 5. Deduct credits if used
+        if (currentUser && creditsToUse > 0) {
+          await db
+            .update(users)
+            .set({ credits: currentUser.credits - creditsToUse })
+            .where(eq(users.id, currentUser.id));
+        }
+
+        successOrderId = newOrderId;
+      }
+    }
+  } catch (e) {
+    console.error('[Checkout Error]:', e);
+    error = locale === 'en' ? 'Checkout failed. Please try again.' : 'ચેકઆઉટ નિષ્ફળ રહ્યું. કૃપા કરીને ફરી પ્રયાસ કરો.';
+  }
+}
+
+// Inline translations
+const translations = {
+  gu: {
+    title: 'મારું કાર્ટ - યશ ઇલેક્ટ્રોનિક્સ',
+    header: 'શોપિંગ કાર્ટ',
+    emptyCart: 'તમારું કાર્ટ ખાલી છે.',
+    browseBtn: 'પ્રોડક્ટ્સ જુઓ',
+    summaryTitle: 'ઓર્ડર સમરી',
+    subtotal: 'પેટા સરવાળો',
+    creditsAvailable: 'સ્ટોર ક્રેડિટ્સ ઉપલબ્ધ: ₹{amount}',
+    useCredits: 'સ્ટોર ક્રેડિટ્સનો ઉપયોગ કરો',
+    total: 'કુલ ચૂકવવાપાત્ર રકમ',
+    detailsTitle: 'ડિલિવરી સરનામું અને વિગતો',
+    nameLabel: 'પૂરું નામ',
+    phoneLabel: 'ફોન નંબર',
+    addressLabel: 'પૂરું ડિલિવરી સરનામું',
+    placeOrderBtn: 'ઓર્ડર કરો (કેશ ઓન ડિલિવરી)',
+    successTitle: 'ઓર્ડર સફળતાપૂર્વક થઈ ગયો છે!',
+    successDesc: 'યશ ઇલેક્ટ્રોનિક્સ પસંદ કરવા બદલ આભાર. તમારો ઓર્ડર સ્વીકારવામાં આવ્યો છે.',
+    orderIdText: 'ઓર્ડર ID:',
+    orderNote: 'અમારી ટીમ ટૂંક સમયમાં ડિલિવરીની પુષ્ટિ કરવા માટે તમારો સંપર્ક કરશે.',
+    backShopBtn: 'ખરીદી ચાલુ રાખો',
+    accDashboard: 'ઓર્ડર ટ્રૅક કરો',
+    quantity: 'જથ્થો',
+    remove: 'કાઢી નાખો',
+  },
+  en: {
+    title: 'My Cart - Yash Electronics',
+    header: 'Shopping Cart',
+    emptyCart: 'Your cart is empty.',
+    browseBtn: 'Browse Products',
+    summaryTitle: 'Order Summary',
+    subtotal: 'Subtotal',
+    creditsAvailable: 'Store Credits Available: ₹{amount}',
+    useCredits: 'Apply Store Credits Discount',
+    total: 'Total Payable Amount',
+    detailsTitle: 'Delivery Details',
+    nameLabel: 'Full Name',
+    phoneLabel: 'Phone Number',
+    addressLabel: 'Full Shipping Address',
+    placeOrderBtn: 'Place Order (Cash on Delivery)',
+    successTitle: 'Order Placed Successfully!',
+    successDesc: 'Thank you for shopping at Yash Electronics. Your order has been registered.',
+    orderIdText: 'Order ID:',
+    orderNote: 'Our team will contact you shortly to confirm the delivery details.',
+    backShopBtn: 'Continue Shopping',
+    accDashboard: 'Track Order Status',
+    quantity: 'Quantity',
+    remove: 'Remove',
+  }
+};
+
+const t = translations[locale === 'en' ? 'en' : 'gu'];
+---
+
+<BaseLayout title={t.title} noindex={true}>
+  <Container class="py-8 max-w-5xl">
+    {successOrderId ? (
+      /* Success View */
+      <div class="bg-white border border-neutral-200 rounded-lg p-8 max-w-xl mx-auto text-center shadow-md">
+        <div class="inline-flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-green-600 text-3xl mb-4">
+          ✓
+        </div>
+        <h1 class="text-2xl font-bold text-neutral-900 mb-2">{t.successTitle}</h1>
+        <p class="text-sm text-neutral-600 mb-6">{t.successDesc}</p>
+        
+        <div class="bg-neutral-50 rounded-md border border-neutral-100 p-4 mb-6 font-mono text-xs text-neutral-700">
+          <span class="font-sans font-bold text-neutral-500 uppercase tracking-wider block mb-1">{t.orderIdText}</span>
+          <span class="text-sm font-bold text-neutral-900">{successOrderId}</span>
+        </div>
+        
+        <p class="text-xs text-neutral-500 mb-6 leading-relaxed">
+          {t.orderNote}
+        </p>
+
+        <div class="flex flex-col sm:flex-row gap-3 justify-center">
+          <a href={getLocalizedPath('/products', locale)} class="btn-primary px-6 py-2.5 text-sm font-semibold">
+            {t.backShopBtn}
+          </a>
+          {currentUser && (
+            <a href={getLocalizedPath('/account', locale)} class="btn-outline px-6 py-2.5 text-sm">
+              {t.accDashboard}
+            </a>
+          )}
+        </div>
+      </div>
+    ) : (
+      /* Main Cart View */
+      <div>
+        <h1 class="text-2xl font-bold text-neutral-900 border-b border-neutral-200 pb-4 mb-6">
+          {t.header}
+        </h1>
+
+        {error && (
+          <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md p-3 mb-6">
+            {error}
+          </div>
+        )}
+
+        <div class="grid gap-8 lg:grid-cols-3">
+          {/* Cart Items Column */}
+          <div class="lg:col-span-2 space-y-4">
+            <div id="cart-loading" class="text-center py-12 text-neutral-500">
+              Loading cart items...
+            </div>
+            
+            <div id="cart-empty" class="hidden bg-white border border-neutral-200 rounded-lg p-12 text-center shadow-sm">
+              <span class="text-4xl mb-4 block">🛒</span>
+              <p class="text-sm text-neutral-500 mb-6">{t.emptyCart}</p>
+              <a href={getLocalizedPath('/products', locale)} class="btn-primary px-6 py-2.5 text-sm font-semibold inline-block">
+                {t.browseBtn}
+              </a>
+            </div>
+
+            <div id="cart-items-container" class="space-y-3">
+              {/* Dynanically populated by JS */}
+            </div>
+          </div>
+
+          {/* Checkout & Summary Form Column */}
+          <div class="lg:col-span-1">
+            <div class="bg-white border border-neutral-200 rounded-lg p-5 shadow-sm sticky top-24">
+              <h2 class="text-base font-bold text-neutral-900 border-b border-neutral-100 pb-3 mb-4">
+                {t.summaryTitle}
+              </h2>
+
+              <div class="space-y-3 text-sm pb-4 border-b border-neutral-100">
+                <div class="flex justify-between text-neutral-600">
+                  <span>{t.subtotal}</span>
+                  <span class="font-bold text-neutral-900" id="cart-subtotal">₹0</span>
+                </div>
+
+                {currentUser && currentUser.credits > 0 && (
+                  <div class="bg-green-50 border border-green-200 rounded-md p-3">
+                    <p class="text-xs text-green-800 font-semibold mb-2">
+                      {t.creditsAvailable.replace('{amount}', currentUser.credits.toString())}
+                    </p>
+                    <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-green-700">
+                      <input 
+                        type="checkbox" 
+                        id="apply-credits-chk" 
+                        class="rounded border-green-300 text-green-600 focus:ring-green-500"
+                        onchange="recalculateTotals()"
+                      />
+                      {t.useCredits}
+                    </label>
+                  </div>
+                )}
+
+                <div class="flex justify-between text-neutral-900 font-bold border-t border-neutral-100 pt-3">
+                  <span>{t.total}</span>
+                  <span class="text-lg text-primary" id="cart-final-total">₹0</span>
+                </div>
+              </div>
+
+              {/* Checkout Form */}
+              <form method="post" id="checkout-form" class="mt-4 space-y-4">
+                <input type="hidden" name="cartItems" id="cart-items-input" />
+                <input type="hidden" name="applyCredits" id="apply-credits-input" value="false" />
+
+                <h3 class="text-xs font-bold uppercase text-neutral-400 mt-2">
+                  {t.detailsTitle}
+                </h3>
+
+                <div>
+                  <label for="checkout-name" class="block text-xs font-semibold text-neutral-700 mb-1">{t.nameLabel} *</label>
+                  <input
+                    type="text"
+                    id="checkout-name"
+                    name="name"
+                    required
+                    value={currentUser?.name || ''}
+                    placeholder="e.g. Hardik Patel"
+                    class="w-full rounded border border-neutral-300 px-3 py-1.5 text-xs focus:border-primary focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label for="checkout-phone" class="block text-xs font-semibold text-neutral-700 mb-1">{t.phoneLabel} *</label>
+                  <input
+                    type="tel"
+                    id="checkout-phone"
+                    name="phone"
+                    required
+                    value={currentUser?.phone || ''}
+                    placeholder="e.g. 9876543210"
+                    class="w-full rounded border border-neutral-300 px-3 py-1.5 text-xs focus:border-primary focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label for="checkout-address" class="block text-xs font-semibold text-neutral-700 mb-1">{t.addressLabel} *</label>
+                  <textarea
+                    id="checkout-address"
+                    name="address"
+                    required
+                    rows="3"
+                    placeholder="House No., Street Name, Area, City"
+                    class="w-full rounded border border-neutral-300 px-3 py-1.5 text-xs focus:border-primary focus:outline-none"
+                  ></textarea>
+                </div>
+
+                <button 
+                  type="submit" 
+                  id="checkout-submit-btn"
+                  class="w-full btn-primary py-2.5 text-xs font-semibold"
+                >
+                  {t.placeOrderBtn}
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+  </Container>
+</BaseLayout>
+
+<script is:inline define:vars={{ userCredits: currentUser?.credits || 0, successOrderId, locale }}>
+  // Manage client side cart
+  const CART_KEY = 'ye_cart';
+
+  function getCart() {
+    try {
+      return JSON.parse(localStorage.getItem(CART_KEY) || '[]');
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveCart(cart) {
+    localStorage.setItem(CART_KEY, JSON.stringify(cart));
+    window.dispatchEvent(new CustomEvent('cart-updated'));
+  }
+
+  function renderCart() {
+    const loadingEl = document.getElementById('cart-loading');
+    const emptyEl = document.getElementById('cart-empty');
+    const containerEl = document.getElementById('cart-items-container');
+    const checkoutForm = document.getElementById('checkout-form');
+    
+    if (loadingEl) loadingEl.style.display = 'none';
+
+    const cart = getCart();
+
+    if (cart.length === 0) {
+      if (emptyEl) emptyEl.classList.remove('hidden');
+      if (containerEl) containerEl.innerHTML = '';
+      if (checkoutForm) {
+        const submitBtn = document.getElementById('checkout-submit-btn');
+        if (submitBtn) submitBtn.disabled = true;
+      }
+      return;
+    }
+
+    if (emptyEl) emptyEl.classList.add('hidden');
+    if (!containerEl) return;
+
+    // Render items
+    containerEl.innerHTML = cart.map((item) => `
+      <div class="bg-white border border-neutral-200 rounded-lg p-4 flex gap-4 items-center">
+        <!-- Thumbnail -->
+        <div class="h-16 w-16 bg-neutral-100 rounded border border-neutral-200 flex items-center justify-center text-xl shrink-0">
+          ${item.image ? `<img src="https://res.cloudinary.com/demo/image/upload/${item.image}" alt="${item.name}" class="h-full w-full object-cover rounded" />` : '📺'}
+        </div>
+        
+        <!-- Info -->
+        <div class="flex-1 min-w-0">
+          <h3 class="text-sm font-bold text-neutral-900 truncate">${item.name}</h3>
+          <p class="text-xs text-primary font-bold mt-0.5">₹${item.price.toLocaleString('en-IN')}</p>
+        </div>
+
+        {/* Quantity Controls */}
+        <div class="flex items-center gap-1 shrink-0 border border-neutral-200 rounded bg-neutral-50 px-1">
+          <button type="button" onclick="updateQty('${item.id}', -1)" class="h-6 w-6 font-bold text-neutral-600 hover:text-primary focus:outline-none">-</button>
+          <span class="text-xs font-bold w-6 text-center">${item.quantity}</span>
+          <button type="button" onclick="updateQty('${item.id}', 1)" class="h-6 w-6 font-bold text-neutral-600 hover:text-primary focus:outline-none">+</button>
+        </div>
+
+        {/* Remove */}
+        <button type="button" onclick="removeItem('${item.id}')" class="text-xs font-semibold text-red-500 hover:underline shrink-0">
+          ${locale === 'en' ? 'Remove' : 'કાઢી નાખો'}
+        </button>
+      </div>
+    `).join('');
+
+    recalculateTotals();
+  }
+
+  window.updateQty = function (productId, delta) {
+    let cart = getCart();
+    const item = cart.find(i => i.id === productId);
+    if (item) {
+      item.quantity = Math.max(1, item.quantity + delta);
+      saveCart(cart);
+      renderCart();
+    }
+  };
+
+  window.removeItem = function (productId) {
+    let cart = getCart();
+    cart = cart.filter(i => i.id !== productId);
+    saveCart(cart);
+    renderCart();
+  };
+
+  window.recalculateTotals = function () {
+    const cart = getCart();
+    const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    
+    // Check credits applied
+    const creditsChk = document.getElementById('apply-credits-chk');
+    const isApplied = creditsChk ? creditsChk.checked : false;
+    
+    const creditsToUse = isApplied ? Math.min(userCredits, subtotal) : 0;
+    const finalTotal = subtotal - creditsToUse;
+
+    // Update UI elements
+    const subtotalEl = document.getElementById('cart-subtotal');
+    const totalEl = document.getElementById('cart-final-total');
+    
+    if (subtotalEl) subtotalEl.textContent = '₹' + subtotal.toLocaleString('en-IN');
+    if (totalEl) totalEl.textContent = '₹' + finalTotal.toLocaleString('en-IN');
+
+    // Populate checkout form hidden values
+    const itemsInput = document.getElementById('cart-items-input');
+    const creditsInput = document.getElementById('apply-credits-input');
+
+    if (itemsInput) itemsInput.value = JSON.stringify(cart);
+    if (creditsInput) creditsInput.value = isApplied ? 'on' : 'off';
+  };
+
+  // Render on mount
+  renderCart();
+
+  // Clear cart if checkout succeeded
+  if (successOrderId) {
+    localStorage.removeItem(CART_KEY);
+    window.dispatchEvent(new CustomEvent('cart-updated'));
+  }
+</script>

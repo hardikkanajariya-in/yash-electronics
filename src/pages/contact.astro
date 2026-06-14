@@ -3,10 +3,46 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import ContactSection from '../components/home/ContactSection.astro';
 import { getSettings } from '../services/cms';
 import { translateObject, t } from '../lib/translations';
+import { db } from '../db';
+import { contactQueries } from '../db/schema';
+import { generateId } from '../lib/auth';
+
+export const prerender = false;
 
 const locale = Astro.currentLocale || 'gu';
 const rawSettings = await getSettings();
 const settings = translateObject(rawSettings, locale);
+
+let success = false;
+let error = '';
+
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const name = formData.get('name')?.toString().trim() || '';
+    const phone = formData.get('phone')?.toString().trim() || '';
+    const email = formData.get('email')?.toString().trim() || '';
+    const message = formData.get('message')?.toString().trim() || '';
+
+    if (!name || !phone || !message) {
+      error = locale === 'en' ? 'Please fill in all required fields.' : 'કૃપા કરીને બધી જરૂરી વિગતો ભરો.';
+    } else {
+      await db.insert(contactQueries).values({
+        id: generateId(),
+        name,
+        phone,
+        email: email || null,
+        message,
+        status: 'unread',
+        createdAt: new Date().toISOString(),
+      });
+      success = true;
+    }
+  } catch (e) {
+    console.error('[Contact Submit Error]:', e);
+    error = locale === 'en' ? 'Failed to submit inquiry. Please try again.' : 'સંદેશો મોકલવામાં નિષ્ફળતા. કૃપા કરીને ફરી પ્રયાસ કરો.';
+  }
+}
 ---
 
 <BaseLayout
@@ -14,5 +50,5 @@ const settings = translateObject(rawSettings, locale);
   description={`Contact ${settings.businessName} for product enquiries, pricing and store directions.`}
   canonicalUrl="/contact"
 >
-  <ContactSection settings={settings} />
+  <ContactSection settings={settings} success={success} error={error} />
 </BaseLayout>

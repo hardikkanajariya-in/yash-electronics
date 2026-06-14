@@ -2,12 +2,15 @@
 import { defineConfig } from 'astro/config';
 import tailwind from '@astrojs/tailwind';
 import sitemap from '@astrojs/sitemap';
+import vercel from '@astrojs/vercel/serverless';
 
 const site = process.env.PUBLIC_SITE_URL || 'https://yashelectronics.in';
 
 // https://astro.build/config
 export default defineConfig({
   site,
+  adapter: vercel(),
+  output: 'hybrid',
   i18n: {
     defaultLocale: 'gu',
     locales: ['gu', 'en'],
@@ -20,10 +23,9 @@ export default defineConfig({
       applyBaseStyles: false,
     }),
     sitemap({
-      filter: (page) => !page.includes('/api/'),
+      filter: (page) => !page.includes('/api/') && !page.includes('/admin') && !page.includes('/account'),
     }),
   ],
-  output: 'static',
   prefetch: {
     prefetchAll: true,
     defaultStrategy: 'viewport',

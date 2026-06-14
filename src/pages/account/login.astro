@@ -1,0 +1,321 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Container from '../../components/ui/Container.astro';
+import { db } from '../../db';
+import { users } from '../../db/schema';
+import { eq, and } from 'drizzle-orm';
+import { hashPassword, setSessionUser, getSessionUser, generateId, generateReferralCode } from '../../lib/auth';
+import { getLocalizedPath } from '../../lib/translations';
+
+export const prerender = false;
+
+const locale = Astro.currentLocale || 'gu';
+
+// Redirect if already logged in as customer
+const currentUser = await getSessionUser(Astro.cookies);
+if (currentUser) {
+  return Astro.redirect(getLocalizedPath('/account', locale));
+}
+
+// Read ref query param
+const refParam = Astro.url.searchParams.get('ref') || '';
+
+// Inline Translations
+const translations = {
+  gu: {
+    title: 'યશ ઇલેક્ટ્રોનિક્સ - ખાતું',
+    loginTab: 'લોગિન',
+    registerTab: 'રજીસ્ટ્રેશન',
+    phoneLabel: 'ફોન નંબર',
+    passwordLabel: 'પાસવર્ડ',
+    nameLabel: 'પૂરું નામ',
+    refLabel: 'રેફરલ કોડ (વૈકલ્પિક)',
+    loginBtn: 'સાઇન ઇન કરો',
+    registerBtn: 'ખાતું બનાવો',
+    haveAccount: 'પહેલેથી જ ખાતું છે? લોગિન કરો',
+    noAccount: 'નવું ખાતું બનાવવું છે? રજીસ્ટ્રેશન કરો',
+    errInvalid: 'ખોટો ફોન નંબર અથવા પાસવર્ડ.',
+    errRefInvalid: 'દાખલ કરેલ રેફરલ કોડ અમાન્ય છે.',
+    errPhoneExists: 'આ ફોન નંબર પર પહેલેથી જ ખાતું બનેલું છે.',
+    errGeneric: 'કંઈક ખોટું થયું. કૃપા કરીને ફરી પ્રયાસ કરો.',
+  },
+  en: {
+    title: 'Yash Electronics - Account',
+    loginTab: 'Login',
+    registerTab: 'Register',
+    phoneLabel: 'Phone Number',
+    passwordLabel: 'Password',
+    nameLabel: 'Full Name',
+    refLabel: 'Referral Code (Optional)',
+    loginBtn: 'Sign In',
+    registerBtn: 'Create Account',
+    haveAccount: 'Already have an account? Login',
+    noAccount: 'Need an account? Register',
+    errInvalid: 'Invalid phone number or password.',
+    errRefInvalid: 'The entered referral code is invalid.',
+    errPhoneExists: 'An account with this phone number already exists.',
+    errGeneric: 'Something went wrong. Please try again.',
+  }
+};
+
+const t = translations[locale === 'en' ? 'en' : 'gu'];
+
+let error = '';
+let activeTab = 'login'; // 'login' or 'register'
+
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const formAction = formData.get('formAction')?.toString() || 'login';
+    activeTab = formAction;
+
+    const phone = formData.get('phone')?.toString().trim() || '';
+    const password = formData.get('password')?.toString() || '';
+
+    if (formAction === 'login') {
+      const hashedPassword = hashPassword(password);
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(
+          and(
+            eq(users.phone, phone),
+            eq(users.password, hashedPassword),
+            eq(users.role, 'customer')
+          )
+        );
+
+      if (user) {
+        setSessionUser(Astro.cookies, user.id);
+        return Astro.redirect(getLocalizedPath('/account', locale));
+      } else {
+        error = t.errInvalid;
+      }
+    } else if (formAction === 'register') {
+      const name = formData.get('name')?.toString().trim() || '';
+      const refCode = formData.get('refCode')?.toString().trim().toUpperCase() || '';
+
+      // Check phone existence
+      const [existingUser] = await db
+        .select()
+        .from(users)
+        .where(eq(users.phone, phone));
+
+      if (existingUser) {
+        error = t.errPhoneExists;
+      } else {
+        let referredById: string | null = null;
+        let referrer: any = null;
+
+        // Validate Referral Code if provided
+        if (refCode) {
+          const [foundReferrer] = await db
+            .select()
+            .from(users)
+            .where(eq(users.referralCode, refCode));
+
+          if (!foundReferrer) {
+            error = t.errRefInvalid;
+          } else {
+            referredById = foundReferrer.id;
+            referrer = foundReferrer;
+          }
+        }
+
+        if (!error) {
+          const newUserId = generateId();
+          const userRefCode = generateReferralCode();
+          
+          // Referred user gets 50 credits, normal user gets 0
+          const initialCredits = referredById ? 50 : 0;
+
+          await db.insert(users).values({
+            id: newUserId,
+            name,
+            phone,
+            password: hashPassword(password),
+            role: 'customer',
+            referralCode: userRefCode,
+            referredById,
+            credits: initialCredits,
+            createdAt: new Date().toISOString(),
+          });
+
+          // Reward referrer with 100 credits
+          if (referredById && referrer) {
+            await db
+              .update(users)
+              .set({ credits: referrer.credits + 100 })
+              .where(eq(users.id, referredById));
+          }
+
+          setSessionUser(Astro.cookies, newUserId);
+          return Astro.redirect(getLocalizedPath('/account', locale));
+        }
+      }
+    }
+  } catch (e) {
+    console.error('[User Auth Error]:', e);
+    error = t.errGeneric;
+  }
+}
+---
+
+<BaseLayout title={t.title} noindex={true}>
+  <Container class="py-12 max-w-md">
+    <div class="bg-white border border-neutral-200 rounded-lg p-6 shadow-md">
+      
+      {/* Tab Selectors */}
+      <div class="flex border-b border-neutral-200 mb-6 text-sm font-medium">
+        <button 
+          id="login-tab-btn" 
+          onclick="switchTab('login')"
+          class={`flex-1 pb-3 text-center transition-colors border-b-2 ${activeTab === 'login' ? 'border-primary text-primary font-bold' : 'border-transparent text-neutral-500 hover:text-primary'}`}
+        >
+          {t.loginTab}
+        </button>
+        <button 
+          id="register-tab-btn" 
+          onclick="switchTab('register')"
+          class={`flex-1 pb-3 text-center transition-colors border-b-2 ${activeTab === 'register' ? 'border-primary text-primary font-bold' : 'border-transparent text-neutral-500 hover:text-primary'}`}
+        >
+          {t.registerTab}
+        </button>
+      </div>
+
+      {error && (
+        <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md p-3 mb-4">
+          {error}
+        </div>
+      )}
+
+      {/* LOGIN FORM */}
+      <form id="login-form" method="post" class={`space-y-4 ${activeTab === 'login' ? '' : 'hidden'}`}>
+        <input type="hidden" name="formAction" value="login" />
+
+        <div>
+          <label for="login-phone" class="block text-sm font-semibold text-neutral-700 mb-1">{t.phoneLabel}</label>
+          <input
+            type="tel"
+            id="login-phone"
+            name="phone"
+            required
+            placeholder="e.g. 9999999999"
+            class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none"
+          />
+        </div>
+
+        <div>
+          <label for="login-password" class="block text-sm font-semibold text-neutral-700 mb-1">{t.passwordLabel}</label>
+          <input
+            type="password"
+            id="login-password"
+            name="password"
+            required
+            placeholder="••••••••"
+            class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none"
+          />
+        </div>
+
+        <button type="submit" class="w-full btn-primary py-2.5 text-sm font-semibold">
+          {t.loginBtn}
+        </button>
+        
+        <p class="text-center text-xs text-neutral-500 mt-2">
+          <button type="button" onclick="switchTab('register')" class="text-primary hover:underline font-medium">
+            {t.noAccount}
+          </button>
+        </p>
+      </form>
+
+      {/* REGISTER FORM */}
+      <form id="register-form" method="post" class={`space-y-4 ${activeTab === 'register' ? '' : 'hidden'}`}>
+        <input type="hidden" name="formAction" value="register" />
+
+        <div>
+          <label for="reg-name" class="block text-sm font-semibold text-neutral-700 mb-1">{t.nameLabel} *</label>
+          <input
+            type="text"
+            id="reg-name"
+            name="name"
+            required
+            placeholder="John Doe"
+            class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none"
+          />
+        </div>
+
+        <div>
+          <label for="reg-phone" class="block text-sm font-semibold text-neutral-700 mb-1">{t.phoneLabel} *</label>
+          <input
+            type="tel"
+            id="reg-phone"
+            name="phone"
+            required
+            placeholder="e.g. 9999999999"
+            class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none"
+          />
+        </div>
+
+        <div>
+          <label for="reg-password" class="block text-sm font-semibold text-neutral-700 mb-1">{t.passwordLabel} *</label>
+          <input
+            type="password"
+            id="reg-password"
+            name="password"
+            required
+            minlength="6"
+            placeholder="•••••••• (Min 6 chars)"
+            class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none"
+          />
+        </div>
+
+        <div>
+          <label for="reg-ref" class="block text-sm font-semibold text-neutral-700 mb-1">{t.refLabel}</label>
+          <input
+            type="text"
+            id="reg-ref"
+            name="refCode"
+            value={refParam}
+            placeholder="e.g. A1B2C3D4"
+            class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none uppercase"
+          />
+        </div>
+
+        <button type="submit" class="w-full btn-primary py-2.5 text-sm font-semibold">
+          {t.registerBtn}
+        </button>
+
+        <p class="text-center text-xs text-neutral-500 mt-2">
+          <button type="button" onclick="switchTab('login')" class="text-primary hover:underline font-medium">
+            {t.haveAccount}
+          </button>
+        </p>
+      </form>
+    </div>
+  </Container>
+</BaseLayout>
+
+<script is:inline>
+  function switchTab(tab) {
+    const loginForm = document.getElementById('login-form');
+    const registerForm = document.getElementById('register-form');
+    const loginBtn = document.getElementById('login-tab-btn');
+    const registerBtn = document.getElementById('register-tab-btn');
+
+    if (tab === 'login') {
+      loginForm?.classList.remove('hidden');
+      registerForm?.classList.add('hidden');
+      loginBtn?.classList.add('border-primary', 'text-primary', 'font-bold');
+      loginBtn?.classList.remove('border-transparent', 'text-neutral-500');
+      registerBtn?.classList.remove('border-primary', 'text-primary', 'font-bold');
+      registerBtn?.classList.add('border-transparent', 'text-neutral-500');
+    } else {
+      registerForm?.classList.remove('hidden');
+      loginForm?.classList.add('hidden');
+      registerBtn?.classList.add('border-primary', 'text-primary', 'font-bold');
+      registerBtn?.classList.remove('border-transparent', 'text-neutral-500');
+      loginBtn?.classList.remove('border-primary', 'text-primary', 'font-bold');
+      loginBtn?.classList.add('border-transparent', 'text-neutral-500');
+    }
+  }
+</script>

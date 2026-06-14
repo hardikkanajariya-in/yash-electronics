@@ -91,6 +91,15 @@ const currentPath = Astro.url.pathname;
         <a href={getLocalizedPath('/contact', locale)} class:list={['rounded px-3 py-2 text-sm font-medium transition-colors', currentPath === getLocalizedPath('/contact', locale) ? 'text-primary' : 'text-neutral-700 hover:text-primary']}>
           {t('nav.contact', locale)}
         </a>
+        <a href={getLocalizedPath('/cart', locale)} class:list={['relative rounded px-3 py-2 text-sm font-medium transition-colors flex items-center gap-1', currentPath === getLocalizedPath('/cart', locale) ? 'text-primary' : 'text-neutral-700 hover:text-primary']}>
+          <span>🛒</span>
+          <span>{t('nav.cart', locale)}</span>
+          <span id="cart-badge-count" class="hidden absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">0</span>
+        </a>
+        <a href={getLocalizedPath('/account', locale)} class:list={['rounded px-3 py-2 text-sm font-medium transition-colors flex items-center gap-1', currentPath.startsWith(getLocalizedPath('/account', locale)) ? 'text-primary' : 'text-neutral-700 hover:text-primary']}>
+          <span>👤</span>
+          <span>{t('nav.account', locale)}</span>
+        </a>
       </nav>
 
       <button
@@ -140,6 +149,13 @@ const currentPath = Astro.url.pathname;
         <a href={getLocalizedPath('/products', locale)} class="px-2 py-2.5 text-sm font-medium text-neutral-800">{t('nav.products', locale)}</a>
         <a href={getLocalizedPath('/offers', locale)} class="px-2 py-2.5 text-sm font-medium text-neutral-800">{t('nav.offers', locale)}</a>
         <a href={getLocalizedPath('/contact', locale)} class="px-2 py-2.5 text-sm font-medium text-neutral-800">{t('nav.contact', locale)}</a>
+        <a href={getLocalizedPath('/cart', locale)} class="px-2 py-2.5 text-sm font-medium text-neutral-800 flex items-center justify-between">
+          <span class="flex items-center gap-2">🛒 {t('nav.cart', locale)}</span>
+          <span id="mobile-cart-badge-count" class="hidden flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">0</span>
+        </a>
+        <a href={getLocalizedPath('/account', locale)} class="px-2 py-2.5 text-sm font-medium text-neutral-800 flex items-center gap-2">
+          <span>👤 {t('nav.account', locale)}</span>
+        </a>
       </nav>
       <div class="border-t border-neutral-100 py-3">
         <p class="mb-2 text-xs font-semibold uppercase text-neutral-500">{t('filter.category', locale)}</p>
@@ -164,4 +180,32 @@ const currentPath = Astro.url.pathname;
     menu?.classList.toggle('hidden');
     btn.setAttribute('aria-expanded', String(!isOpen));
   });
+
+  function updateCartBadge() {
+    try {
+      const cart = JSON.parse(localStorage.getItem('ye_cart') || '[]');
+      const totalItems = cart.reduce((sum: number, item: any) => sum + item.quantity, 0);
+      const badges = ['cart-badge-count', 'mobile-cart-badge-count'];
+      badges.forEach(id => {
+        const badge = document.getElementById(id);
+        if (badge) {
+          if (totalItems > 0) {
+            badge.textContent = String(totalItems);
+            badge.classList.remove('hidden');
+          } else {
+            badge.classList.add('hidden');
+          }
+        }
+      });
+    } catch (e) {
+      // Ignore
+    }
+  }
+
+  // Update badge immediately
+  updateCartBadge();
+
+  // Listen for dynamic updates
+  window.addEventListener('cart-updated', updateCartBadge);
+  document.addEventListener('astro:page-load', updateCartBadge);
 </script>
