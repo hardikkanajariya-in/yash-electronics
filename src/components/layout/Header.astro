@@ -22,14 +22,6 @@ const currentPath = Astro.url.pathname;
           <a href={`tel:${settings.phone.replace(/\s/g, '')}`} class="hidden hover:underline sm:inline">
             {settings.phone}
           </a>
-          <a
-            href={`https://wa.me/${settings.whatsapp}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="font-medium hover:underline"
-          >
-            {t('contact.chatWhatsApp', locale)}
-          </a>
           <div class="flex items-center gap-1.5 border-l border-white/20 pl-3">
             <a
               href={getAlternateLocalePath(currentPath, 'gu')}
