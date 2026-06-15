@@ -19,4 +19,13 @@ export const pool = new pg.Pool({
   connectionTimeoutMillis: 10_000,
 });
 
+// Self-healing migration for service_requests table
+pool.query(`
+  ALTER TABLE service_requests ALTER COLUMN user_id DROP NOT NULL;
+  ALTER TABLE service_requests ADD COLUMN IF NOT EXISTS customer_name TEXT;
+  ALTER TABLE service_requests ADD COLUMN IF NOT EXISTS customer_phone TEXT;
+`).catch(err => {
+  console.error('[DB Schema Migration] Failed to run self-healing migration:', err);
+});
+
 export const db = drizzle(pool, { schema });

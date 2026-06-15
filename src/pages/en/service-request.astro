@@ -11,12 +11,9 @@ export const prerender = false;
 
 const locale = 'en';
 
-// Authenticate user
+// Authenticate user (optional)
 Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
 const currentUser = await getSessionUser(Astro.cookies);
-if (!currentUser || currentUser.role !== 'customer') {
-  return Astro.redirect(`${getLocalizedPath('/account/login', locale)}?redirect=${encodeURIComponent(Astro.url.pathname)}`);
-}
 
 let success = false;
 let error = '';
@@ -26,13 +23,17 @@ if (Astro.request.method === 'POST') {
     const formData = await Astro.request.formData();
     const productName = formData.get('productName')?.toString().trim() || '';
     const complaintDetails = formData.get('complaintDetails')?.toString().trim() || '';
+    const customerName = currentUser ? currentUser.name : (formData.get('customerName')?.toString().trim() || '');
+    const customerPhone = currentUser ? currentUser.phone : (formData.get('customerPhone')?.toString().trim() || '');
 
-    if (!productName || !complaintDetails) {
+    if (!productName || !complaintDetails || !customerName || !customerPhone) {
       error = 'All fields are required.';
     } else {
       await db.insert(serviceRequests).values({
         id: generateId(),
-        userId: currentUser.id,
+        userId: currentUser?.id || null,
+        customerName,
+        customerPhone,
         productName,
         complaintDetails,
         status: 'pending',
@@ -51,6 +52,10 @@ if (Astro.request.method === 'POST') {
 const pageT = {
   title: 'New Service Request (SR)',
   subtitle: 'File a complaint regarding your product here. Our team will contact you shortly.',
+  customerName: 'Customer Name *',
+  customerPhone: 'Mobile Number *',
+  namePlaceholder: 'Enter your full name',
+  phonePlaceholder: 'Enter 10-digit mobile number',
   productName: 'Product Name *',
   productPlaceholder: 'e.g. Luminous Inverter 1100 or Battery Model',
   details: 'Complaint / Issue Details *',
@@ -64,8 +69,8 @@ const pageT = {
 <BaseLayout title={pageT.title} noindex={true}>
   <Container class="py-12 max-w-xl">
     <div class="mb-6">
-      <a href={getLocalizedPath('/account', locale)} class="text-sm text-primary hover:underline font-semibold">
-        {pageT.backToAccount}
+      <a href={currentUser ? getLocalizedPath('/account', locale) : getLocalizedPath('/', locale)} class="text-sm text-primary hover:underline font-semibold">
+        {currentUser ? pageT.backToAccount : '← Back to Home'}
       </a>
     </div>
 
@@ -81,9 +86,11 @@ const pageT = {
           <div>
             <p class="font-semibold">Success</p>
             <p class="text-xs mt-0.5">{pageT.successMsg}</p>
-            <a href={getLocalizedPath('/account', locale)} class="mt-2 inline-block text-xs font-bold underline text-green-900 hover:text-green-950">
-              View status in My Account →
-            </a>
+            {currentUser && (
+              <a href={getLocalizedPath('/account', locale)} class="mt-2 inline-block text-xs font-bold underline text-green-900 hover:text-green-950">
+                View status in My Account →
+              </a>
+            )}
           </div>
         </div>
       )}
@@ -100,6 +107,39 @@ const pageT = {
 
       {!success && (
         <form method="post" class="space-y-5">
+          {!currentUser && (
+            <>
+              <div>
+                <label for="customerName" class="block text-sm font-semibold text-neutral-700 mb-1">
+                  {pageT.customerName}
+                </label>
+                <input
+                  type="text"
+                  id="customerName"
+                  name="customerName"
+                  required
+                  placeholder={pageT.namePlaceholder}
+                  class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-shadow"
+                />
+              </div>
+
+              <div>
+                <label for="customerPhone" class="block text-sm font-semibold text-neutral-700 mb-1">
+                  {pageT.customerPhone}
+                </label>
+                <input
+                  type="tel"
+                  id="customerPhone"
+                  name="customerPhone"
+                  required
+                  pattern="[0-9]{10}"
+                  placeholder={pageT.phonePlaceholder}
+                  class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-shadow"
+                />
+              </div>
+            </>
+          )}
+
           <div>
             <label for="productName" class="block text-sm font-semibold text-neutral-700 mb-1">
               {pageT.productName}

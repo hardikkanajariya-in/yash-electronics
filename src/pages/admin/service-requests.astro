@@ -132,7 +132,7 @@ const counts = {
             <div class="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-100 pb-3 mb-3">
               <div>
                 <span class="text-[10px] text-neutral-400 font-bold uppercase">Customer</span>
-                <h3 class="text-sm font-bold text-neutral-800">{sr.user?.name || 'Unknown User'}</h3>
+                <h3 class="text-sm font-bold text-neutral-800">{sr.user?.name || sr.customerName || 'Guest Customer'}</h3>
                 <span class="text-[10px] text-neutral-400">{dateStr}</span>
               </div>
               <div class="flex items-center gap-2">
@@ -151,7 +151,7 @@ const counts = {
               {/* Customer Contact Details */}
               <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-600">
                 <span>
-                  📞 Phone: <a href={`tel:${sr.user?.phone}`} class="text-primary hover:underline font-medium">{sr.user?.phone}</a>
+                  📞 Phone: <a href={`tel:${sr.user?.phone || sr.customerPhone}`} class="text-primary hover:underline font-medium">{sr.user?.phone || sr.customerPhone}</a>
                 </span>
               </div>
 

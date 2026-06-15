@@ -1,4 +1,4 @@
 ---
-import Page from '../team.astro';
+export const prerender = false;
+return Astro.redirect('/en/about', 301);
 ---
-<Page />

@@ -245,7 +245,9 @@ export const referralHistoryRelations = relations(referralHistory, ({ one }) => 
  */
 export const serviceRequests = pgTable('service_requests', {
   id: varchar('id', { length: 255 }).primaryKey(),
-  userId: varchar('user_id', { length: 255 }).references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  userId: varchar('user_id', { length: 255 }).references(() => users.id, { onDelete: 'cascade' }),
+  customerName: text('customer_name'),
+  customerPhone: text('customer_phone'),
   productName: text('product_name').notNull(),
   complaintDetails: text('complaint_details').notNull(),
   status: text('status').$type<'pending' | 'in_progress' | 'resolved' | 'cancelled'>().notNull().default('pending'),
