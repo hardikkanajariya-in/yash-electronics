@@ -5,6 +5,7 @@ import { db } from '../../db';
 import { products, categories, brands } from '../../db/schema';
 import { eq } from 'drizzle-orm';
 import { getSessionUser, generateId } from '../../lib/auth';
+import { importProductsFromCsv, exportProductsToCsv } from '../../lib/csv';
 
 export const prerender = false;
 
@@ -21,19 +22,87 @@ const productId = Astro.url.searchParams.get('id') || '';
 let error = '';
 let success = '';
 
+// Handle CSV Export and Template Downloads
+if (action === 'export') {
+  try {
+    const csvContent = await exportProductsToCsv();
+    return new Response(csvContent, {
+      headers: {
+        'Content-Type': 'text/csv',
+        'Content-Disposition': 'attachment; filename="yash_electronics_products.csv"',
+      }
+    });
+  } catch (e: any) {
+    error = 'Failed to export CSV: ' + e.message;
+  }
+}
+
+if (action === 'template') {
+  const headers = [
+    'Name',
+    'Slug',
+    'Brand',
+    'Category',
+    'Model Number',
+    'MRP',
+    'Offer Price',
+    'Featured',
+    'Active',
+    'Images',
+    'Specifications',
+    'Description'
+  ];
+  const sampleRow = [
+    'Luminous Zelio+ 1100 Inverter',
+    'luminous-zelio-1100',
+    'Luminous',
+    'Home Inverters',
+    'Zelio+ 1100',
+    '9500',
+    '7999',
+    'true',
+    'true',
+    'yash-electronics/uploads/inverter_xyz',
+    'Capacity: 900 VA; Output Waveform: Pure Sine Wave; Warranty: 2 Years',
+    'India\'s most intelligent home UPS with LED display for backup status.'
+  ];
+  
+  const csvContent = headers.join(',') + '\r\n' + sampleRow.map(v => '"' + v.replace(/"/g, '""') + '"').join(',');
+  return new Response(csvContent, {
+    headers: {
+      'Content-Type': 'text/csv',
+      'Content-Disposition': 'attachment; filename="products_csv_template.csv"',
+    }
+  });
+}
+
 // Fetch categories and brands for the dropdowns
 const [allCategories, allBrands] = await Promise.all([
   db.select().from(categories),
   db.select().from(brands),
 ]);
 
-// Handle POST actions (Create, Update, Delete)
+// Handle POST actions (Create, Update, Delete, Import)
 if (Astro.request.method === 'POST') {
   try {
     const formData = await Astro.request.formData();
     const formAction = formData.get('formAction')?.toString() || '';
 
-    if (formAction === 'delete') {
+    if (formAction === 'import_csv') {
+      const file = formData.get('csvFile') as File;
+      if (file && file.name) {
+        const csvText = await file.text();
+        const importResult = await importProductsFromCsv(csvText);
+        if (importResult.errors.length > 0) {
+          error = `Imported ${importResult.success} products. Errors:\n` + importResult.errors.slice(0, 5).join('\n') + (importResult.errors.length > 5 ? `\n...and ${importResult.errors.length - 5} more errors.` : '');
+        }
+        if (importResult.success > 0) {
+          success = `Successfully imported/updated ${importResult.success} products!`;
+        }
+      } else {
+        error = 'Please select a valid CSV file.';
+      }
+    } else if (formAction === 'delete') {
       const idToDelete = formData.get('id')?.toString() || '';
       await db.delete(products).where(eq(products.id, idToDelete));
       success = 'Product deleted successfully!';
@@ -113,19 +182,37 @@ const emptySpecifications = '{}';
 <BaseLayout title="Manage Products" noindex={true}>
   <Container class="py-6">
     <!-- Header -->
-    <div class="flex items-center justify-between border-b border-neutral-200 pb-4 mb-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-neutral-200 pb-4 mb-6 gap-4">
       <div>
         <h1 class="text-2xl font-bold text-neutral-900">Manage Catalog</h1>
         <p class="text-xs text-neutral-500">Add, edit, or delete store products</p>
       </div>
-      <div class="flex gap-2">
-        <a href="/admin" class="text-xs font-semibold text-neutral-600 border border-neutral-300 rounded-md px-3 py-1.5 hover:bg-neutral-50 transition-colors">
+      <div class="flex flex-wrap items-center gap-2">
+        <a href="/admin" class="text-xs font-semibold text-neutral-600 border border-neutral-300 bg-white hover:bg-neutral-50 rounded-md px-3 py-1.5 transition-colors">
           ← Dashboard
         </a>
         {action === 'list' && (
-          <a href="/admin/products?action=add" class="text-xs font-semibold text-white bg-primary hover:bg-primary/95 rounded-md px-3 py-1.5 transition-colors">
-            + Add Product
-          </a>
+          <>
+            <a href="/admin/products?action=export" class="text-xs font-semibold text-neutral-700 border border-neutral-300 bg-white hover:bg-neutral-50 rounded-md px-3 py-1.5 transition-colors flex items-center gap-1">
+              📤 Export CSV
+            </a>
+            
+            <form method="post" enctype="multipart/form-data" class="inline-block m-0">
+              <input type="hidden" name="formAction" value="import_csv" />
+              <label class="text-xs font-semibold text-neutral-700 border border-neutral-300 bg-white hover:bg-neutral-50 rounded-md px-3 py-1.5 transition-colors cursor-pointer flex items-center gap-1">
+                📥 Import CSV
+                <input type="file" name="csvFile" accept=".csv" class="hidden" onchange="this.form.submit()" />
+              </label>
+            </form>
+            
+            <a href="/admin/products?action=template" class="text-[11px] font-semibold text-primary hover:underline px-1 py-1 transition-colors">
+              Get Template
+            </a>
+
+            <a href="/admin/products?action=add" class="text-xs font-semibold text-white bg-primary hover:bg-primary/95 rounded-md px-3 py-1.5 transition-colors">
+              + Add Product
+            </a>
+          </>
         )}
       </div>
     </div>
