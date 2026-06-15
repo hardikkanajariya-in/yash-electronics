@@ -2,7 +2,7 @@
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import Container from '../../../components/ui/Container.astro';
 import { db } from '../../../db';
-import { orders } from '../../../db/schema';
+import { orders, serviceRequests } from '../../../db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { getSessionUser, clearSessionUser } from '../../../lib/auth';
 import { getLocalizedPath } from '../../../lib/translations';
@@ -45,6 +45,18 @@ try {
   console.error('[User Account] Failed to fetch user orders:', e);
 }
 
+// Fetch user service requests
+let userServiceRequests: any[] = [];
+try {
+  userServiceRequests = await db
+    .select()
+    .from(serviceRequests)
+    .where(eq(serviceRequests.userId, currentUser.id))
+    .orderBy(desc(serviceRequests.createdAt));
+} catch (e) {
+  console.error('[User Account] Failed to fetch user service requests:', e);
+}
+
 // English translations
 const t = {
   title: 'My Account - Yash Electronics',
@@ -66,6 +78,14 @@ const t = {
   discount: 'Credits Discount',
   status: 'Status',
   date: 'Date',
+  srTitle: 'Service Requests (Complaints)',
+  newSrBtn: 'Raise New Complaint',
+  noSrs: 'You have not raised any complaints yet.',
+  srProduct: 'Product',
+  srStatus: 'Status',
+  srDetails: 'Complaint Details',
+  srTracking: 'Tracking Info / Updates',
+  srDate: 'Date',
 };
 
 // Construct absolute referral URL
@@ -203,6 +223,73 @@ const waShareUrl = `https://wa.me/?text=${encodeURIComponent(
         {userOrders.length === 0 && (
           <p class="text-sm text-neutral-500 py-4 text-center">
             {t.noOrders}
+          </p>
+        )}
+      </div>
+    </div>
+
+    {/* Service Requests Section */}
+    <div class="bg-white border border-neutral-200 rounded-lg p-5 shadow-sm mt-6">
+      <div class="flex flex-wrap items-center justify-between gap-4 border-b border-neutral-100 pb-3 mb-4">
+        <h2 class="text-lg font-bold text-neutral-900">{t.srTitle}</h2>
+        <a href={getLocalizedPath('/service-request', locale)} class="text-xs font-bold bg-primary text-white hover:bg-primary/95 px-3 py-1.5 rounded-md transition-colors">
+          + {t.newSrBtn}
+        </a>
+      </div>
+      
+      <div class="space-y-4">
+        {userServiceRequests.map((sr) => {
+          const dateStr = new Date(sr.createdAt).toLocaleDateString(locale === 'en' ? 'en-US' : 'en-IN', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+          });
+
+          return (
+            <div class="border border-neutral-150 rounded-md p-4 bg-neutral-50/20">
+              <div class="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-100 pb-2 mb-3">
+                <div>
+                  <span class="text-[10px] font-bold text-neutral-400 uppercase">{t.srDate}</span>
+                  <p class="text-xs font-medium text-neutral-600">{dateStr}</p>
+                </div>
+                
+                <div>
+                  <span class={`inline-block rounded px-2 py-0.5 text-[10px] font-semibold uppercase border ${
+                    sr.status === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                    sr.status === 'in_progress' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                    sr.status === 'resolved' ? 'bg-green-50 text-green-700 border-green-200' :
+                    'bg-neutral-50 text-neutral-700 border-neutral-200'
+                  }`}>
+                    {sr.status}
+                  </span>
+                </div>
+              </div>
+
+              <div class="space-y-2.5">
+                <div>
+                  <h3 class="text-xs font-bold text-neutral-400 uppercase">{t.srProduct}</h3>
+                  <p class="text-sm font-semibold text-neutral-800">{sr.productName}</p>
+                </div>
+
+                <div>
+                  <h3 class="text-xs font-bold text-neutral-400 uppercase">{t.srDetails}</h3>
+                  <p class="text-xs text-neutral-600 whitespace-pre-line leading-relaxed">{sr.complaintDetails}</p>
+                </div>
+
+                {sr.trackingInfo && (
+                  <div class="bg-neutral-100/60 rounded p-3 border border-neutral-200/50">
+                    <h3 class="text-xs font-bold text-primary uppercase mb-1">{t.srTracking}</h3>
+                    <p class="text-xs text-neutral-700 whitespace-pre-line leading-relaxed">{sr.trackingInfo}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+
+        {userServiceRequests.length === 0 && (
+          <p class="text-sm text-neutral-500 py-4 text-center">
+            {t.noSrs}
           </p>
         )}
       </div>

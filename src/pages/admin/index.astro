@@ -2,7 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Container from '../../components/ui/Container.astro';
 import { db } from '../../db';
-import { products, offers, orders, contactQueries, teamMembers, services } from '../../db/schema';
+import { products, offers, orders, contactQueries, teamMembers, services, serviceRequests } from '../../db/schema';
 import { getSessionUser, clearSessionUser } from '../../lib/auth';
 import { sql } from 'drizzle-orm';
 
@@ -30,6 +30,7 @@ let stats = {
   totalSales: 0,
   teamCount: 0,
   servicesCount: 0,
+  srsCount: 0,
 };
 
 try {
@@ -37,6 +38,7 @@ try {
   const [oCount] = await db.select({ count: sql`count(*)` }).from(offers);
   const [ordCount] = await db.select({ count: sql`count(*)`, sales: sql`sum(total_amount)` }).from(orders);
   const [qCount] = await db.select({ count: sql`count(*)` }).from(contactQueries);
+  const [srsCount] = await db.select({ count: sql`count(*)` }).from(serviceRequests);
   
   let tCount = { count: 0 };
   let sCount = { count: 0 };
@@ -53,6 +55,7 @@ try {
     totalSales: Number((ordCount as any)?.sales || 0),
     teamCount: Number(tCount?.count || 0),
     servicesCount: Number(sCount?.count || 0),
+    srsCount: Number(srsCount?.count || 0),
   };
 } catch (e) {
   console.error('[Admin Dashboard] Failed to fetch stats:', e);
@@ -78,6 +81,7 @@ try {
       <a data-astro-prefetch="false" href="/admin/offers" class="text-neutral-600 hover:text-primary px-1 pb-3">Offers</a>
       <a data-astro-prefetch="false" href="/admin/orders" class="text-neutral-600 hover:text-primary px-1 pb-3">Orders ({stats.ordersCount})</a>
       <a data-astro-prefetch="false" href="/admin/queries" class="text-neutral-600 hover:text-primary px-1 pb-3">Queries ({stats.queriesCount})</a>
+      <a data-astro-prefetch="false" href="/admin/service-requests" class="text-neutral-600 hover:text-primary px-1 pb-3">Service Requests ({stats.srsCount})</a>
       <a data-astro-prefetch="false" href="/admin/team" class="text-neutral-600 hover:text-primary px-1 pb-3">Team</a>
       <a data-astro-prefetch="false" href="/admin/services" class="text-neutral-600 hover:text-primary px-1 pb-3">Services</a>
       <a data-astro-prefetch="false" href="/admin/about" class="text-neutral-600 hover:text-primary px-1 pb-3">About</a>
@@ -162,6 +166,12 @@ try {
           <span class="h-8 w-8 flex items-center justify-center rounded-full bg-green-100 text-green-700 mb-2 text-sm font-bold">💬</span>
           <span class="text-sm font-semibold text-neutral-800">Read Messages</span>
           <span class="text-xs text-neutral-400 mt-0.5">Reply to support requests</span>
+        </a>
+
+        <a href="/admin/service-requests" class="flex flex-col items-center justify-center p-4 border border-dashed border-neutral-300 rounded-lg hover:border-primary hover:bg-neutral-50 text-center transition-colors">
+          <span class="h-8 w-8 flex items-center justify-center rounded-full bg-amber-100 text-amber-700 mb-2 text-sm font-bold">🔧</span>
+          <span class="text-sm font-semibold text-neutral-800">Service Requests</span>
+          <span class="text-xs text-neutral-400 mt-0.5">Process complaints ({stats.srsCount})</span>
         </a>
       </div>
     </div>

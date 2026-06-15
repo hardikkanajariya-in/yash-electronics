@@ -93,6 +93,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   orders: many(orders),
   referralsMade: many(referralHistory, { relationName: 'referrer' }),
   referralsReceived: many(referralHistory, { relationName: 'referred' }),
+  serviceRequests: many(serviceRequests),
 }));
 
 export const orders = pgTable('orders', {
@@ -236,5 +237,26 @@ export const referralHistoryRelations = relations(referralHistory, ({ one }) => 
     fields: [referralHistory.referredUserId],
     references: [users.id],
     relationName: 'referred',
+  }),
+}));
+
+/**
+ * Service Requests (SR) — Customer complaints and tracking
+ */
+export const serviceRequests = pgTable('service_requests', {
+  id: varchar('id', { length: 255 }).primaryKey(),
+  userId: varchar('user_id', { length: 255 }).references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  productName: text('product_name').notNull(),
+  complaintDetails: text('complaint_details').notNull(),
+  status: text('status').$type<'pending' | 'in_progress' | 'resolved' | 'cancelled'>().notNull().default('pending'),
+  trackingInfo: text('tracking_info'),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
+
+export const serviceRequestsRelations = relations(serviceRequests, ({ one }) => ({
+  user: one(users, {
+    fields: [serviceRequests.userId],
+    references: [users.id],
   }),
 }));

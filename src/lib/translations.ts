@@ -16,6 +16,7 @@ export const UI_TRANSLATIONS = {
     'nav.services': 'સેવાઓ',
     'nav.team': 'અમારી ટીમ',
     'nav.bankDetails': 'ચૂકવણી માહિતી',
+    'nav.serviceRequest': 'સર્વિસ રિક્વેસ્ટ',
 
     // Search and Filters
     'search.placeholder': 'નામ, મોડેલ અથવા બ્રાન્ડ દ્વારા શોધો...',
@@ -149,6 +150,7 @@ export const UI_TRANSLATIONS = {
     'nav.services': 'Services',
     'nav.team': 'Our Team',
     'nav.bankDetails': 'Payment Info',
+    'nav.serviceRequest': 'Service Request',
 
     // Search and Filters
     'search.placeholder': 'Search by name, model or brand...',
