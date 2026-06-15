@@ -96,10 +96,11 @@ if (Astro.request.method === 'POST') {
 
             if (!isExpired) {
               appliedCoupon = offer.couponCode;
+              const discountVal = offer.discountValue ?? 0;
               if (offer.discountType === 'percentage') {
-                couponDiscount = Math.round(subtotal * (offer.discountValue / 100));
+                couponDiscount = Math.round(subtotal * (discountVal / 100));
               } else {
-                couponDiscount = offer.discountValue;
+                couponDiscount = discountVal;
               }
               couponDiscount = Math.min(couponDiscount, subtotal);
             }

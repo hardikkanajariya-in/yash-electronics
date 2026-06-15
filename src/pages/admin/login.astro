@@ -4,7 +4,7 @@ import Container from '../../components/ui/Container.astro';
 import { db } from '../../db';
 import { users } from '../../db/schema';
 import { eq, and } from 'drizzle-orm';
-import { hashPassword, redirectWithSession, getSessionUser } from '../../lib/auth';
+import { hashPassword, setSessionUser, getSessionUser } from '../../lib/auth';
 
 export const prerender = false;
 
@@ -38,7 +38,14 @@ if (Astro.request.method === 'POST') {
 
     if (user) {
       Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-      return redirectWithSession(Astro.cookies, user.id, '/admin', Astro.url);
+      setSessionUser(Astro.cookies, user.id, Astro.url);
+      return new Response(null, {
+        status: 303,
+        headers: {
+          Location: '/admin',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+        },
+      });
     } else {
       error = 'Invalid credentials or access denied.';
     }

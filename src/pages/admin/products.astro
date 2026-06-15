@@ -25,8 +25,7 @@ let success = '';
 // Handle CSV Export and Template Downloads
 if (action === 'export') {
   try {
-    const csvContent = await exportProductsToCsv();
-    return new Response(csvContent, {
+    return new Response(await exportProductsToCsv(), {
       headers: {
         'Content-Type': 'text/csv',
         'Content-Disposition': 'attachment; filename="yash_electronics_products.csv"',
@@ -77,13 +76,15 @@ if (action === 'template') {
     'એલઇડી ડિસ્પ્લે સાથે ભારતનું સૌથી બુદ્ધિશાળી હોમ યુપીએસ.'
   ];
   
-  const csvContent = headers.join(',') + '\r\n' + sampleRow.map(v => '"' + v.replace(/"/g, '""') + '"').join(',');
-  return new Response(csvContent, {
-    headers: {
-      'Content-Type': 'text/csv',
-      'Content-Disposition': 'attachment; filename="products_csv_template.csv"',
+  return new Response(
+    headers.join(',') + '\r\n' + sampleRow.map(v => '"' + v.replace(/"/g, '""') + '"').join(','),
+    {
+      headers: {
+        'Content-Type': 'text/csv',
+        'Content-Disposition': 'attachment; filename="products_csv_template.csv"',
+      }
     }
-  });
+  );
 }
 
 // Fetch categories and brands for the dropdowns

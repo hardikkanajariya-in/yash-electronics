@@ -1,6 +1,6 @@
 import { db } from '../db';
 import { products, brands, categories } from '../db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { generateId } from './auth';
 
 // Simple slugify function
