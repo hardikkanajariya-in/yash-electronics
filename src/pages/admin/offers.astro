@@ -99,23 +99,13 @@ const allOffers = await db.select().from(offers);
 ---
 
 <AdminLayout title="Manage Offers" activeTab="offers" subtitle="Create or edit special deals & promotions">
-    <!-- Header -->
-    <div class="flex items-center justify-between border-b border-neutral-200 pb-4 mb-6">
-      <div>
-        <h1 class="text-2xl font-bold text-neutral-900">Manage Offers</h1>
-        <p class="text-xs text-neutral-500">Create or edit special deals & promotions</p>
-      </div>
-      <div class="flex gap-2">
-        <a href="/admin" class="text-xs font-semibold text-neutral-600 border border-neutral-300 rounded-md px-3 py-1.5 hover:bg-neutral-50 transition-colors">
-          ← Dashboard
+    {action === 'list' && (
+      <div class="flex justify-end mb-6">
+        <a href="/admin/offers?action=add" class="text-xs font-semibold text-white bg-primary hover:bg-primary/95 rounded-md px-3.5 py-2 transition-colors">
+          + Create Offer
         </a>
-        {action === 'list' && (
-          <a href="/admin/offers?action=add" class="text-xs font-semibold text-white bg-primary hover:bg-primary/95 rounded-md px-3 py-1.5 transition-colors">
-            + Create Offer
-          </a>
-        )}
       </div>
-    </div>
+    )}
 
     {error && (
       <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md p-3 mb-4">

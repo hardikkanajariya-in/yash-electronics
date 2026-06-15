@@ -199,41 +199,29 @@ const emptySpecifications = '{}';
 ---
 
 <AdminLayout title="Manage Products" activeTab="products" subtitle="Add, edit, or delete store products">
-    <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-neutral-200 pb-4 mb-6 gap-4">
-      <div>
-        <h1 class="text-2xl font-bold text-neutral-900">Manage Catalog</h1>
-        <p class="text-xs text-neutral-500">Add, edit, or delete store products</p>
-      </div>
-      <div class="flex flex-wrap items-center gap-2">
-        <a href="/admin" class="text-xs font-semibold text-neutral-600 border border-neutral-300 bg-white hover:bg-neutral-50 rounded-md px-3 py-1.5 transition-colors">
-          ← Dashboard
+    {action === 'list' && (
+      <div class="flex flex-wrap items-center justify-end gap-2 mb-6 bg-white border border-neutral-200 rounded-lg p-3 shadow-sm">
+        <a href="/admin/products?action=export" class="text-xs font-semibold text-neutral-700 border border-neutral-300 bg-white hover:bg-neutral-50 rounded-md px-3 py-1.5 transition-colors flex items-center gap-1">
+          📤 Export CSV
         </a>
-        {action === 'list' && (
-          <>
-            <a href="/admin/products?action=export" class="text-xs font-semibold text-neutral-700 border border-neutral-300 bg-white hover:bg-neutral-50 rounded-md px-3 py-1.5 transition-colors flex items-center gap-1">
-              📤 Export CSV
-            </a>
-            
-            <form method="post" enctype="multipart/form-data" class="inline-block m-0">
-              <input type="hidden" name="formAction" value="import_csv" />
-              <label class="text-xs font-semibold text-neutral-700 border border-neutral-300 bg-white hover:bg-neutral-50 rounded-md px-3 py-1.5 transition-colors cursor-pointer flex items-center gap-1">
-                📥 Import CSV
-                <input type="file" name="csvFile" accept=".csv" class="hidden" onchange="this.form.submit()" />
-              </label>
-            </form>
-            
-            <a href="/admin/products?action=template" class="text-[11px] font-semibold text-primary hover:underline px-1 py-1 transition-colors">
-              Get Template
-            </a>
+        
+        <form method="post" enctype="multipart/form-data" class="inline-block m-0">
+          <input type="hidden" name="formAction" value="import_csv" />
+          <label class="text-xs font-semibold text-neutral-700 border border-neutral-300 bg-white hover:bg-neutral-50 rounded-md px-3 py-1.5 transition-colors cursor-pointer flex items-center gap-1">
+            📥 Import CSV
+            <input type="file" name="csvFile" accept=".csv" class="hidden" onchange="this.form.submit()" />
+          </label>
+        </form>
+        
+        <a href="/admin/products?action=template" class="text-[11px] font-semibold text-primary hover:underline px-1 py-1 transition-colors">
+          Get Template
+        </a>
 
-            <a href="/admin/products?action=add" class="text-xs font-semibold text-white bg-primary hover:bg-primary/95 rounded-md px-3 py-1.5 transition-colors">
-              + Add Product
-            </a>
-          </>
-        )}
+        <a href="/admin/products?action=add" class="text-xs font-semibold text-white bg-primary hover:bg-primary/95 rounded-md px-3 py-1.5 transition-colors">
+          + Add Product
+        </a>
       </div>
-    </div>
+    )}
 
     {error && (
       <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md p-3 mb-4">
