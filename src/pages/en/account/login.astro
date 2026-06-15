@@ -2,11 +2,27 @@
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import Container from '../../../components/ui/Container.astro';
 import { db } from '../../../db';
-import { users, referralHistory } from '../../../db/schema';
+import { users, referralHistory, settings } from '../../../db/schema';
 import { eq, and } from 'drizzle-orm';
 import { hashPassword, redirectWithSession, getSessionUser, generateId, generateReferralCode } from '../../../lib/auth';
 
 export const prerender = false;
+
+// Fetch global referral reward settings
+let signupBonusPoints = 50;
+let referrerBonusPoints = 100;
+try {
+  const [signupSetting] = await db.select().from(settings).where(eq(settings.key, 'signup_bonus_points'));
+  if (signupSetting) signupBonusPoints = parseInt(signupSetting.value, 10);
+  
+  const [referrerSetting] = await db.select().from(settings).where(eq(settings.key, 'referrer_bonus_points'));
+  if (referrerSetting) referrerBonusPoints = parseInt(referrerSetting.value, 10);
+} catch (e) {
+  console.error('[Login] Failed to load referral points config:', e);
+}
+
+// Read redirect query param
+const redirectParam = Astro.url.searchParams.get('redirect') || '';
 
 // Redirect if already logged in as customer
 const currentUser = await getSessionUser(Astro.cookies);
@@ -67,7 +83,8 @@ if (Astro.request.method === 'POST') {
 
       if (user) {
         Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-        return redirectWithSession(Astro.cookies, user.id, '/en/account', Astro.url);
+        const destination = redirectParam ? redirectParam : '/en/account';
+        return redirectWithSession(Astro.cookies, user.id, destination, Astro.url);
       } else {
         error = t.errInvalid;
       }
@@ -106,8 +123,8 @@ if (Astro.request.method === 'POST') {
           const newUserId = generateId();
           const userRefCode = generateReferralCode();
           
-          // Referred user gets 50 credits, normal user gets 0
-          const initialCredits = referredById ? 50 : 0;
+          // Referred user gets signup bonus points, normal user gets 0
+          const initialCredits = referredById ? signupBonusPoints : 0;
 
           await db.insert(users).values({
             id: newUserId,
@@ -121,11 +138,11 @@ if (Astro.request.method === 'POST') {
             createdAt: new Date().toISOString(),
           });
 
-          // Reward referrer with 100 credits and record history
+          // Reward referrer and record history
           if (referredById && referrer) {
             await db
               .update(users)
-              .set({ credits: referrer.credits + 100 })
+              .set({ credits: referrer.credits + referrerBonusPoints })
               .where(eq(users.id, referredById));
 
             // Record signup bonus for referred user
@@ -133,7 +150,7 @@ if (Astro.request.method === 'POST') {
               id: generateId(),
               referrerId: referredById,
               referredUserId: newUserId,
-              pointsEarned: 50,
+              pointsEarned: signupBonusPoints,
               type: 'signup_bonus',
               createdAt: new Date().toISOString(),
             });
@@ -143,14 +160,15 @@ if (Astro.request.method === 'POST') {
               id: generateId(),
               referrerId: referredById,
               referredUserId: newUserId,
-              pointsEarned: 100,
+              pointsEarned: referrerBonusPoints,
               type: 'referrer_bonus',
               createdAt: new Date().toISOString(),
             });
           }
 
           Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-          return redirectWithSession(Astro.cookies, newUserId, '/en/account', Astro.url);
+          const destination = redirectParam ? redirectParam : '/en/account';
+          return redirectWithSession(Astro.cookies, newUserId, destination, Astro.url);
         }
       }
     }

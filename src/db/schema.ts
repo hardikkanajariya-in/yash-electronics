@@ -83,6 +83,9 @@ export const offers = pgTable('offers', {
   validUntil: text('valid_until'),
   isActive: boolean('is_active').notNull().default(true),
   sortOrder: integer('sort_order').notNull().default(0),
+  couponCode: text('coupon_code'),
+  discountType: text('discount_type').$type<'percentage' | 'flat'>().default('flat'),
+  discountValue: integer('discount_value').default(0),
 });
 
 export const users = pgTable('users', {
@@ -115,6 +118,8 @@ export const orders = pgTable('orders', {
   totalAmount: integer('total_amount').notNull().default(0),
   status: text('status').$type<'pending' | 'processing' | 'delivered' | 'cancelled'>().notNull().default('pending'),
   createdAt: text('created_at').notNull(),
+  couponCode: text('coupon_code'),
+  discountApplied: integer('discount_applied').default(0),
 });
 
 export const ordersRelations = relations(orders, ({ one, many }) => ({

@@ -2,7 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Container from '../../components/ui/Container.astro';
 import { db } from '../../db';
-import { users, orders } from '../../db/schema';
+import { users, orders, settings } from '../../db/schema';
 import { eq, and, or, ilike, desc, gt, sql } from 'drizzle-orm';
 import { getSessionUser } from '../../lib/auth';
 
@@ -21,7 +21,7 @@ let success = '';
 const action = Astro.url.searchParams.get('action') || 'list';
 const customerId = Astro.url.searchParams.get('id') || '';
 
-// Handle POST actions (credit adjustment, deletion)
+// Handle POST actions (credit adjustment, deletion, settings update)
 if (Astro.request.method === 'POST') {
   try {
     const formData = await Astro.request.formData();
@@ -39,6 +39,31 @@ if (Astro.request.method === 'POST') {
     } else if (formAction === 'delete' && targetId) {
       await db.delete(users).where(eq(users.id, targetId));
       return Astro.redirect('/admin/customers?success=Customer+deleted+successfully');
+    } else if (formAction === 'update_referral_settings') {
+      const signupPoints = parseInt(formData.get('signup_bonus_points')?.toString() || '50', 10);
+      const referrerPoints = parseInt(formData.get('referrer_bonus_points')?.toString() || '100', 10);
+      
+      if (isNaN(signupPoints) || signupPoints < 0 || isNaN(referrerPoints) || referrerPoints < 0) {
+        error = 'Points must be valid positive integers.';
+      } else {
+        // Try to update or insert signup_bonus_points
+        const [exSignup] = await db.select().from(settings).where(eq(settings.key, 'signup_bonus_points'));
+        if (exSignup) {
+          await db.update(settings).set({ value: signupPoints.toString() }).where(eq(settings.key, 'signup_bonus_points'));
+        } else {
+          await db.insert(settings).values({ key: 'signup_bonus_points', value: signupPoints.toString() });
+        }
+
+        // Try to update or insert referrer_bonus_points
+        const [exReferrer] = await db.select().from(settings).where(eq(settings.key, 'referrer_bonus_points'));
+        if (exReferrer) {
+          await db.update(settings).set({ value: referrerPoints.toString() }).where(eq(settings.key, 'referrer_bonus_points'));
+        } else {
+          await db.insert(settings).values({ key: 'referrer_bonus_points', value: referrerPoints.toString() });
+        }
+        
+        success = 'Referral points settings updated successfully!';
+      }
     }
   } catch (e: any) {
     error = e.message || 'Failed to perform action.';
@@ -53,6 +78,19 @@ if (successParam) {
 const errorParam = Astro.url.searchParams.get('error');
 if (errorParam) {
   error = errorParam;
+}
+
+// Fetch global referral reward settings
+let signupBonusPointsSetting = 50;
+let referrerBonusPointsSetting = 100;
+try {
+  const [signupSetting] = await db.select().from(settings).where(eq(settings.key, 'signup_bonus_points'));
+  if (signupSetting) signupBonusPointsSetting = parseInt(signupSetting.value, 10);
+  
+  const [referrerSetting] = await db.select().from(settings).where(eq(settings.key, 'referrer_bonus_points'));
+  if (referrerSetting) referrerBonusPointsSetting = parseInt(referrerSetting.value, 10);
+} catch (e) {
+  console.error('[Admin Customers] Failed to fetch settings:', e);
 }
 
 // Page variables
@@ -218,6 +256,43 @@ const formatDate = (dateStr: string) => {
     {/* LIST VIEW */}
     {action === 'list' && (
       <div>
+        {/* Referral Program Settings Form */}
+        <div class="bg-white border border-neutral-200 rounded-lg p-5 shadow-sm mb-6">
+          <h2 class="text-sm font-bold text-neutral-900 border-b border-neutral-100 pb-2 mb-4">Referral Program Point Configurations</h2>
+          <form method="post" class="grid gap-4 sm:grid-cols-3 items-end">
+            <input type="hidden" name="formAction" value="update_referral_settings" />
+            <div>
+              <label for="signup-points-input" class="block text-xs font-semibold text-neutral-700 mb-1">New User Signup Reward (Points)</label>
+              <input
+                type="number"
+                id="signup-points-input"
+                name="signup_bonus_points"
+                required
+                min="0"
+                value={signupBonusPointsSetting}
+                class="w-full rounded border border-neutral-300 px-3 py-1.5 text-xs focus:border-primary focus:outline-none"
+              />
+            </div>
+            <div>
+              <label for="referrer-points-input" class="block text-xs font-semibold text-neutral-700 mb-1">Referrer Reward (Points per signup)</label>
+              <input
+                type="number"
+                id="referrer-points-input"
+                name="referrer_bonus_points"
+                required
+                min="0"
+                value={referrerBonusPointsSetting}
+                class="w-full rounded border border-neutral-300 px-3 py-1.5 text-xs focus:border-primary focus:outline-none"
+              />
+            </div>
+            <div>
+              <button type="submit" class="w-full bg-primary text-white text-xs font-bold rounded px-4 py-2.5 hover:bg-primary/95 transition-colors focus:outline-none cursor-pointer">
+                Save Rewards Configuration
+              </button>
+            </div>
+          </form>
+        </div>
+
         {/* Search Bar */}
         <form method="get" class="flex gap-2 mb-6">
           <input 

@@ -2,19 +2,22 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Container from '../../components/ui/Container.astro';
 import { db } from '../../db';
-import { products, orders, orderItems, users } from '../../db/schema';
-import { eq, inArray } from 'drizzle-orm';
+import { products, orders, orderItems, users, offers } from '../../db/schema';
+import { eq, inArray, and } from 'drizzle-orm';
 import { getSessionUser, generateId } from '../../lib/auth';
 import { getLocalizedPath } from '../../lib/translations';
 import { cloudinaryConfig } from '../../config/cloudinary';
 
 export const prerender = false;
 
-const locale = Astro.currentLocale || 'en'; // Force English locale fallback for safety
+const locale = 'en';
 
-// Authenticate user to check for credits
+// Authenticate user. Redirect to login if not logged in.
 Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
 const currentUser = await getSessionUser(Astro.cookies);
+if (!currentUser) {
+  return Astro.redirect(`/en/account/login?redirect=${encodeURIComponent('/en/cart')}`);
+}
 
 let error = '';
 let successOrderId = '';
@@ -27,7 +30,11 @@ if (Astro.request.method === 'POST') {
     const customerPhone = formData.get('phone')?.toString().trim() || '';
     const shippingAddress = formData.get('address')?.toString().trim() || '';
     const cartItemsRaw = formData.get('cartItems')?.toString() || '[]';
-    const applyCredits = formData.get('applyCredits') === 'on';
+    const couponCode = formData.get('couponCode')?.toString().trim().toUpperCase() || '';
+    const redeemPointsStr = formData.get('redeemPoints')?.toString().trim() || '0';
+
+    let redeemPoints = parseInt(redeemPointsStr, 10);
+    if (isNaN(redeemPoints) || redeemPoints < 0) redeemPoints = 0;
 
     const cart = JSON.parse(cartItemsRaw);
 
@@ -57,22 +64,62 @@ if (Astro.request.method === 'POST') {
       if (orderLines.length === 0) {
         error = 'Cart contains invalid products.';
       } else {
-        // 2. Resolve store credits usage
-        let creditsToUse = 0;
-        if (currentUser && applyCredits && currentUser.credits > 0) {
-          const [userRecord] = await db.select().from(users).where(eq(users.id, currentUser.id));
-          if (userRecord && userRecord.credits > 0) {
-            creditsToUse = Math.min(userRecord.credits, subtotal);
+        // 2. Resolve Coupon discount
+        let couponDiscount = 0;
+        let appliedCoupon: string | null = null;
+
+        if (couponCode) {
+          const [offer] = await db
+            .select()
+            .from(offers)
+            .where(
+              and(
+                eq(offers.couponCode, couponCode),
+                eq(offers.isActive, true)
+              )
+            );
+
+          if (offer) {
+            let isExpired = false;
+            if (offer.validUntil) {
+              const expiry = new Date(offer.validUntil);
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              if (expiry.getTime() < today.getTime()) {
+                isExpired = true;
+              }
+            }
+
+            if (!isExpired) {
+              appliedCoupon = offer.couponCode;
+              if (offer.discountType === 'percentage') {
+                couponDiscount = Math.round(subtotal * (offer.discountValue / 100));
+              } else {
+                couponDiscount = offer.discountValue;
+              }
+              couponDiscount = Math.min(couponDiscount, subtotal);
+            }
           }
         }
 
-        const totalAmount = subtotal - creditsToUse;
+        // 3. Resolve store credits/points usage
+        let creditsToUse = 0;
+        if (redeemPoints > 0) {
+          // Re-fetch user to get fresh credits balance
+          const [userRecord] = await db.select().from(users).where(eq(users.id, currentUser.id));
+          if (userRecord && userRecord.credits > 0) {
+            const maxUsableCredits = Math.min(userRecord.credits, subtotal - couponDiscount);
+            creditsToUse = Math.min(redeemPoints, maxUsableCredits);
+          }
+        }
+
+        const totalAmount = subtotal - couponDiscount - creditsToUse;
         const newOrderId = generateId();
 
-        // 3. Insert into orders table
+        // 4. Insert into orders table
         await db.insert(orders).values({
           id: newOrderId,
-          userId: currentUser ? currentUser.id : null,
+          userId: currentUser.id,
           customerName,
           customerPhone,
           shippingAddress,
@@ -80,9 +127,11 @@ if (Astro.request.method === 'POST') {
           totalAmount,
           status: 'pending',
           createdAt: new Date().toISOString(),
+          couponCode: appliedCoupon,
+          discountApplied: couponDiscount,
         });
 
-        // 4. Insert order items
+        // 5. Insert order items
         for (const line of orderLines) {
           await db.insert(orderItems).values({
             id: generateId(),
@@ -93,8 +142,8 @@ if (Astro.request.method === 'POST') {
           });
         }
 
-        // 5. Deduct credits if used
-        if (currentUser && creditsToUse > 0) {
+        // 6. Deduct credits if used
+        if (creditsToUse > 0) {
           await db
             .update(users)
             .set({ credits: currentUser.credits - creditsToUse })
@@ -118,7 +167,7 @@ const t = {
   browseBtn: 'Browse Products',
   summaryTitle: 'Order Summary',
   subtotal: 'Subtotal',
-  creditsAvailable: 'Store Credits Available: ₹{amount}',
+  creditsAvailable: 'Available: {amount} Pts',
   useCredits: 'Apply Store Credits Discount',
   total: 'Total Payable Amount',
   detailsTitle: 'Delivery Details',
@@ -134,6 +183,13 @@ const t = {
   accDashboard: 'Track Order Status',
   quantity: 'Quantity',
   remove: 'Remove',
+  couponLabel: 'Apply Discount Code',
+  applyBtn: 'Apply',
+  pointsLabel: 'Redeem Points',
+  pointsHelper: '1 Point = ₹1. Up to subtotal after coupon discount.',
+  redeemMax: 'Redeem Max',
+  couponApplied: 'Coupon Discount',
+  pointsApplied: 'Points Redeemed',
 };
 ---
 
@@ -161,11 +217,9 @@ const t = {
           <a href={getLocalizedPath('/products', locale)} class="btn-primary px-6 py-2.5 text-sm font-semibold">
             {t.backShopBtn}
           </a>
-          {currentUser && (
-            <a href={getLocalizedPath('/account', locale)} class="btn-outline px-6 py-2.5 text-sm">
-              {t.accDashboard}
-            </a>
-          )}
+          <a href={getLocalizedPath('/account', locale)} class="btn-outline px-6 py-2.5 text-sm">
+            {t.accDashboard}
+          </a>
         </div>
       </div>
     ) : (
@@ -214,22 +268,67 @@ const t = {
                   <span class="font-bold text-neutral-900" id="cart-subtotal">₹0</span>
                 </div>
 
-                {currentUser && currentUser.credits > 0 && (
-                  <div class="bg-green-50 border border-green-200 rounded-md p-3">
-                    <p class="text-xs text-green-800 font-semibold mb-2">
-                      {t.creditsAvailable.replace('{amount}', currentUser.credits.toString())}
-                    </p>
-                    <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-green-700">
-                      <input 
-                        type="checkbox" 
-                        id="apply-credits-chk" 
-                        class="rounded border-green-300 text-green-600 focus:ring-green-500"
-                        onchange="recalculateTotals()"
-                      />
-                      {t.useCredits}
-                    </label>
+                <!-- Dynamic Coupon Row -->
+                <div class="flex justify-between text-green-600 hidden" id="coupon-discount-row">
+                  <span>{t.couponApplied} (<span id="applied-coupon-label"></span>)</span>
+                  <span class="font-bold font-mono" id="coupon-discount-value">-₹0</span>
+                </div>
+
+                <!-- Dynamic Points Row -->
+                <div class="flex justify-between text-green-600 hidden" id="points-discount-row">
+                  <span>{t.pointsApplied}</span>
+                  <span class="font-bold font-mono" id="points-discount-value">-₹0</span>
+                </div>
+
+                <!-- Apply Discount Code Field -->
+                <div class="border border-neutral-200 rounded-md p-3 bg-neutral-50/50">
+                  <label for="coupon-code-field" class="block text-[11px] font-bold text-neutral-600 uppercase mb-1">{t.couponLabel}</label>
+                  <div class="flex gap-1.5">
+                    <input 
+                      type="text" 
+                      id="coupon-code-field" 
+                      placeholder="e.g. SAVE20" 
+                      class="flex-1 rounded border border-neutral-300 px-2.5 py-1 text-xs focus:border-primary focus:outline-none uppercase font-mono font-bold"
+                    />
+                    <button 
+                      type="button" 
+                      id="apply-coupon-btn" 
+                      onclick="applyCouponCode()"
+                      class="bg-neutral-800 text-white text-xs font-semibold px-3 py-1 rounded hover:bg-neutral-900 transition-colors focus:outline-none cursor-pointer"
+                    >
+                      {t.applyBtn}
+                    </button>
                   </div>
-                )}
+                  <p class="text-[10px] mt-1 font-semibold text-red-600 hidden" id="coupon-error"></p>
+                  <p class="text-[10px] mt-1 font-semibold text-green-600 hidden" id="coupon-success"></p>
+                </div>
+
+                <!-- Redeem Points Field -->
+                <div class="border border-neutral-200 rounded-md p-3 bg-neutral-50/50">
+                  <div class="flex justify-between items-center mb-1">
+                    <label for="points-redeem-field" class="block text-[11px] font-bold text-neutral-600 uppercase">{t.pointsLabel}</label>
+                    <span class="text-[10px] font-bold text-green-700">{t.creditsAvailable.replace('{amount}', currentUser.credits.toString())}</span>
+                  </div>
+                  <div class="flex gap-1.5 items-center">
+                    <input 
+                      type="number" 
+                      id="points-redeem-field" 
+                      value="0"
+                      min="0"
+                      max={currentUser.credits}
+                      oninput="recalculateTotals()"
+                      class="w-24 rounded border border-neutral-300 px-2 py-1 text-xs focus:border-primary focus:outline-none font-mono font-bold"
+                    />
+                    <button 
+                      type="button" 
+                      onclick={`document.getElementById('points-redeem-field').value = ${currentUser.credits}; recalculateTotals()`}
+                      class="text-[10px] font-bold text-primary hover:underline cursor-pointer focus:outline-none"
+                    >
+                      {t.redeemMax}
+                    </button>
+                  </div>
+                  <p class="text-[9px] text-neutral-400 mt-1 leading-tight">{t.pointsHelper}</p>
+                </div>
 
                 <div class="flex justify-between text-neutral-900 font-bold border-t border-neutral-100 pt-3">
                   <span>{t.total}</span>
@@ -240,7 +339,8 @@ const t = {
               {/* Checkout Form */}
               <form method="post" id="checkout-form" class="mt-4 space-y-4">
                 <input type="hidden" name="cartItems" id="cart-items-input" />
-                <input type="hidden" name="applyCredits" id="apply-credits-input" value="false" />
+                <input type="hidden" name="couponCode" id="coupon-code-input" />
+                <input type="hidden" name="redeemPoints" id="redeem-points-input" value="0" />
 
                 <h3 class="text-xs font-bold uppercase text-neutral-400 mt-2">
                   {t.detailsTitle}
@@ -287,7 +387,7 @@ const t = {
                 <button 
                   type="submit" 
                   id="checkout-submit-btn"
-                  class="w-full btn-primary py-2.5 text-xs font-semibold"
+                  class="w-full btn-primary py-2.5 text-xs font-semibold focus:outline-none cursor-pointer"
                 >
                   {t.placeOrderBtn}
                 </button>
@@ -301,7 +401,9 @@ const t = {
 </BaseLayout>
 
 <script is:inline define:vars={{ userCredits: currentUser?.credits || 0, successOrderId, locale, cloudName: cloudinaryConfig.cloudName }}>
+  // Manage client side cart
   const CART_KEY = 'ye_cart';
+  let activeCoupon = null; // Holds { code, discountType, discountValue }
 
   function getCart() {
     try {
@@ -345,25 +447,30 @@ const t = {
       return `https://res.cloudinary.com/${cloudName}/image/upload/${imagePath}`;
     }
 
+    // Render items
     containerEl.innerHTML = cart.map((item) => `
-      <div class="bg-white border border-neutral-200 rounded-lg p-4 flex gap-4 items-center">
+      <div class="bg-white border border-neutral-200 rounded-lg p-4 flex gap-4 items-center animate-fade-in">
+        <!-- Thumbnail -->
         <div class="h-16 w-16 bg-neutral-100 rounded border border-neutral-200 flex items-center justify-center text-xl shrink-0">
           ${item.image ? `<img src="${buildImageUrl(item.image)}" alt="${item.name}" class="h-full w-full object-cover rounded" />` : '📺'}
         </div>
         
+        <!-- Info -->
         <div class="flex-1 min-w-0">
           <h3 class="text-sm font-bold text-neutral-900 truncate">${item.name}</h3>
-          <p class="text-xs text-primary font-bold mt-0.5">₹${item.price.toLocaleString('en-IN')}</p>
+          <p class="text-xs text-primary font-bold mt-0.5 font-mono">₹${item.price.toLocaleString('en-IN')}</p>
         </div>
 
+        <!-- Quantity Controls -->
         <div class="flex items-center gap-1 shrink-0 border border-neutral-200 rounded bg-neutral-50 px-1">
           <button type="button" onclick="updateQty('${item.id}', -1)" class="h-6 w-6 font-bold text-neutral-600 hover:text-primary focus:outline-none">-</button>
-          <span class="text-xs font-bold w-6 text-center">${item.quantity}</span>
+          <span class="text-xs font-bold w-6 text-center font-mono">${item.quantity}</span>
           <button type="button" onclick="updateQty('${item.id}', 1)" class="h-6 w-6 font-bold text-neutral-600 hover:text-primary focus:outline-none">+</button>
         </div>
 
+        <!-- Remove -->
         <button type="button" onclick="removeItem('${item.id}')" class="text-xs font-semibold text-red-500 hover:underline shrink-0">
-          ${locale === 'en' ? 'Remove' : 'કાઢી નાખો'}
+          Remove
         </button>
       </div>
     `).join('');
@@ -388,31 +495,115 @@ const t = {
     renderCart();
   };
 
+  window.applyCouponCode = async function () {
+    const field = document.getElementById('coupon-code-field');
+    const errEl = document.getElementById('coupon-error');
+    const succEl = document.getElementById('coupon-success');
+    
+    if (!field || !errEl || !succEl) return;
+
+    const code = field.value.trim().toUpperCase();
+    errEl.classList.add('hidden');
+    succEl.classList.add('hidden');
+
+    if (!code) {
+      activeCoupon = null;
+      recalculateTotals();
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/validate-coupon?code=${encodeURIComponent(code)}`);
+      const data = await res.json();
+
+      if (data.valid) {
+        activeCoupon = data;
+        succEl.textContent = `Coupon ${data.code} applied successfully!`;
+        succEl.classList.remove('hidden');
+      } else {
+        activeCoupon = null;
+        errEl.textContent = data.message || 'Invalid coupon code.';
+        errEl.classList.remove('hidden');
+      }
+    } catch (e) {
+      activeCoupon = null;
+      errEl.textContent = 'Failed to validate coupon.';
+      errEl.classList.remove('hidden');
+    }
+
+    recalculateTotals();
+  };
+
   window.recalculateTotals = function () {
     const cart = getCart();
     const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
     
-    const creditsChk = document.getElementById('apply-credits-chk');
-    const isApplied = creditsChk ? creditsChk.checked : false;
-    
-    const creditsToUse = isApplied ? Math.min(userCredits, subtotal) : 0;
-    const finalTotal = subtotal - creditsToUse;
+    // 1. Calculate coupon discount
+    let couponDiscount = 0;
+    const couponRow = document.getElementById('coupon-discount-row');
+    const couponLabel = document.getElementById('applied-coupon-label');
+    const couponVal = document.getElementById('coupon-discount-value');
+    const couponHiddenInput = document.getElementById('coupon-code-input');
 
+    if (activeCoupon) {
+      if (activeCoupon.discountType === 'percentage') {
+        couponDiscount = Math.round(subtotal * (activeCoupon.discountValue / 100));
+      } else {
+        couponDiscount = activeCoupon.discountValue;
+      }
+      couponDiscount = Math.min(couponDiscount, subtotal);
+      
+      if (couponLabel) couponLabel.textContent = activeCoupon.code;
+      if (couponVal) couponVal.textContent = `-₹` + couponDiscount.toLocaleString('en-IN');
+      if (couponRow) couponRow.classList.remove('hidden');
+      if (couponHiddenInput) couponHiddenInput.value = activeCoupon.code;
+    } else {
+      if (couponRow) couponRow.classList.add('hidden');
+      if (couponHiddenInput) couponHiddenInput.value = '';
+    }
+
+    // 2. Calculate points discount
+    const pointsField = document.getElementById('points-redeem-field');
+    let pointsToRedeem = pointsField ? parseInt(pointsField.value, 10) : 0;
+    if (isNaN(pointsToRedeem) || pointsToRedeem < 0) pointsToRedeem = 0;
+
+    const maxUsablePoints = Math.min(userCredits, subtotal - couponDiscount);
+    if (pointsToRedeem > maxUsablePoints) {
+      pointsToRedeem = maxUsablePoints;
+      if (pointsField) pointsField.value = pointsToRedeem;
+    }
+
+    const pointsRow = document.getElementById('points-discount-row');
+    const pointsVal = document.getElementById('points-discount-value');
+    const pointsHiddenInput = document.getElementById('redeem-points-input');
+
+    if (pointsToRedeem > 0) {
+      if (pointsVal) pointsVal.textContent = `-₹` + pointsToRedeem.toLocaleString('en-IN');
+      if (pointsRow) pointsRow.classList.remove('hidden');
+      if (pointsHiddenInput) pointsHiddenInput.value = pointsToRedeem.toString();
+    } else {
+      if (pointsRow) pointsRow.classList.add('hidden');
+      if (pointsHiddenInput) pointsHiddenInput.value = '0';
+    }
+
+    const finalTotal = subtotal - couponDiscount - pointsToRedeem;
+
+    // Update UI elements
     const subtotalEl = document.getElementById('cart-subtotal');
     const totalEl = document.getElementById('cart-final-total');
     
     if (subtotalEl) subtotalEl.textContent = '₹' + subtotal.toLocaleString('en-IN');
     if (totalEl) totalEl.textContent = '₹' + finalTotal.toLocaleString('en-IN');
 
+    // Populate checkout form hidden value for items
     const itemsInput = document.getElementById('cart-items-input');
-    const creditsInput = document.getElementById('apply-credits-input');
-
     if (itemsInput) itemsInput.value = JSON.stringify(cart);
-    if (creditsInput) creditsInput.value = isApplied ? 'on' : 'off';
   };
 
+  // Render on mount
   renderCart();
 
+  // Clear cart if checkout succeeded
   if (successOrderId) {
     localStorage.removeItem(CART_KEY);
     window.dispatchEvent(new CustomEvent('cart-updated'));
