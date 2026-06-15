@@ -2,7 +2,7 @@
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import Container from '../../../components/ui/Container.astro';
 import { db } from '../../../db';
-import { users } from '../../../db/schema';
+import { users, referralHistory } from '../../../db/schema';
 import { eq, and } from 'drizzle-orm';
 import { hashPassword, redirectWithSession, getSessionUser, generateId, generateReferralCode } from '../../../lib/auth';
 
@@ -121,12 +121,32 @@ if (Astro.request.method === 'POST') {
             createdAt: new Date().toISOString(),
           });
 
-          // Reward referrer with 100 credits
+          // Reward referrer with 100 credits and record history
           if (referredById && referrer) {
             await db
               .update(users)
               .set({ credits: referrer.credits + 100 })
               .where(eq(users.id, referredById));
+
+            // Record signup bonus for referred user
+            await db.insert(referralHistory).values({
+              id: generateId(),
+              referrerId: referredById,
+              referredUserId: newUserId,
+              pointsEarned: 50,
+              type: 'signup_bonus',
+              createdAt: new Date().toISOString(),
+            });
+
+            // Record referral bonus for referrer
+            await db.insert(referralHistory).values({
+              id: generateId(),
+              referrerId: referredById,
+              referredUserId: newUserId,
+              pointsEarned: 100,
+              type: 'referrer_bonus',
+              createdAt: new Date().toISOString(),
+            });
           }
 
           Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
