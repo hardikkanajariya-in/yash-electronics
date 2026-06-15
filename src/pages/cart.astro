@@ -389,14 +389,14 @@ const t = translations[locale === 'en' ? 'en' : 'gu'];
           <p class="text-xs text-primary font-bold mt-0.5">₹${item.price.toLocaleString('en-IN')}</p>
         </div>
 
-        {/* Quantity Controls */}
+        <!-- Quantity Controls -->
         <div class="flex items-center gap-1 shrink-0 border border-neutral-200 rounded bg-neutral-50 px-1">
           <button type="button" onclick="updateQty('${item.id}', -1)" class="h-6 w-6 font-bold text-neutral-600 hover:text-primary focus:outline-none">-</button>
           <span class="text-xs font-bold w-6 text-center">${item.quantity}</span>
           <button type="button" onclick="updateQty('${item.id}', 1)" class="h-6 w-6 font-bold text-neutral-600 hover:text-primary focus:outline-none">+</button>
         </div>
 
-        {/* Remove */}
+        <!-- Remove -->
         <button type="button" onclick="removeItem('${item.id}')" class="text-xs font-semibold text-red-500 hover:underline shrink-0">
           ${locale === 'en' ? 'Remove' : 'કાઢી નાખો'}
         </button>
