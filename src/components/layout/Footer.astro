@@ -98,8 +98,14 @@ const year = new Date().getFullYear();
       </div>
     </div>
 
-    <div class="border-t border-neutral-800 py-4 text-center text-xs text-neutral-500">
+    <div class="border-t border-neutral-800 py-4 text-center text-xs text-neutral-500 space-y-1">
       <p>{locale === 'gu' ? `© ${year} ${settings.businessName}. સર્વાધિકાર સુરક્ષિત. અસલી પ્રોડક્ટ્સ. સ્થાનિક સપોર્ટ.` : `© ${year} ${settings.businessName}. All rights reserved. Genuine products. Local support.`}</p>
+      <p>
+        {locale === 'gu' ? 'બનાવનાર: ' : 'Made by '}
+        <a href="https://hardikkanajariya.in" target="_blank" rel="noopener noreferrer" class="underline hover:text-neutral-400 transition-colors font-medium">
+          hardikkanajariya.in
+        </a>
+      </p>
     </div>
   </Container>
 </footer>
