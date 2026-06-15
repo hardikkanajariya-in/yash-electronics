@@ -4,6 +4,9 @@ import Container from '../components/ui/Container.astro';
 import { getServicesList, getSettings } from '../services/cms';
 import { translateObject, t, getLocalizedPath } from '../lib/translations';
 
+export const prerender = false;
+Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+
 const locale = Astro.currentLocale || 'gu';
 const rawSettings = await getSettings();
 const settings = translateObject(rawSettings, locale);

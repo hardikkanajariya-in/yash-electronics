@@ -5,6 +5,9 @@ import { getAboutInfo, getSettings } from '../services/cms';
 import { translateObject, t } from '../lib/translations';
 import CloudinaryImage from '../components/common/CloudinaryImage.astro';
 
+export const prerender = false;
+Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+
 const locale = Astro.currentLocale || 'gu';
 const rawSettings = await getSettings();
 const settings = translateObject(rawSettings, locale);
