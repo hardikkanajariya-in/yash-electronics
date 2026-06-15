@@ -1,6 +1,5 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import Container from '../../components/ui/Container.astro';
+import AdminLayout from '../../layouts/AdminLayout.astro';
 import { db } from '../../db';
 import { offers } from '../../db/schema';
 import { eq } from 'drizzle-orm';
@@ -99,8 +98,7 @@ if (action === 'edit' && offerId) {
 const allOffers = await db.select().from(offers);
 ---
 
-<BaseLayout title="Manage Offers" noindex={true}>
-  <Container class="py-6">
+<AdminLayout title="Manage Offers" activeTab="offers" subtitle="Create or edit special deals & promotions">
     <!-- Header -->
     <div class="flex items-center justify-between border-b border-neutral-200 pb-4 mb-6">
       <div>
@@ -471,5 +469,4 @@ const allOffers = await db.select().from(offers);
         </script>
       </div>
     )}
-  </Container>
-</BaseLayout>
+</AdminLayout>

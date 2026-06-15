@@ -1,6 +1,5 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import Container from '../../components/ui/Container.astro';
+import AdminLayout from '../../layouts/AdminLayout.astro';
 import { db } from '../../db';
 import { orders } from '../../db/schema';
 import { eq, desc } from 'drizzle-orm';
@@ -66,8 +65,7 @@ const counts = {
 };
 ---
 
-<BaseLayout title="Manage Orders" noindex={true}>
-  <Container class="py-6">
+<AdminLayout title="Manage Orders" activeTab="orders" subtitle="Track and fulfill customer orders">
     <!-- Header -->
     <div class="flex items-center justify-between border-b border-neutral-200 pb-4 mb-6">
       <div>
@@ -233,8 +231,7 @@ const counts = {
         </div>
       )}
     </div>
-  </Container>
-</BaseLayout>
+</AdminLayout>
 
 <script is:inline>
   function filterOrders(status) {

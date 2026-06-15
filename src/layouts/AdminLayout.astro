@@ -1,0 +1,383 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import Container from '../components/ui/Container.astro';
+import { getSessionUser } from '../lib/auth';
+
+interface Props {
+  title: string;
+  activeTab: string;
+  subtitle?: string;
+}
+
+const { title, activeTab, subtitle = 'Yash Electronics Admin Panel' } = Astro.props;
+
+// Authenticate user check (pre-flight to make sure user exists)
+const currentUser = await getSessionUser(Astro.cookies);
+if (!currentUser || currentUser.role !== 'admin') {
+  // Page level redirects will handle this, but as fallback:
+  return Astro.redirect('/admin/login');
+}
+
+// Side navigation links (12 items)
+const menuItems = [
+  { path: '/admin', label: 'Overview', icon: 'home', key: 'overview' },
+  { path: '/admin/products', label: 'Products', icon: 'box', key: 'products' },
+  { path: '/admin/offers', label: 'Offers', icon: 'tag', key: 'offers' },
+  { path: '/admin/orders', label: 'Orders', icon: 'shopping-cart', key: 'orders' },
+  { path: '/admin/customers', label: 'Customers', icon: 'users', key: 'customers' },
+  { path: '/admin/queries', label: 'Queries', icon: 'mail', key: 'queries' },
+  { path: '/admin/service-requests', label: 'Service Requests', icon: 'tool', key: 'service-requests' },
+  { path: '/admin/team', label: 'Team', icon: 'shield', key: 'team' },
+  { path: '/admin/services', label: 'Services', icon: 'briefcase', key: 'services' },
+  { path: '/admin/about', label: 'About Info', icon: 'info', key: 'about' },
+  { path: '/admin/bank-details', label: 'Bank Details', icon: 'credit-card', key: 'bank' },
+  { path: '/admin/business-hours', label: 'Business Hours', icon: 'clock', key: 'hours' },
+];
+
+// Mobile primary bottom nav (4 items)
+const bottomNavItems = [
+  { path: '/admin', label: 'Overview', icon: 'home', key: 'overview' },
+  { path: '/admin/products', label: 'Products', icon: 'box', key: 'products' },
+  { path: '/admin/orders', label: 'Orders', icon: 'shopping-cart', key: 'orders' },
+  { path: '/admin/customers', label: 'Customers', icon: 'users', key: 'customers' },
+];
+
+// Items that will appear in the "More" bottom sheet drawer
+const drawerNavItems = [
+  { path: '/admin/offers', label: 'Offers', icon: 'tag', key: 'offers' },
+  { path: '/admin/queries', label: 'Queries', icon: 'mail', key: 'queries' },
+  { path: '/admin/service-requests', label: 'Service Requests', icon: 'tool', key: 'service-requests' },
+  { path: '/admin/team', label: 'Team', icon: 'shield', key: 'team' },
+  { path: '/admin/services', label: 'Services', icon: 'briefcase', key: 'services' },
+  { path: '/admin/about', label: 'About Info', icon: 'info', key: 'about' },
+  { path: '/admin/bank-details', label: 'Bank Details', icon: 'credit-card', key: 'bank' },
+  { path: '/admin/business-hours', label: 'Business Hours', icon: 'clock', key: 'hours' },
+];
+---
+
+<BaseLayout title={title} noindex={true}>
+  <div class="min-h-screen bg-neutral-50 flex flex-col md:flex-row pb-16 md:pb-0">
+    
+    <!-- DESKTOP LEFT SIDEBAR -->
+    <aside class="hidden md:flex flex-col w-64 bg-neutral-900 text-neutral-300 border-r border-neutral-800 flex-shrink-0 sticky top-0 h-screen z-30">
+      <!-- Sidebar Header -->
+      <div class="h-16 flex items-center px-6 border-b border-neutral-800 bg-neutral-950">
+        <div class="flex items-center gap-2">
+          <span class="h-8 w-8 flex items-center justify-center rounded-md bg-primary text-white font-bold text-sm">
+            YE
+          </span>
+          <div>
+            <h1 class="text-sm font-bold text-white tracking-wider leading-none">YASH ELECTRONICS</h1>
+            <span class="text-[10px] text-neutral-500 font-semibold tracking-widest uppercase">Admin Panel</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- User Profile Summary -->
+      <div class="px-6 py-4 border-b border-neutral-800 bg-neutral-900/50 flex items-center gap-3">
+        <div class="h-8 w-8 rounded-full bg-neutral-800 flex items-center justify-center text-xs font-bold text-neutral-300 border border-neutral-700">
+          {currentUser.name.charAt(0).toUpperCase()}
+        </div>
+        <div class="overflow-hidden">
+          <p class="text-xs font-semibold text-neutral-200 truncate">{currentUser.name}</p>
+          <span class="text-[10px] text-emerald-500 font-medium flex items-center gap-1">
+            <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            Super Admin
+          </span>
+        </div>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="flex-1 px-4 py-4 space-y-1 overflow-y-auto custom-scrollbar">
+        {menuItems.map((item) => {
+          const isActive = activeTab === item.key;
+          return (
+            <a
+              href={item.path}
+              data-astro-prefetch="false"
+              class={`flex items-center gap-3 px-3 py-2.5 rounded-md text-xs font-medium transition-all ${
+                isActive
+                  ? 'bg-primary text-white shadow-md shadow-primary/10'
+                  : 'text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200'
+              }`}
+            >
+              <span class={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-white' : 'text-neutral-400'}`}>
+                {item.icon === 'home' && (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                )}
+                {item.icon === 'box' && (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                )}
+                {item.icon === 'tag' && (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></svg>
+                )}
+                {item.icon === 'shopping-cart' && (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+                )}
+                {item.icon === 'users' && (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                )}
+                {item.icon === 'mail' && (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                )}
+                {item.icon === 'tool' && (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                )}
+                {item.icon === 'shield' && (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><path d="M20 13c0 5-3.5 7.5-7.66 9.7a1 1 0 0 1-.68 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 .76-.97l8-2a1 1 0 0 1 .48 0l8 2A1 1 0 0 1 20 6v7z"/></svg>
+                )}
+                {item.icon === 'briefcase' && (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><rect width="20" height="14" x="2" y="6" rx="2"/></svg>
+                )}
+                {item.icon === 'info' && (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                )}
+                {item.icon === 'credit-card' && (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                )}
+                {item.icon === 'clock' && (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                )}
+              </span>
+              <span>{item.label}</span>
+            </a>
+          );
+        })}
+      </nav>
+
+      <!-- Sidebar Footer -->
+      <div class="p-4 border-t border-neutral-800 bg-neutral-950/40">
+        <a
+          href="/admin?action=logout"
+          class="flex items-center justify-center gap-2 w-full py-2.5 text-xs font-semibold text-red-400 bg-red-950/20 hover:bg-red-950/50 hover:text-red-300 rounded-md border border-red-900/30 transition-all"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Sign Out
+        </a>
+      </div>
+    </aside>
+
+    <!-- CONTENT SHELL CONTAINER -->
+    <div class="flex-1 flex flex-col min-w-0">
+      
+      <!-- TOP HEADER BAR -->
+      <header class="h-16 bg-white border-b border-neutral-200 flex items-center justify-between px-4 sm:px-6 sticky top-0 z-20 shadow-sm">
+        <div class="flex items-center gap-3">
+          <!-- Mobile logo -->
+          <span class="h-8 w-8 flex md:hidden items-center justify-center rounded-md bg-primary text-white font-bold text-sm">
+            YE
+          </span>
+          <div>
+            <h2 class="text-sm sm:text-base font-bold text-neutral-900 leading-tight">{title}</h2>
+            <p class="hidden sm:block text-[10px] text-neutral-400 font-medium">{subtitle}</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- Quick links/Actions -->
+          <a
+            href="/"
+            target="_blank"
+            class="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium text-neutral-600 hover:text-primary px-3 py-1.5 rounded-md hover:bg-neutral-100 transition-all"
+          >
+            <span>View Site</span>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          </a>
+          
+          <!-- Mobile Logout shortcut -->
+          <a
+            href="/admin?action=logout"
+            title="Sign Out"
+            class="md:hidden flex items-center justify-center h-8 w-8 rounded-md text-red-500 hover:bg-red-50 border border-transparent hover:border-red-100 transition-all"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          </a>
+        </div>
+      </header>
+
+      <!-- MAIN PAGE CONTENT CONTAINER -->
+      <main class="flex-1 overflow-y-auto px-4 py-6 sm:px-6 md:py-8">
+        <slot />
+      </main>
+    </div>
+
+    <!-- MOBILE BOTTOM NAVIGATION BAR -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-neutral-200 grid grid-cols-5 z-40 shadow-lg pb-safe">
+      {bottomNavItems.map((item) => {
+        const isActive = activeTab === item.key;
+        return (
+          <a
+            href={item.path}
+            data-astro-prefetch="false"
+            class={`flex flex-col items-center justify-center transition-all ${
+              isActive ? 'text-primary' : 'text-neutral-500'
+            }`}
+          >
+            <span class="w-5 h-5 mb-0.5">
+              {item.icon === 'home' && (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              )}
+              {item.icon === 'box' && (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+              )}
+              {item.icon === 'shopping-cart' && (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+              )}
+              {item.icon === 'users' && (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              )}
+            </span>
+            <span class="text-[10px] font-semibold tracking-tight leading-none">{item.label}</span>
+          </a>
+        );
+      })}
+
+      <!-- MORE BUTTON TRIGGER -->
+      <button
+        id="mobile-drawer-trigger"
+        class="flex flex-col items-center justify-center text-neutral-500 hover:text-primary outline-none"
+      >
+        <span class="w-5 h-5 mb-0.5">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+        </span>
+        <span class="text-[10px] font-semibold tracking-tight leading-none">More</span>
+      </button>
+    </nav>
+
+    <!-- MOBILE SLIDE-UP DRAWER (MORE MENU) -->
+    <div
+      id="mobile-drawer-backdrop"
+      class="md:hidden fixed inset-0 bg-neutral-900/60 z-50 opacity-0 pointer-events-none transition-opacity duration-300"
+    >
+      <!-- BOTTOM DRAWER CONTENT -->
+      <div
+        id="mobile-drawer-sheet"
+        class="absolute bottom-0 left-0 right-0 max-h-[80vh] bg-white rounded-t-2xl flex flex-col z-50 translate-y-full transition-transform duration-300 shadow-2xl border-t border-neutral-200"
+      >
+        <!-- Header of Drawer -->
+        <div class="h-14 flex items-center justify-between px-6 border-b border-neutral-100 flex-shrink-0 bg-neutral-50 rounded-t-2xl">
+          <h3 class="text-sm font-bold text-neutral-900">Store Management Tools</h3>
+          <button id="mobile-drawer-close" class="h-8 w-8 flex items-center justify-center text-neutral-400 hover:text-neutral-600 rounded-full hover:bg-neutral-100 transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+
+        <!-- Scrollable content of Drawer -->
+        <div class="flex-1 overflow-y-auto px-4 py-4 space-y-1">
+          <div class="grid grid-cols-2 gap-2">
+            {drawerNavItems.map((item) => {
+              const isActive = activeTab === item.key;
+              return (
+                <a
+                  href={item.path}
+                  data-astro-prefetch="false"
+                  class={`flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-semibold border transition-all ${
+                    isActive
+                      ? 'bg-primary/5 text-primary border-primary/20 shadow-sm'
+                      : 'bg-white text-neutral-700 border-neutral-200/80 hover:bg-neutral-50'
+                  }`}
+                >
+                  <span class={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-primary' : 'text-neutral-400'}`}>
+                    {item.icon === 'tag' && (
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></svg>
+                    )}
+                    {item.icon === 'mail' && (
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                    )}
+                    {item.icon === 'tool' && (
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                    )}
+                    {item.icon === 'shield' && (
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><path d="M20 13c0 5-3.5 7.5-7.66 9.7a1 1 0 0 1-.68 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 .76-.97l8-2a1 1 0 0 1 .48 0l8 2A1 1 0 0 1 20 6v7z"/></svg>
+                    )}
+                    {item.icon === 'briefcase' && (
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><rect width="20" height="14" x="2" y="6" rx="2"/></svg>
+                    )}
+                    {item.icon === 'info' && (
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                    )}
+                    {item.icon === 'credit-card' && (
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                    )}
+                    {item.icon === 'clock' && (
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    )}
+                  </span>
+                  <span class="truncate">{item.label}</span>
+                </a>
+              );
+            })}
+          </div>
+          
+          <div class="pt-4 border-t border-neutral-100 mt-4">
+            <a
+              href="/admin?action=logout"
+              class="flex items-center justify-center gap-2 w-full py-3.5 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl border border-red-200 transition-all"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              Sign Out
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<script is:inline>
+  document.addEventListener('DOMContentLoaded', () => {
+    const trigger = document.getElementById('mobile-drawer-trigger');
+    const close = document.getElementById('mobile-drawer-close');
+    const backdrop = document.getElementById('mobile-drawer-backdrop');
+    const sheet = document.getElementById('mobile-drawer-sheet');
+
+    function openDrawer() {
+      backdrop.classList.remove('pointer-events-none', 'opacity-0');
+      backdrop.classList.add('opacity-100');
+      sheet.classList.remove('translate-y-full');
+    }
+
+    function closeDrawer() {
+      backdrop.classList.remove('opacity-100');
+      backdrop.classList.add('opacity-0', 'pointer-events-none');
+      sheet.classList.add('translate-y-full');
+    }
+
+    if (trigger) {
+      trigger.addEventListener('click', (e) => {
+        e.preventDefault();
+        openDrawer();
+      });
+    }
+
+    if (close) {
+      close.addEventListener('click', closeDrawer);
+    }
+
+    if (backdrop) {
+      backdrop.addEventListener('click', (e) => {
+        // Only close if we clicked the backdrop overlay itself, not the sheet inside it
+        if (e.target === backdrop) {
+          closeDrawer();
+        }
+      });
+    }
+  });
+</script>
+
+<style>
+  /* Custom thin scrollbar styling for sidebar */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #404040;
+    border-radius: 2px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #525252;
+  }
+</style>

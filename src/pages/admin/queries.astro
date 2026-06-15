@@ -1,6 +1,5 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import Container from '../../components/ui/Container.astro';
+import AdminLayout from '../../layouts/AdminLayout.astro';
 import { db } from '../../db';
 import { contactQueries } from '../../db/schema';
 import { eq, desc } from 'drizzle-orm';
@@ -57,8 +56,7 @@ const counts = {
 };
 ---
 
-<BaseLayout title="Contact Queries" noindex={true}>
-  <Container class="py-6">
+<AdminLayout title="Customer Queries" activeTab="queries" subtitle="Respond to customer questions and messages">
     <!-- Header -->
     <div class="flex items-center justify-between border-b border-neutral-200 pb-4 mb-6">
       <div>
@@ -184,8 +182,7 @@ const counts = {
         </div>
       )}
     </div>
-  </Container>
-</BaseLayout>
+</AdminLayout>
 
 <script is:inline>
   function filterQueries(status) {

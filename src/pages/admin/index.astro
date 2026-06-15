@@ -1,6 +1,5 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import Container from '../../components/ui/Container.astro';
+import AdminLayout from '../../layouts/AdminLayout.astro';
 import { db } from '../../db';
 import { products, offers, orders, contactQueries, teamMembers, services, serviceRequests, users } from '../../db/schema';
 import { getSessionUser, clearSessionUser } from '../../lib/auth';
@@ -65,33 +64,7 @@ try {
 }
 ---
 
-<BaseLayout title="Admin Dashboard" noindex={true}>
-  <Container class="py-6">
-    <div class="flex items-center justify-between border-b border-neutral-200 pb-4 mb-6">
-      <div>
-        <h1 class="text-2xl font-bold text-neutral-900">Admin Dashboard</h1>
-        <p class="text-xs text-neutral-500">Welcome, {currentUser.name}</p>
-      </div>
-      <a href="/admin?action=logout" class="text-xs font-semibold text-red-600 border border-red-200 bg-red-50 hover:bg-red-100 rounded-md px-3 py-1.5 transition-colors">
-        Sign Out
-      </a>
-    </div>
-
-    <!-- Navigation Tabs -->
-    <nav class="flex flex-wrap border-b border-neutral-200 gap-x-4 gap-y-1 mb-6 text-sm font-medium">
-      <a data-astro-prefetch="false" href="/admin" class="border-b-2 border-primary text-primary px-1 pb-3">Overview</a>
-      <a data-astro-prefetch="false" href="/admin/products" class="text-neutral-600 hover:text-primary px-1 pb-3">Products</a>
-      <a data-astro-prefetch="false" href="/admin/offers" class="text-neutral-600 hover:text-primary px-1 pb-3">Offers</a>
-      <a data-astro-prefetch="false" href="/admin/orders" class="text-neutral-600 hover:text-primary px-1 pb-3">Orders ({stats.ordersCount})</a>
-      <a data-astro-prefetch="false" href="/admin/queries" class="text-neutral-600 hover:text-primary px-1 pb-3">Queries ({stats.queriesCount})</a>
-      <a data-astro-prefetch="false" href="/admin/service-requests" class="text-neutral-600 hover:text-primary px-1 pb-3">Service Requests ({stats.srsCount})</a>
-      <a data-astro-prefetch="false" href="/admin/customers" class="text-neutral-600 hover:text-primary px-1 pb-3">Customers ({stats.customersCount})</a>
-      <a data-astro-prefetch="false" href="/admin/team" class="text-neutral-600 hover:text-primary px-1 pb-3">Team</a>
-      <a data-astro-prefetch="false" href="/admin/services" class="text-neutral-600 hover:text-primary px-1 pb-3">Services</a>
-      <a data-astro-prefetch="false" href="/admin/about" class="text-neutral-600 hover:text-primary px-1 pb-3">About</a>
-      <a data-astro-prefetch="false" href="/admin/bank-details" class="text-neutral-600 hover:text-primary px-1 pb-3">Bank</a>
-      <a data-astro-prefetch="false" href="/admin/business-hours" class="text-neutral-600 hover:text-primary px-1 pb-3">Hours</a>
-    </nav>
+<AdminLayout title="Admin Dashboard" activeTab="overview" subtitle={`Welcome back, ${currentUser.name}`}>
 
     <!-- Stats Grid -->
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 mb-8">
@@ -191,5 +164,4 @@ try {
         </a>
       </div>
     </div>
-  </Container>
-</BaseLayout>
+</AdminLayout>

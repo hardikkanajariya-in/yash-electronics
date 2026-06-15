@@ -1,6 +1,5 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import Container from '../../components/ui/Container.astro';
+import AdminLayout from '../../layouts/AdminLayout.astro';
 import { db } from '../../db';
 import { teamMembers } from '../../db/schema';
 import { getSessionUser, generateId } from '../../lib/auth';
@@ -63,26 +62,7 @@ const editMember = editId ? allMembers.find(m => m.id === editId) : null;
 const showForm = isAdding || editMember;
 ---
 
-<BaseLayout title="Admin — Team Management" noindex={true}>
-  <Container class="py-6">
-    <div class="flex items-center justify-between border-b border-neutral-200 pb-4 mb-6">
-      <div>
-        <h1 class="text-2xl font-bold text-neutral-900">Team Management</h1>
-        <p class="text-xs text-neutral-500">{allMembers.length} team members</p>
-      </div>
-      <a href="/admin" class="text-xs font-semibold text-neutral-600 border border-neutral-300 bg-white hover:bg-neutral-50 rounded-md px-3 py-1.5 transition-colors">← Dashboard</a>
-    </div>
-
-    <!-- Admin Nav -->
-    <nav class="flex flex-wrap border-b border-neutral-200 gap-x-4 gap-y-1 mb-6 text-sm font-medium">
-      <a href="/admin" class="text-neutral-600 hover:text-primary px-1 pb-3">Overview</a>
-      <a href="/admin/customers" class="text-neutral-600 hover:text-primary px-1 pb-3">Customers</a>
-      <a href="/admin/team" class="border-b-2 border-primary text-primary px-1 pb-3">Team</a>
-      <a href="/admin/services" class="text-neutral-600 hover:text-primary px-1 pb-3">Services</a>
-      <a href="/admin/about" class="text-neutral-600 hover:text-primary px-1 pb-3">About</a>
-      <a href="/admin/bank-details" class="text-neutral-600 hover:text-primary px-1 pb-3">Bank</a>
-      <a href="/admin/business-hours" class="text-neutral-600 hover:text-primary px-1 pb-3">Hours</a>
-    </nav>
+<AdminLayout title="Team Management" activeTab="team" subtitle="Manage store team members">
 
     {message && <div class="bg-green-50 border border-green-200 text-green-700 text-sm rounded-md p-3 mb-4">{message}</div>}
     {error && <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md p-3 mb-4">{error}</div>}
@@ -294,5 +274,4 @@ const showForm = isAdding || editMember;
         </tbody>
       </table>
     </div>
-  </Container>
-</BaseLayout>
+</AdminLayout>

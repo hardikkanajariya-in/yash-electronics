@@ -1,6 +1,5 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import Container from '../../components/ui/Container.astro';
+import AdminLayout from '../../layouts/AdminLayout.astro';
 import { db } from '../../db';
 import { products, categories, brands } from '../../db/schema';
 import { eq } from 'drizzle-orm';
@@ -199,8 +198,7 @@ const allProducts = await db.select().from(products);
 const emptySpecifications = '{}';
 ---
 
-<BaseLayout title="Manage Products" noindex={true}>
-  <Container class="py-6">
+<AdminLayout title="Manage Products" activeTab="products" subtitle="Add, edit, or delete store products">
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-neutral-200 pb-4 mb-6 gap-4">
       <div>
@@ -718,5 +716,4 @@ const emptySpecifications = '{}';
         </script>
       </div>
     )}  
-  </Container>
-</BaseLayout>
+</AdminLayout>

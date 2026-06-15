@@ -1,6 +1,5 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import Container from '../../components/ui/Container.astro';
+import AdminLayout from '../../layouts/AdminLayout.astro';
 import { db } from '../../db';
 import { users, orders, settings } from '../../db/schema';
 import { eq, and, or, ilike, desc, gt, sql } from 'drizzle-orm';
@@ -207,8 +206,7 @@ const formatDate = (dateStr: string) => {
 };
 ---
 
-<BaseLayout title={action === 'view' && customer ? `Customer Profile: ${customer.name}` : "Manage Customers"} noindex={true}>
-  <Container class="py-6">
+<AdminLayout title={action === 'view' && customer ? `Customer Profile: ${customer.name}` : "Manage Customers"} activeTab="customers" subtitle={action === 'view' && customer ? `View details, referral statistics, and loyalty credit history.` : `${totalCustomers} registered customers in database.`}>
     <!-- Header -->
     <div class="flex items-center justify-between border-b border-neutral-200 pb-4 mb-6">
       <div>
@@ -548,5 +546,4 @@ const formatDate = (dateStr: string) => {
         </div>
       </div>
     )}
-  </Container>
-</BaseLayout>
+</AdminLayout>
