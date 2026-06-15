@@ -50,7 +50,12 @@ if (action === 'template') {
     'Active',
     'Images',
     'Specifications',
-    'Description'
+    'Description',
+    'Name (Gujarati)',
+    'Brand (Gujarati)',
+    'Category (Gujarati)',
+    'Specifications (Gujarati)',
+    'Description (Gujarati)'
   ];
   const sampleRow = [
     'Luminous Zelio+ 1100 Inverter',
@@ -64,7 +69,12 @@ if (action === 'template') {
     'true',
     'yash-electronics/uploads/inverter_xyz',
     'Capacity: 900 VA; Output Waveform: Pure Sine Wave; Warranty: 2 Years',
-    'India\'s most intelligent home UPS with LED display for backup status.'
+    'India\'s most intelligent home UPS with LED display for backup status.',
+    'લ્યુમિનસ ઝેલિયો+ ૧૧૦૦ હોમ યુપીએસ',
+    'Luminous',
+    'Home Inverters',
+    'Capacity: 900 VA; Output Waveform: Pure Sine Wave; Warranty: 2 Years',
+    'એલઇડી ડિસ્પ્લે સાથે ભારતનું સૌથી બુદ્ધિશાળી હોમ યુપીએસ.'
   ];
   
   const csvContent = headers.join(',') + '\r\n' + sampleRow.map(v => '"' + v.replace(/"/g, '""') + '"').join(',');
@@ -108,12 +118,15 @@ if (Astro.request.method === 'POST') {
       success = 'Product deleted successfully!';
     } else if (formAction === 'save') {
       const name = formData.get('name')?.toString() || '';
+      const nameGu = formData.get('nameGu')?.toString() || '';
       const slug = formData.get('slug')?.toString() || '';
       const brandId = formData.get('brandId')?.toString() || null;
       const categoryId = formData.get('categoryId')?.toString() || null;
       const modelNumber = formData.get('modelNumber')?.toString() || '';
       const description = formData.get('description')?.toString() || '';
+      const descriptionGu = formData.get('descriptionGu')?.toString() || '';
       const specifications = formData.get('specifications')?.toString() || '{}';
+      const specificationsGu = formData.get('specificationsGu')?.toString() || '{}';
       const mrp = Number(formData.get('mrp') || 0);
       const offerPrice = Number(formData.get('offerPrice') || 0);
       const isFeatured = formData.get('isFeatured') === 'on';
@@ -125,12 +138,15 @@ if (Astro.request.method === 'POST') {
         // Edit existing product
         await db.update(products).set({
           name,
+          nameGu: nameGu || null,
           slug,
           brandId,
           categoryId,
           modelNumber,
           description,
+          descriptionGu: descriptionGu || null,
           specifications,
+          specificationsGu: specificationsGu || null,
           mrp,
           offerPrice,
           images: imagesArray,
@@ -145,12 +161,15 @@ if (Astro.request.method === 'POST') {
         await db.insert(products).values({
           id: newId,
           name,
+          nameGu: nameGu || null,
           slug,
           brandId,
           categoryId,
           modelNumber,
           description,
+          descriptionGu: descriptionGu || null,
           specifications,
+          specificationsGu: specificationsGu || null,
           mrp,
           offerPrice,
           images: imagesArray,
@@ -297,17 +316,30 @@ const emptySpecifications = '{}';
         <form method="post" class="space-y-4">
           <input type="hidden" name="formAction" value="save" />
 
-          <div>
-            <label for="name" class="block text-sm font-semibold text-neutral-700 mb-1">Product Name *</label>
-            <input
-              type="text"
-              id="name"
-              name="name"
-              required
-              value={editProduct?.name || ''}
-              placeholder="e.g. Sony Bravia 55"
-              class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-            />
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label for="name" class="block text-sm font-semibold text-neutral-700 mb-1">Product Name (English) *</label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                required
+                value={editProduct?.name || ''}
+                placeholder="e.g. Sony Bravia 55"
+                class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+            <div>
+              <label for="nameGu" class="block text-sm font-semibold text-neutral-700 mb-1">Product Name (Gujarati)</label>
+              <input
+                type="text"
+                id="nameGu"
+                name="nameGu"
+                value={editProduct?.nameGu || ''}
+                placeholder="દા.ત. સોની બ્રાવિયા ૫૫"
+                class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
           </div>
 
           <div class="grid gap-4 sm:grid-cols-2">
@@ -418,22 +450,35 @@ const emptySpecifications = '{}';
             </div>
           </div>
 
-          <div>
-            <label for="description" class="block text-sm font-semibold text-neutral-700 mb-1">Product Description</label>
-            <textarea
-              id="description"
-              name="description"
-              rows="3"
-              placeholder="Enter product details..."
-              class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none"
-            >{editProduct?.description || ''}</textarea>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label for="description" class="block text-sm font-semibold text-neutral-700 mb-1">Product Description (English)</label>
+              <textarea
+                id="description"
+                name="description"
+                rows="3"
+                placeholder="Enter product details..."
+                class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              >{editProduct?.description || ''}</textarea>
+            </div>
+            <div>
+              <label for="descriptionGu" class="block text-sm font-semibold text-neutral-700 mb-1">Product Description (Gujarati)</label>
+              <textarea
+                id="descriptionGu"
+                name="descriptionGu"
+                rows="3"
+                placeholder="ગુજરાતીમાં વિગતો દાખલ કરો..."
+                class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              >{editProduct?.descriptionGu || ''}</textarea>
+            </div>
           </div>
 
           <div>
             <label class="block text-sm font-semibold text-neutral-700 mb-2">Specifications</label>
             <input type="hidden" id="specifications" name="specifications" value={editProduct?.specifications || emptySpecifications} />
+            <input type="hidden" id="specificationsGu" name="specificationsGu" value={editProduct?.specificationsGu || emptySpecifications} />
             
-            <div id="specs-list" class="space-y-2 mb-3"></div>
+            <div id="specs-list" class="space-y-3 mb-3"></div>
             
             <button
               type="button"
@@ -468,6 +513,7 @@ const emptySpecifications = '{}';
         <script>
           // Specifications Editor
           const specsInput = document.getElementById('specifications') as HTMLInputElement;
+          const specsGuInput = document.getElementById('specificationsGu') as HTMLInputElement;
           const specsList = document.getElementById('specs-list');
           const addSpecBtn = document.getElementById('add-spec-btn');
 
@@ -479,30 +525,59 @@ const emptySpecifications = '{}';
             }
           }
 
+          function getSpecsGuData() {
+            try {
+              return JSON.parse(specsGuInput.value || '{}');
+            } catch(e) {
+              return {};
+            }
+          }
+
           function saveSpecsData() {
             const data: Record<string, string> = {};
+            const dataGu: Record<string, string> = {};
             const rows = specsList?.querySelectorAll('.spec-row');
             rows?.forEach(row => {
               const keyInput = row.querySelector('.spec-key') as HTMLInputElement;
               const valInput = row.querySelector('.spec-val') as HTMLInputElement;
+              const keyGuInput = row.querySelector('.spec-key-gu') as HTMLInputElement;
+              const valGuInput = row.querySelector('.spec-val-gu') as HTMLInputElement;
+              
               if (keyInput && valInput && keyInput.value.trim()) {
-                data[keyInput.value.trim()] = valInput.value.trim();
+                const k = keyInput.value.trim();
+                const v = valInput.value.trim();
+                data[k] = v;
+                
+                const kGu = keyGuInput?.value.trim() || k;
+                const vGu = valGuInput?.value.trim() || v;
+                dataGu[kGu] = vGu;
               }
             });
             specsInput.value = JSON.stringify(data);
+            specsGuInput.value = JSON.stringify(dataGu);
           }
 
-          function createSpecRow(key = '', val = '') {
+          function createSpecRow(key = '', val = '', keyGu = '', valGu = '') {
             const div = document.createElement('div');
-            div.className = 'spec-row flex gap-2 items-center';
+            div.className = 'spec-row border border-neutral-200 rounded-md p-3 bg-neutral-50/50 space-y-2 relative';
             div.innerHTML = `
-              <input type="text" placeholder="Specification Name (e.g. Screen Size)" value="${key}" class="spec-key flex-1 rounded-md border border-neutral-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary" />
-              <input type="text" placeholder="Value (e.g. 55 inch)" value="${val}" class="spec-val flex-1 rounded-md border border-neutral-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary" />
-              <button type="button" class="remove-spec-btn text-red-500 hover:text-red-700 p-1.5 rounded transition-colors text-sm">✕</button>
+              <div class="flex gap-2 items-center">
+                <span class="text-[10px] font-bold text-neutral-400 w-6 uppercase shrink-0">EN</span>
+                <input type="text" placeholder="Spec Name (e.g. Screen Size)" value="${key}" class="spec-key flex-1 rounded-md border border-neutral-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary" />
+                <input type="text" placeholder="Value (e.g. 55 inch)" value="${val}" class="spec-val flex-1 rounded-md border border-neutral-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary" />
+              </div>
+              <div class="flex gap-2 items-center">
+                <span class="text-[10px] font-bold text-neutral-400 w-6 uppercase shrink-0">GU</span>
+                <input type="text" placeholder="ગુજરાતી નામ (વૈકલ્પિક)" value="${keyGu}" class="spec-key-gu flex-1 rounded-md border border-neutral-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary" />
+                <input type="text" placeholder="ગુજરાતી કિંમત (વૈકલ્પિક)" value="${valGu}" class="spec-val-gu flex-1 rounded-md border border-neutral-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary" />
+              </div>
+              <button type="button" class="remove-spec-btn absolute right-2 top-2 text-neutral-400 hover:text-red-500 p-1 rounded transition-colors text-xs">✕ Remove</button>
             `;
             
             div.querySelector('.spec-key')?.addEventListener('input', saveSpecsData);
             div.querySelector('.spec-val')?.addEventListener('input', saveSpecsData);
+            div.querySelector('.spec-key-gu')?.addEventListener('input', saveSpecsData);
+            div.querySelector('.spec-val-gu')?.addEventListener('input', saveSpecsData);
             div.querySelector('.remove-spec-btn')?.addEventListener('click', () => {
               div.remove();
               saveSpecsData();
@@ -623,8 +698,15 @@ const emptySpecifications = '{}';
 
           // Initialize
           const initialSpecs = getSpecsData();
-          Object.entries(initialSpecs).forEach(([key, val]) => {
-            createSpecRow(key, val as string);
+          const initialSpecsGu = getSpecsGuData();
+          const keysEn = Object.keys(initialSpecs);
+          const keysGu = Object.keys(initialSpecsGu);
+
+          keysEn.forEach((key, index) => {
+            const val = initialSpecs[key];
+            const keyGu = keysGu[index] || '';
+            const valGu = initialSpecsGu[keyGu] || '';
+            createSpecRow(key, val, keyGu, valGu);
           });
 
           addSpecBtn?.addEventListener('click', () => {

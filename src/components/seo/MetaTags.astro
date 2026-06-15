@@ -9,11 +9,11 @@ interface Props {
 }
 
 import { siteConfig } from '../../config/site';
-import { translate } from '../../lib/translations';
+import { t } from '../../lib/translations';
 
 const locale = Astro.currentLocale || 'gu';
-const localizedSiteName = translate(siteConfig.name, locale);
-const localizedDefaultDescription = translate(siteConfig.defaultDescription, locale);
+const localizedSiteName = t('site.name', locale);
+const localizedDefaultDescription = t('site.description', locale);
 
 const {
   title,

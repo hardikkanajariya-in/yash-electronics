@@ -9,8 +9,10 @@ export const settings = pgTable('settings', {
 export const categories = pgTable('categories', {
   id: varchar('id', { length: 255 }).primaryKey(),
   name: text('name').notNull(),
+  nameGu: text('name_gu'),
   slug: text('slug').notNull().unique(),
   description: text('description'),
+  descriptionGu: text('description_gu'),
   icon: text('icon'),
   image: text('image'),
   sortOrder: integer('sort_order').notNull().default(0),
@@ -24,6 +26,7 @@ export const categoriesRelations = relations(categories, ({ many }) => ({
 export const brands = pgTable('brands', {
   id: varchar('id', { length: 255 }).primaryKey(),
   name: text('name').notNull(),
+  nameGu: text('name_gu'),
   slug: text('slug').notNull().unique(),
   logo: text('logo'),
   sortOrder: integer('sort_order').notNull().default(0),
@@ -37,12 +40,15 @@ export const brandsRelations = relations(brands, ({ many }) => ({
 export const products = pgTable('products', {
   id: varchar('id', { length: 255 }).primaryKey(),
   name: text('name').notNull(),
+  nameGu: text('name_gu'),
   slug: text('slug').notNull().unique(),
   brandId: varchar('brand_id', { length: 255 }).references(() => brands.id, { onDelete: 'cascade' }),
   categoryId: varchar('category_id', { length: 255 }).references(() => categories.id, { onDelete: 'cascade' }),
   modelNumber: text('model_number'),
   description: text('description'),
+  descriptionGu: text('description_gu'),
   specifications: text('specifications'), // Stored as a JSON string for consistency
+  specificationsGu: text('specifications_gu'),
   mrp: integer('mrp').notNull().default(0),
   offerPrice: integer('offer_price').notNull().default(0),
   images: text('images').array().notNull().default([]), // Postgres array of texts
@@ -66,11 +72,14 @@ export const productsRelations = relations(products, ({ one }) => ({
 export const offers = pgTable('offers', {
   id: varchar('id', { length: 255 }).primaryKey(),
   title: text('title').notNull(),
+  titleGu: text('title_gu'),
   slug: text('slug').notNull().unique(),
   type: text('type').$type<'combo' | 'bundle' | 'weekly' | 'festival'>().notNull(),
   description: text('description'),
+  descriptionGu: text('description_gu'),
   image: text('image'),
   discountText: text('discount_text'),
+  discountTextGu: text('discount_text_gu'),
   validUntil: text('valid_until'),
   isActive: boolean('is_active').notNull().default(true),
   sortOrder: integer('sort_order').notNull().default(0),

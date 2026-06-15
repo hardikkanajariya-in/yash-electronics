@@ -82,12 +82,17 @@ export async function importProductsFromCsv(csvText: string) {
   const headerRow = parsed[0].map(h => h.toLowerCase().replace(/[\s_-]/g, ''));
   
   const nameIdx = headerRow.indexOf('name');
+  const nameGuIdx = headerRow.indexOf('name(gujarati)') !== -1 ? headerRow.indexOf('name(gujarati)') : headerRow.indexOf('namegu');
   const slugIdx = headerRow.indexOf('slug');
   const brandIdx = headerRow.indexOf('brand') !== -1 ? headerRow.indexOf('brand') : headerRow.indexOf('brandname');
+  const brandGuIdx = headerRow.indexOf('brand(gujarati)') !== -1 ? headerRow.indexOf('brand(gujarati)') : headerRow.indexOf('brandgu');
   const categoryIdx = headerRow.indexOf('category') !== -1 ? headerRow.indexOf('category') : headerRow.indexOf('categoryname');
+  const categoryGuIdx = headerRow.indexOf('category(gujarati)') !== -1 ? headerRow.indexOf('category(gujarati)') : headerRow.indexOf('categorygu');
   const modelIdx = headerRow.indexOf('modelnumber') !== -1 ? headerRow.indexOf('modelnumber') : headerRow.indexOf('model');
   const descriptionIdx = headerRow.indexOf('description');
+  const descriptionGuIdx = headerRow.indexOf('description(gujarati)') !== -1 ? headerRow.indexOf('description(gujarati)') : headerRow.indexOf('descriptiongu');
   const specsIdx = headerRow.indexOf('specifications') !== -1 ? headerRow.indexOf('specifications') : headerRow.indexOf('specs');
+  const specsGuIdx = headerRow.indexOf('specifications(gujarati)') !== -1 ? headerRow.indexOf('specifications(gujarati)') : headerRow.indexOf('specificationsgu');
   const mrpIdx = headerRow.indexOf('mrp');
   const offerPriceIdx = headerRow.indexOf('offerprice') !== -1 ? headerRow.indexOf('offerprice') : headerRow.indexOf('price');
   const imagesIdx = headerRow.indexOf('images');
@@ -123,10 +128,14 @@ export async function importProductsFromCsv(csvText: string) {
       // 1. Resolve Brand
       let brandId: string | null = null;
       const brandName = brandIdx !== -1 ? row[brandIdx]?.trim() || '' : '';
+      const brandNameGu = brandGuIdx !== -1 ? row[brandGuIdx]?.trim() || '' : '';
       if (brandName) {
         const brandKey = brandName.toLowerCase();
         if (brandMap.has(brandKey)) {
           brandId = brandMap.get(brandKey)!;
+          if (brandNameGu) {
+            await db.update(brands).set({ nameGu: brandNameGu }).where(eq(brands.id, brandId));
+          }
         } else {
           // Create new brand
           const newBrandId = generateId();
@@ -134,6 +143,7 @@ export async function importProductsFromCsv(csvText: string) {
           await db.insert(brands).values({
             id: newBrandId,
             name: brandName,
+            nameGu: brandNameGu || null,
             slug: brandSlug,
             isActive: true,
             sortOrder: 0,
@@ -146,10 +156,14 @@ export async function importProductsFromCsv(csvText: string) {
       // 2. Resolve Category
       let categoryId: string | null = null;
       const categoryName = categoryIdx !== -1 ? row[categoryIdx]?.trim() || '' : '';
+      const categoryNameGu = categoryGuIdx !== -1 ? row[categoryGuIdx]?.trim() || '' : '';
       if (categoryName) {
         const categoryKey = categoryName.toLowerCase();
         if (categoryMap.has(categoryKey)) {
           categoryId = categoryMap.get(categoryKey)!;
+          if (categoryNameGu) {
+            await db.update(categories).set({ nameGu: categoryNameGu }).where(eq(categories.id, categoryId));
+          }
         } else {
           // Create new category
           const newCategoryId = generateId();
@@ -157,6 +171,7 @@ export async function importProductsFromCsv(csvText: string) {
           await db.insert(categories).values({
             id: newCategoryId,
             name: categoryName,
+            nameGu: categoryNameGu || null,
             slug: categorySlug,
             isActive: true,
             sortOrder: 0,
@@ -195,7 +210,37 @@ export async function importProductsFromCsv(csvText: string) {
         }
       }
 
+      // 3b. Resolve Specifications (Gujarati)
+      let specificationsGu = '{}';
+      const rawSpecsGu = specsGuIdx !== -1 ? row[specsGuIdx]?.trim() || '' : '';
+      if (rawSpecsGu) {
+        if (rawSpecsGu.startsWith('{')) {
+          try {
+            JSON.parse(rawSpecsGu);
+            specificationsGu = rawSpecsGu;
+          } catch {
+            errors.push(`Row ${i + 1}: Gujarati specifications has invalid JSON format.`);
+          }
+        } else {
+          const specsObj: Record<string, string> = {};
+          const pairs = rawSpecsGu.split(';');
+          for (const pair of pairs) {
+            const parts = pair.split(':');
+            if (parts.length >= 2) {
+              const key = parts[0].trim();
+              const val = parts.slice(1).join(':').trim();
+              if (key && val) {
+                specsObj[key] = val;
+              }
+            }
+          }
+          specificationsGu = JSON.stringify(specsObj);
+        }
+      }
+
       // 4. Resolve other values
+      const nameGu = nameGuIdx !== -1 ? row[nameGuIdx]?.trim() || null : null;
+      const descriptionGu = descriptionGuIdx !== -1 ? row[descriptionGuIdx]?.trim() || null : null;
       const slug = slugIdx !== -1 && row[slugIdx]?.trim() ? slugify(row[slugIdx].trim()) : slugify(name);
       const modelNumber = modelIdx !== -1 ? row[modelIdx]?.trim() || null : null;
       const description = descriptionIdx !== -1 ? row[descriptionIdx]?.trim() || null : null;
@@ -222,11 +267,14 @@ export async function importProductsFromCsv(csvText: string) {
       if (existingProduct) {
         await db.update(products).set({
           name,
+          nameGu,
           brandId,
           categoryId,
           modelNumber,
           description,
+          descriptionGu,
           specifications,
+          specificationsGu,
           mrp,
           offerPrice,
           images,
@@ -238,12 +286,15 @@ export async function importProductsFromCsv(csvText: string) {
         await db.insert(products).values({
           id: generateId(),
           name,
+          nameGu,
           slug,
           brandId,
           categoryId,
           modelNumber,
           description,
+          descriptionGu,
           specifications,
+          specificationsGu,
           mrp,
           offerPrice,
           images,
@@ -283,7 +334,12 @@ export async function exportProductsToCsv(): Promise<string> {
     'Active',
     'Images',
     'Specifications',
-    'Description'
+    'Description',
+    'Name (Gujarati)',
+    'Brand (Gujarati)',
+    'Category (Gujarati)',
+    'Specifications (Gujarati)',
+    'Description (Gujarati)'
   ];
 
   const rows = allProducts.map(p => {
@@ -295,6 +351,16 @@ export async function exportProductsToCsv(): Promise<string> {
         specStr = Object.entries(obj).map(([k, v]) => `${k}: ${v}`).join('; ');
       } catch {
         specStr = p.specifications;
+      }
+    }
+
+    let specGuStr = '';
+    if (p.specificationsGu) {
+      try {
+        const obj = JSON.parse(p.specificationsGu);
+        specGuStr = Object.entries(obj).map(([k, v]) => `${k}: ${v}`).join('; ');
+      } catch {
+        specGuStr = p.specificationsGu;
       }
     }
 
@@ -310,7 +376,12 @@ export async function exportProductsToCsv(): Promise<string> {
       'Active': p.isActive ? 'true' : 'false',
       'Images': p.images.join(', '),
       'Specifications': specStr,
-      'Description': p.description || ''
+      'Description': p.description || '',
+      'Name (Gujarati)': p.nameGu || '',
+      'Brand (Gujarati)': p.brand?.nameGu || '',
+      'Category (Gujarati)': p.category?.nameGu || '',
+      'Specifications (Gujarati)': specGuStr,
+      'Description (Gujarati)': p.descriptionGu || ''
     };
   });
 
