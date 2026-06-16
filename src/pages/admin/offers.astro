@@ -4,6 +4,7 @@ import { db } from '../../db';
 import { offers } from '../../db/schema';
 import { eq } from 'drizzle-orm';
 import { getSessionUser, generateId } from '../../lib/auth';
+import { clearCmsCache } from '../../services/cms';
 
 export const prerender = false;
 
@@ -29,6 +30,7 @@ if (Astro.request.method === 'POST') {
     if (formAction === 'delete') {
       const idToDelete = formData.get('id')?.toString() || '';
       await db.delete(offers).where(eq(offers.id, idToDelete));
+      clearCmsCache();
       success = 'Offer deleted successfully!';
     } else if (formAction === 'save') {
       const title = formData.get('title')?.toString() || '';
@@ -60,6 +62,7 @@ if (Astro.request.method === 'POST') {
           discountType: discountType as any,
           discountValue: isNaN(discountValue) ? 0 : discountValue,
         }).where(eq(offers.id, offerId));
+        clearCmsCache();
         success = 'Offer updated successfully!';
       } else {
         // Create new
@@ -79,6 +82,7 @@ if (Astro.request.method === 'POST') {
           discountType: discountType as any,
           discountValue: isNaN(discountValue) ? 0 : discountValue,
         });
+        clearCmsCache();
         success = 'Offer added successfully!';
       }
     }

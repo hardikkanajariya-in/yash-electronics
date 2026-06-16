@@ -55,23 +55,23 @@ const settings = {
 };
 
 const categories = [
-  { id: 'cat1', name: 'Home Inverters', slug: 'home-inverters', description: 'High-performance home inverters and UPS for uninterrupted power supply.', icon: 'inverter', image: '/images/seed/categories/led-tv.jpg', sortOrder: 1, isActive: true },
-  { id: 'cat2', name: 'Batteries', slug: 'batteries', description: 'Long-lasting tubular and flat plate batteries for inverters and vehicles.', icon: 'battery', image: '/images/seed/categories/refrigerator.jpg', sortOrder: 2, isActive: true },
-  { id: 'cat3', name: 'Sound Systems', slug: 'sound-systems', description: 'Premium home theatres, soundbars, and consumer audio gear.', icon: 'speaker', image: '/images/seed/categories/washing-machine.jpg', sortOrder: 3, isActive: true },
-  { id: 'cat4', name: 'DJ Speaker Systems', slug: 'dj-speaker-systems', description: 'Professional DJ speakers, amplifiers, mixers, and stage audio gear.', icon: 'dj', image: '/images/seed/categories/microwave.jpg', sortOrder: 4, isActive: true },
+  { id: 'cat1', name: 'Home Inverters', nameGu: 'હોમ ઇન્વર્ટર', slug: 'home-inverters', description: 'High-performance home inverters and UPS for uninterrupted power supply.', descriptionGu: 'અવિરત પાવર સપ્લાય માટે ઉચ્ચ પ્રદર્શનવાળા હોમ ઇન્વર્ટર અને યુપીએસ.', icon: 'inverter', image: '/images/seed/categories/led-tv.jpg', sortOrder: 1, isActive: true },
+  { id: 'cat2', name: 'Batteries', nameGu: 'બેટરીઓ', slug: 'batteries', description: 'Long-lasting tubular and flat plate batteries for inverters and vehicles.', descriptionGu: 'ઇન્વર્ટર અને વાહનો માટે લાંબો સમય ચાલતી ટ્યુબ્યુલર અને ફ્લેટ પ્લેટ બેટરી.', icon: 'battery', image: '/images/seed/categories/refrigerator.jpg', sortOrder: 2, isActive: true },
+  { id: 'cat3', name: 'Sound Systems', nameGu: 'સાઉન્ડ સિસ્ટમ્સ', slug: 'sound-systems', description: 'Premium home theatres, soundbars, and consumer audio gear.', descriptionGu: 'પ્રીમિયમ હોમ થિયેટર્સ, સાઉન્ડબાર્સ અને કન્ઝ્યુમર ઓડિયો ગિયર.', icon: 'speaker', image: '/images/seed/categories/washing-machine.jpg', sortOrder: 3, isActive: true },
+  { id: 'cat4', name: 'DJ Speaker Systems', nameGu: 'ડીજે સ્પીકર સિસ્ટમ્સ', slug: 'dj-speaker-systems', description: 'Professional DJ speakers, amplifiers, mixers, and stage audio gear.', descriptionGu: 'પ્રોફેશનલ ડીજે સ્પીકર્સ, એમ્પ્લીફાયર, મિક્સર્સ અને સ્ટેજ ઓડિયો ગિયર.', icon: 'dj', image: '/images/seed/categories/microwave.jpg', sortOrder: 4, isActive: true },
 ];
 
 const brands = [
-  { id: 'b1', name: 'Luminous', slug: 'luminous', logo: '/images/seed/brands/sony.svg', sortOrder: 1, isActive: true },
-  { id: 'b2', name: 'Microtek', slug: 'microtek', logo: '/images/seed/brands/samsung.svg', sortOrder: 2, isActive: true },
-  { id: 'b3', name: 'Exide', slug: 'exide', logo: '/images/seed/brands/haier.svg', sortOrder: 3, isActive: true },
-  { id: 'b4', name: 'Amaron', slug: 'amaron', logo: '/images/seed/brands/ifb.svg', sortOrder: 4, isActive: true },
-  { id: 'b5', name: 'Livguard', slug: 'livguard', logo: '/images/seed/brands/iwis.svg', sortOrder: 5, isActive: true },
-  { id: 'b6', name: 'JBL', slug: 'jbl', logo: '/images/seed/brands/clt.svg', sortOrder: 6, isActive: true },
-  { id: 'b7', name: 'Sony', slug: 'sony', logo: '/images/seed/brands/trion.svg', sortOrder: 7, isActive: true },
-  { id: 'b8', name: 'Pioneer', slug: 'pioneer', logo: '/images/seed/brands/komfy.svg', sortOrder: 8, isActive: true },
-  { id: 'b9', name: 'Studio Master', slug: 'studio-master', logo: '/images/seed/brands/daikin.svg', sortOrder: 9, isActive: true },
-  { id: 'b10', name: 'Ahuja', slug: 'ahuja', logo: '/images/seed/brands/voltas.svg', sortOrder: 10, isActive: true },
+  { id: 'b1', name: 'Luminous', nameGu: 'લ્યુમિનસ', slug: 'luminous', logo: '/images/seed/brands/sony.svg', sortOrder: 1, isActive: true },
+  { id: 'b2', name: 'Microtek', nameGu: 'માઇક્રોટેક', slug: 'microtek', logo: '/images/seed/brands/samsung.svg', sortOrder: 2, isActive: true },
+  { id: 'b3', name: 'Exide', nameGu: 'એક્સાઇડ', slug: 'exide', logo: '/images/seed/brands/haier.svg', sortOrder: 3, isActive: true },
+  { id: 'b4', name: 'Amaron', nameGu: 'અમરોન', slug: 'amaron', logo: '/images/seed/brands/ifb.svg', sortOrder: 4, isActive: true },
+  { id: 'b5', name: 'Livguard', nameGu: 'લીવગાર્ડ', slug: 'livguard', logo: '/images/seed/brands/iwis.svg', sortOrder: 5, isActive: true },
+  { id: 'b6', name: 'JBL', nameGu: 'જેબીએલ', slug: 'jbl', logo: '/images/seed/brands/clt.svg', sortOrder: 6, isActive: true },
+  { id: 'b7', name: 'Sony', nameGu: 'સોની', slug: 'sony', logo: '/images/seed/brands/trion.svg', sortOrder: 7, isActive: true },
+  { id: 'b8', name: 'Pioneer', nameGu: 'પાયોનિયર', slug: 'pioneer', logo: '/images/seed/brands/komfy.svg', sortOrder: 8, isActive: true },
+  { id: 'b9', name: 'Studio Master', nameGu: 'સ્ટુડિયો માસ્ટર', slug: 'studio-master', logo: '/images/seed/brands/daikin.svg', sortOrder: 9, isActive: true },
+  { id: 'b10', name: 'Ahuja', nameGu: 'આહુજા', slug: 'ahuja', logo: '/images/seed/brands/voltas.svg', sortOrder: 10, isActive: true },
 ];
 
 const products = [
@@ -662,18 +662,37 @@ async function seed() {
     console.log('[Seed] Inserting categories...');
     for (const category of categories) {
       await client.query(
-        `INSERT INTO categories (id, name, slug, description, icon, image, sort_order, is_active)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-        [category.id, category.name, category.slug, category.description, category.icon, category.image, category.sortOrder, category.isActive]
+        `INSERT INTO categories (id, name, name_gu, slug, description, description_gu, icon, image, sort_order, is_active)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+        [
+          category.id,
+          category.name,
+          category.nameGu || null,
+          category.slug,
+          category.description || null,
+          category.descriptionGu || null,
+          category.icon,
+          category.image,
+          category.sortOrder,
+          category.isActive
+        ]
       );
     }
 
     console.log('[Seed] Inserting brands...');
     for (const brand of brands) {
       await client.query(
-        `INSERT INTO brands (id, name, slug, logo, sort_order, is_active)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [brand.id, brand.name, brand.slug, brand.logo, brand.sortOrder, brand.isActive]
+        `INSERT INTO brands (id, name, name_gu, slug, logo, sort_order, is_active)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [
+          brand.id,
+          brand.name,
+          brand.nameGu || null,
+          brand.slug,
+          brand.logo,
+          brand.sortOrder,
+          brand.isActive
+        ]
       );
     }
 

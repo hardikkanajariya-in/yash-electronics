@@ -264,3 +264,8 @@ export async function getReferralHistory(userId: string) {
     return [];
   }
 }
+
+export function clearCmsCache() {
+  cachedData = null;
+}
+
