@@ -248,8 +248,7 @@ export async function importProductsFromCsv(csvText: string) {
       const mrp = mrpIdx !== -1 ? Math.round(Number(row[mrpIdx]) || 0) : 0;
       const offerPrice = offerPriceIdx !== -1 ? Math.round(Number(row[offerPriceIdx]) || 0) : 0;
       
-      const rawImages = imagesIdx !== -1 ? row[imagesIdx]?.trim() || '' : '';
-      const images = rawImages ? rawImages.split(',').map(img => img.trim()).filter(Boolean) : [];
+      const images: string[] = [];
 
       const valBool = (val: string | undefined, defaultVal: boolean) => {
         if (!val) return defaultVal;
@@ -277,7 +276,7 @@ export async function importProductsFromCsv(csvText: string) {
           specificationsGu,
           mrp,
           offerPrice,
-          images,
+          // We do NOT update images from CSV, keeping existing ones
           isFeatured,
           isActive,
           updatedAt: now,
@@ -297,7 +296,7 @@ export async function importProductsFromCsv(csvText: string) {
           specificationsGu,
           mrp,
           offerPrice,
-          images,
+          images: [], // New products get empty image lists
           isFeatured,
           isActive,
           createdAt: now,
@@ -332,7 +331,6 @@ export async function exportProductsToCsv(): Promise<string> {
     'Offer Price',
     'Featured',
     'Active',
-    'Images',
     'Specifications',
     'Description',
     'Name (Gujarati)',
@@ -374,7 +372,6 @@ export async function exportProductsToCsv(): Promise<string> {
       'Offer Price': p.offerPrice,
       'Featured': p.isFeatured ? 'true' : 'false',
       'Active': p.isActive ? 'true' : 'false',
-      'Images': p.images.join(', '),
       'Specifications': specStr,
       'Description': p.description || '',
       'Name (Gujarati)': p.nameGu || '',
