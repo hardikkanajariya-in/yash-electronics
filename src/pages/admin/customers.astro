@@ -1,71 +1,61 @@
 ---
-import AdminLayout from '../../layouts/AdminLayout.astro';
-import { db } from '../../db';
-import { users, orders, settings } from '../../db/schema';
-import { eq, and, or, ilike, desc, gt, sql } from 'drizzle-orm';
-import { getSessionUser } from '../../lib/auth';
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import { db } from "../../db";
+import { users, orders, settings } from "../../db/schema";
+import { eq, and, or, ilike, desc, gt, sql } from "drizzle-orm";
+import { getSessionUser } from "../../lib/auth";
 
 export const prerender = false;
 
 // Authenticate Admin
-Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+Astro.response.headers.set(
+  "Cache-Control",
+  "no-cache, no-store, must-revalidate",
+);
 const currentUser = await getSessionUser(Astro.cookies);
-if (!currentUser || currentUser.role !== 'admin') {
-  return Astro.redirect('/admin/login');
+if (!currentUser || currentUser.role !== "admin") {
+  return Astro.redirect("/admin/login");
 }
 
-let error = Astro.url.searchParams.get('error') || '';
-let success = Astro.url.searchParams.get('success') || '';
+let error = Astro.url.searchParams.get("error") || "";
+let success = Astro.url.searchParams.get("success") || "";
 
-const action = Astro.url.searchParams.get('action') || 'list';
-const customerId = Astro.url.searchParams.get('id') || '';
+const action = Astro.url.searchParams.get("action") || "list";
+const customerId = Astro.url.searchParams.get("id") || "";
 
 // Handle POST actions (credit adjustment, deletion, settings update)
-if (Astro.request.method === 'POST') {
+if (Astro.request.method === "POST") {
   try {
     const formData = await Astro.request.formData();
-    const formAction = formData.get('formAction')?.toString();
-    const targetId = formData.get('customerId')?.toString() || '';
+    const formAction = formData.get("formAction")?.toString();
+    const targetId = formData.get("customerId")?.toString() || "";
 
-    if (formAction === 'adjust_credits' && targetId) {
-      const newCredits = parseInt(formData.get('credits')?.toString() || '0', 10);
+    if (formAction === "adjust_credits" && targetId) {
+      const newCredits = parseInt(
+        formData.get("credits")?.toString() || "0",
+        10,
+      );
       if (isNaN(newCredits) || newCredits < 0) {
-        error = 'Credits must be a valid positive integer.';
+        error = "Credits must be a valid positive integer.";
       } else {
-        await db.update(users).set({ credits: newCredits }).where(eq(users.id, targetId));
-        return Astro.redirect(`/admin/customers?action=view&id=${targetId}&success=` + encodeURIComponent('Customer credits updated successfully!'));
+        await db
+          .update(users)
+          .set({ credits: newCredits })
+          .where(eq(users.id, targetId));
+        return Astro.redirect(
+          `/admin/customers?action=view&id=${targetId}&success=` +
+            encodeURIComponent("Customer credits updated successfully!"),
+        );
       }
-    } else if (formAction === 'delete' && targetId) {
+    } else if (formAction === "delete" && targetId) {
       await db.delete(users).where(eq(users.id, targetId));
-      return Astro.redirect('/admin/customers?success=' + encodeURIComponent('Customer deleted successfully!'));
-    } else if (formAction === 'update_referral_settings') {
-      const signupPoints = parseInt(formData.get('signup_bonus_points')?.toString() || '50', 10);
-      const referrerPoints = parseInt(formData.get('referrer_bonus_points')?.toString() || '100', 10);
-      
-      if (isNaN(signupPoints) || signupPoints < 0 || isNaN(referrerPoints) || referrerPoints < 0) {
-        error = 'Points must be valid positive integers.';
-      } else {
-        // Try to update or insert signup_bonus_points
-        const [exSignup] = await db.select().from(settings).where(eq(settings.key, 'signup_bonus_points'));
-        if (exSignup) {
-          await db.update(settings).set({ value: signupPoints.toString() }).where(eq(settings.key, 'signup_bonus_points'));
-        } else {
-          await db.insert(settings).values({ key: 'signup_bonus_points', value: signupPoints.toString() });
-        }
-
-        // Try to update or insert referrer_bonus_points
-        const [exReferrer] = await db.select().from(settings).where(eq(settings.key, 'referrer_bonus_points'));
-        if (exReferrer) {
-          await db.update(settings).set({ value: referrerPoints.toString() }).where(eq(settings.key, 'referrer_bonus_points'));
-        } else {
-          await db.insert(settings).values({ key: 'referrer_bonus_points', value: referrerPoints.toString() });
-        }
-        
-        return Astro.redirect('/admin/customers?success=' + encodeURIComponent('Referral points settings updated successfully!'));
-      }
+      return Astro.redirect(
+        "/admin/customers?success=" +
+          encodeURIComponent("Customer deleted successfully!"),
+      );
     }
   } catch (e: any) {
-    error = e.message || 'Failed to perform action.';
+    error = e.message || "Failed to perform action.";
   }
 }
 
@@ -73,13 +63,21 @@ if (Astro.request.method === 'POST') {
 let signupBonusPointsSetting = 50;
 let referrerBonusPointsSetting = 100;
 try {
-  const [signupSetting] = await db.select().from(settings).where(eq(settings.key, 'signup_bonus_points'));
-  if (signupSetting) signupBonusPointsSetting = parseInt(signupSetting.value, 10);
-  
-  const [referrerSetting] = await db.select().from(settings).where(eq(settings.key, 'referrer_bonus_points'));
-  if (referrerSetting) referrerBonusPointsSetting = parseInt(referrerSetting.value, 10);
+  const [signupSetting] = await db
+    .select()
+    .from(settings)
+    .where(eq(settings.key, "signup_bonus_points"));
+  if (signupSetting)
+    signupBonusPointsSetting = parseInt(signupSetting.value, 10);
+
+  const [referrerSetting] = await db
+    .select()
+    .from(settings)
+    .where(eq(settings.key, "referrer_bonus_points"));
+  if (referrerSetting)
+    referrerBonusPointsSetting = parseInt(referrerSetting.value, 10);
 } catch (e) {
-  console.error('[Admin Customers] Failed to fetch settings:', e);
+  console.error("[Admin Customers] Failed to fetch settings:", e);
 }
 
 // Page variables
@@ -87,22 +85,32 @@ let customer: any = null;
 let referralsMade: any[] = [];
 let ledger: any[] = [];
 let customersList: any[] = [];
-let search = Astro.url.searchParams.get('search')?.trim() || '';
-let referrerName = 'None';
+let search = Astro.url.searchParams.get("search")?.trim() || "";
+let referrerName = "None";
 
-if (action === 'view' && customerId) {
-  const [foundCustomer] = await db.select().from(users).where(and(eq(users.id, customerId), eq(users.role, 'customer')));
+if (action === "view" && customerId) {
+  const [foundCustomer] = await db
+    .select()
+    .from(users)
+    .where(and(eq(users.id, customerId), eq(users.role, "customer")));
   if (!foundCustomer) {
-    return Astro.redirect('/admin/customers?error=Customer+not+found');
+    return Astro.redirect("/admin/customers?error=Customer+not+found");
   }
   customer = foundCustomer;
 
   // Fetch referrals made by this customer (U.referredById = customer.id)
-  referralsMade = await db.select().from(users).where(eq(users.referredById, customer.id)).orderBy(desc(users.createdAt));
+  referralsMade = await db
+    .select()
+    .from(users)
+    .where(eq(users.referredById, customer.id))
+    .orderBy(desc(users.createdAt));
 
   // Determine referrer details
   if (customer.referredById) {
-    const [ref] = await db.select().from(users).where(eq(users.id, customer.referredById));
+    const [ref] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, customer.referredById));
     if (ref) {
       referrerName = `${ref.name} (${ref.phone})`;
     }
@@ -111,14 +119,17 @@ if (action === 'view' && customerId) {
   // Build points transaction ledger
   // 1. Signup Bonus (+50 points)
   if (customer.referredById) {
-    const [referrerUser] = await db.select().from(users).where(eq(users.id, customer.referredById));
+    const [referrerUser] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, customer.referredById));
     ledger.push({
       date: customer.createdAt,
-      type: 'signup_bonus',
-      points: 50,
-      description: referrerUser 
+      type: "signup_bonus",
+      points: signupBonusPointsSetting,
+      description: referrerUser
         ? `Signup bonus for registering with code of ${referrerUser.name} (${referrerUser.phone})`
-        : `Signup bonus for registering`
+        : `Signup bonus for registering`,
     });
   }
 
@@ -126,69 +137,80 @@ if (action === 'view' && customerId) {
   for (const ref of referralsMade) {
     ledger.push({
       date: ref.createdAt,
-      type: 'referral_bonus',
-      points: 100,
-      description: `Referral bonus for inviting ${ref.name} (${ref.phone})`
+      type: "referral_bonus",
+      points: referrerBonusPointsSetting,
+      description: `Referral bonus for inviting ${ref.name} (${ref.phone})`,
     });
   }
 
   // 3. Order Redeemed Credits (deductions)
-  const orderDeductions = await db.select().from(orders).where(
-    and(
-      eq(orders.userId, customer.id),
-      gt(orders.creditsUsed, 0)
-    )
-  ).orderBy(desc(orders.createdAt));
+  const orderDeductions = await db
+    .select()
+    .from(orders)
+    .where(and(eq(orders.userId, customer.id), gt(orders.creditsUsed, 0)))
+    .orderBy(desc(orders.createdAt));
 
   for (const order of orderDeductions) {
     ledger.push({
       date: order.createdAt,
-      type: 'redemption',
+      type: "redemption",
       points: -order.creditsUsed,
       description: `Redeemed points on order #${order.id.slice(0, 8)}`,
-      link: `/admin/orders`
+      link: `/admin/orders`,
     });
   }
 
   // Sort chronological ledger newest first
-  ledger.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
+  ledger.sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+  );
 } else {
   // List view
   if (search) {
-    customersList = await db.select().from(users).where(
-      and(
-        eq(users.role, 'customer'),
-        or(
-          ilike(users.name, `%${search}%`),
-          ilike(users.phone, `%${search}%`),
-          ilike(users.email, `%${search}%`)
-        )
+    customersList = await db
+      .select()
+      .from(users)
+      .where(
+        and(
+          eq(users.role, "customer"),
+          or(
+            ilike(users.name, `%${search}%`),
+            ilike(users.phone, `%${search}%`),
+            ilike(users.email, `%${search}%`),
+          ),
+        ),
       )
-    ).orderBy(desc(users.createdAt));
+      .orderBy(desc(users.createdAt));
   } else {
-    customersList = await db.select().from(users).where(eq(users.role, 'customer')).orderBy(desc(users.createdAt));
+    customersList = await db
+      .select()
+      .from(users)
+      .where(eq(users.role, "customer"))
+      .orderBy(desc(users.createdAt));
   }
 }
 
 // Fetch stats for overview
 let totalCustomers = 0;
 try {
-  const [custCount] = await db.select({ count: sql`count(*)` }).from(users).where(eq(users.role, 'customer'));
+  const [custCount] = await db
+    .select({ count: sql`count(*)` })
+    .from(users)
+    .where(eq(users.role, "customer"));
   totalCustomers = Number(custCount?.count || 0);
 } catch (e) {
-  console.error('[Admin Customers] Failed to fetch total customer count:', e);
+  console.error("[Admin Customers] Failed to fetch total customer count:", e);
 }
 
 const formatDate = (dateStr: string) => {
-  if (!dateStr) return 'N/A';
+  if (!dateStr) return "N/A";
   try {
-    return new Date(dateStr).toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+    return new Date(dateStr).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   } catch (e) {
     return dateStr;
@@ -196,74 +218,54 @@ const formatDate = (dateStr: string) => {
 };
 ---
 
-<AdminLayout title={action === 'view' && customer ? `Customer Profile: ${customer.name}` : "Manage Customers"} activeTab="customers" subtitle={action === 'view' && customer ? `View details, referral statistics, and loyalty credit history.` : `${totalCustomers} registered customers in database.`}>
-
-
-    {error && (
+<AdminLayout
+  title={action === "view" && customer
+    ? `Customer Profile: ${customer.name}`
+    : "Manage Customers"}
+  activeTab="customers"
+  subtitle={action === "view" && customer
+    ? `View details, referral statistics, and loyalty credit history.`
+    : `${totalCustomers} registered customers in database.`}
+>
+  {
+    error && (
       <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md p-3 mb-4">
         {error}
       </div>
-    )}
-    {success && (
+    )
+  }
+  {
+    success && (
       <div class="bg-green-50 border border-green-200 text-green-700 text-sm rounded-md p-3 mb-4">
         {success}
       </div>
-    )}
+    )
+  }
 
-    {/* LIST VIEW */}
-    {action === 'list' && (
+  {/* LIST VIEW */}
+  {
+    action === "list" && (
       <div>
-        {/* Referral Program Settings Form */}
-        <div class="bg-white border border-neutral-200 rounded-lg p-5 shadow-sm mb-6">
-          <h2 class="text-sm font-bold text-neutral-900 border-b border-neutral-100 pb-2 mb-4">Referral Program Point Configurations</h2>
-          <form method="post" class="grid gap-4 sm:grid-cols-3 items-end">
-            <input type="hidden" name="formAction" value="update_referral_settings" />
-            <div>
-              <label for="signup-points-input" class="block text-xs font-semibold text-neutral-700 mb-1">New User Signup Reward (Points)</label>
-              <input
-                type="number"
-                id="signup-points-input"
-                name="signup_bonus_points"
-                required
-                min="0"
-                value={signupBonusPointsSetting}
-                class="w-full rounded border border-neutral-300 px-3 py-1.5 text-xs focus:border-primary focus:outline-none"
-              />
-            </div>
-            <div>
-              <label for="referrer-points-input" class="block text-xs font-semibold text-neutral-700 mb-1">Referrer Reward (Points per signup)</label>
-              <input
-                type="number"
-                id="referrer-points-input"
-                name="referrer_bonus_points"
-                required
-                min="0"
-                value={referrerBonusPointsSetting}
-                class="w-full rounded border border-neutral-300 px-3 py-1.5 text-xs focus:border-primary focus:outline-none"
-              />
-            </div>
-            <div>
-              <button type="submit" class="w-full bg-primary text-white text-xs font-bold rounded px-4 py-2.5 hover:bg-primary/95 transition-colors focus:outline-none cursor-pointer">
-                Save Rewards Configuration
-              </button>
-            </div>
-          </form>
-        </div>
-
         {/* Search Bar */}
         <form method="get" class="flex gap-2 mb-6">
-          <input 
-            type="text" 
-            name="search" 
-            value={search} 
-            placeholder="Search by name, phone number, or email..." 
+          <input
+            type="text"
+            name="search"
+            value={search}
+            placeholder="Search by name, phone number, or email..."
             class="flex-1 rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none"
           />
-          <button type="submit" class="bg-primary text-white px-5 py-2 rounded-md text-sm font-semibold hover:bg-primary/95 transition-colors">
+          <button
+            type="submit"
+            class="bg-primary text-white px-5 py-2 rounded-md text-sm font-semibold hover:bg-primary/95 transition-colors"
+          >
             Search
           </button>
           {search && (
-            <a href="/admin/customers" class="border border-neutral-300 text-neutral-600 px-4 py-2 rounded-md text-sm font-semibold hover:bg-neutral-50 transition-colors flex items-center justify-center">
+            <a
+              href="/admin/customers"
+              class="border border-neutral-300 text-neutral-600 px-4 py-2 rounded-md text-sm font-semibold hover:bg-neutral-50 transition-colors flex items-center justify-center"
+            >
               Clear
             </a>
           )}
@@ -288,16 +290,25 @@ const formatDate = (dateStr: string) => {
                 {customersList.map((cust) => (
                   <tr class="hover:bg-neutral-50/50 transition-colors">
                     <td class="px-4 py-3">
-                      <div class="font-semibold text-neutral-950">{cust.name}</div>
-                      <span class="inline-block bg-neutral-100 text-neutral-600 px-1.5 py-0.5 rounded text-[10px] uppercase font-bold mt-0.5">Customer</span>
+                      <div class="font-semibold text-neutral-950">
+                        {cust.name}
+                      </div>
+                      <span class="inline-block bg-neutral-100 text-neutral-600 px-1.5 py-0.5 rounded text-[10px] uppercase font-bold mt-0.5">
+                        Customer
+                      </span>
                     </td>
                     <td class="px-4 py-3">
-                      <a href={`tel:${cust.phone}`} class="text-primary hover:underline font-medium">
+                      <a
+                        href={`tel:${cust.phone}`}
+                        class="text-primary hover:underline font-medium"
+                      >
                         {cust.phone}
                       </a>
                     </td>
                     <td class="px-4 py-3 text-neutral-500 font-mono text-xs">
-                      {cust.email || <span class="text-neutral-400 italic">None</span>}
+                      {cust.email || (
+                        <span class="text-neutral-400 italic">None</span>
+                      )}
                     </td>
                     <td class="px-4 py-3 text-center font-mono font-bold text-neutral-800">
                       {cust.referralCode}
@@ -309,13 +320,27 @@ const formatDate = (dateStr: string) => {
                       {formatDate(cust.createdAt)}
                     </td>
                     <td class="px-4 py-3 text-right whitespace-nowrap space-x-3">
-                      <a href={`/admin/customers?action=view&id=${cust.id}`} class="text-xs font-semibold text-primary hover:underline">
+                      <a
+                        href={`/admin/customers?action=view&id=${cust.id}`}
+                        class="text-xs font-semibold text-primary hover:underline"
+                      >
                         View Details
                       </a>
-                      <form method="post" onsubmit="return confirm('Are you sure you want to delete this customer? This action is permanent and will delete all associated orders, service requests, and referral history.')" class="inline">
+                      <form
+                        method="post"
+                        onsubmit="return confirm('Are you sure you want to delete this customer? This action is permanent and will delete all associated orders, service requests, and referral history.')"
+                        class="inline"
+                      >
                         <input type="hidden" name="formAction" value="delete" />
-                        <input type="hidden" name="customerId" value={cust.id} />
-                        <button type="submit" class="text-xs font-semibold text-red-600 hover:text-red-700 hover:underline">
+                        <input
+                          type="hidden"
+                          name="customerId"
+                          value={cust.id}
+                        />
+                        <button
+                          type="submit"
+                          class="text-xs font-semibold text-red-600 hover:text-red-700 hover:underline"
+                        >
                           Delete
                         </button>
                       </form>
@@ -325,8 +350,13 @@ const formatDate = (dateStr: string) => {
 
                 {customersList.length === 0 && (
                   <tr>
-                    <td colspan="7" class="px-4 py-12 text-center text-neutral-400">
-                      {search ? "No customers match your search criteria." : "No registered customers found."}
+                    <td
+                      colspan="7"
+                      class="px-4 py-12 text-center text-neutral-400"
+                    >
+                      {search
+                        ? "No customers match your search criteria."
+                        : "No registered customers found."}
                     </td>
                   </tr>
                 )}
@@ -335,14 +365,19 @@ const formatDate = (dateStr: string) => {
           </div>
         </div>
       </div>
-    )}
+    )
+  }
 
-    {/* CUSTOMER DETAILS VIEW */}
-    {action === 'view' && customer && (
+  {/* CUSTOMER DETAILS VIEW */}
+  {
+    action === "view" && customer && (
       <div class="space-y-6">
         {/* Back link */}
         <div>
-          <a href="/admin/customers" class="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-1.5">
+          <a
+            href="/admin/customers"
+            class="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-1.5"
+          >
             ← Back to Customer Database
           </a>
         </div>
@@ -350,35 +385,62 @@ const formatDate = (dateStr: string) => {
         <div class="grid gap-6 lg:grid-cols-3">
           {/* Profile Details Card */}
           <div class="bg-white border border-neutral-200 rounded-lg p-5 shadow-sm space-y-4 lg:col-span-2">
-            <h2 class="text-base font-bold text-neutral-900 border-b border-neutral-100 pb-2 mb-3">Customer Profile</h2>
+            <h2 class="text-base font-bold text-neutral-900 border-b border-neutral-100 pb-2 mb-3">
+              Customer Profile
+            </h2>
             <div class="grid gap-4 sm:grid-cols-2 text-sm">
               <div>
-                <p class="text-xs font-semibold text-neutral-500 uppercase">Full Name</p>
+                <p class="text-xs font-semibold text-neutral-500 uppercase">
+                  Full Name
+                </p>
                 <p class="font-bold text-neutral-900 mt-0.5">{customer.name}</p>
               </div>
               <div>
-                <p class="text-xs font-semibold text-neutral-500 uppercase">Referral Code</p>
-                <p class="font-mono font-bold text-neutral-800 mt-0.5">{customer.referralCode}</p>
+                <p class="text-xs font-semibold text-neutral-500 uppercase">
+                  Referral Code
+                </p>
+                <p class="font-mono font-bold text-neutral-800 mt-0.5">
+                  {customer.referralCode}
+                </p>
               </div>
               <div>
-                <p class="text-xs font-semibold text-neutral-500 uppercase">Phone Number</p>
+                <p class="text-xs font-semibold text-neutral-500 uppercase">
+                  Phone Number
+                </p>
                 <p class="font-medium text-neutral-900 mt-0.5">
-                  <a href={`tel:${customer.phone}`} class="text-primary hover:underline">
+                  <a
+                    href={`tel:${customer.phone}`}
+                    class="text-primary hover:underline"
+                  >
                     {customer.phone}
                   </a>
                 </p>
               </div>
               <div>
-                <p class="text-xs font-semibold text-neutral-500 uppercase">Email Address</p>
-                <p class="font-mono text-neutral-800 mt-0.5">{customer.email || <span class="text-neutral-500 italic">None</span>}</p>
+                <p class="text-xs font-semibold text-neutral-500 uppercase">
+                  Email Address
+                </p>
+                <p class="font-mono text-neutral-800 mt-0.5">
+                  {customer.email || (
+                    <span class="text-neutral-500 italic">None</span>
+                  )}
+                </p>
               </div>
               <div>
-                <p class="text-xs font-semibold text-neutral-500 uppercase">Joined Date</p>
-                <p class="text-neutral-700 mt-0.5">{formatDate(customer.createdAt)}</p>
+                <p class="text-xs font-semibold text-neutral-500 uppercase">
+                  Joined Date
+                </p>
+                <p class="text-neutral-700 mt-0.5">
+                  {formatDate(customer.createdAt)}
+                </p>
               </div>
               <div>
-                <p class="text-xs font-semibold text-neutral-500 uppercase">Referred By</p>
-                <p class="text-neutral-700 mt-0.5 font-medium">{referrerName}</p>
+                <p class="text-xs font-semibold text-neutral-500 uppercase">
+                  Referred By
+                </p>
+                <p class="text-neutral-700 mt-0.5 font-medium">
+                  {referrerName}
+                </p>
               </div>
             </div>
           </div>
@@ -386,19 +448,31 @@ const formatDate = (dateStr: string) => {
           {/* Credits Adjustment Form Card */}
           <div class="bg-white border border-neutral-200 rounded-lg p-5 shadow-sm flex flex-col justify-between">
             <div>
-              <h2 class="text-base font-bold text-neutral-900 border-b border-neutral-100 pb-2 mb-3">Credits Balance</h2>
+              <h2 class="text-base font-bold text-neutral-900 border-b border-neutral-100 pb-2 mb-3">
+                Credits Balance
+              </h2>
               <div class="mb-4">
-                <p class="text-xs font-semibold text-neutral-500 uppercase">Current Balance</p>
-                <span class="text-3xl font-extrabold text-green-600 font-mono">{customer.credits} <span class="text-sm font-semibold">Points</span></span>
+                <p class="text-xs font-semibold text-neutral-500 uppercase">
+                  Current Balance
+                </p>
+                <span class="text-3xl font-extrabold text-green-600 font-mono">
+                  {customer.credits}{" "}
+                  <span class="text-sm font-semibold">Points</span>
+                </span>
               </div>
             </div>
-            
+
             <form method="post" class="space-y-4">
               <input type="hidden" name="formAction" value="adjust_credits" />
               <input type="hidden" name="customerId" value={customer.id} />
-              
+
               <div>
-                <label for="credits-input" class="block text-xs font-semibold text-neutral-700 mb-1">Set New Credits Balance</label>
+                <label
+                  for="credits-input"
+                  class="block text-xs font-semibold text-neutral-700 mb-1"
+                >
+                  Set New Credits Balance
+                </label>
                 <input
                   type="number"
                   id="credits-input"
@@ -408,10 +482,16 @@ const formatDate = (dateStr: string) => {
                   value={customer.credits}
                   class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
                 />
-                <p class="text-[10px] text-neutral-500 mt-1">Manual overrides immediately modify the customer's wallet balance.</p>
+                <p class="text-[10px] text-neutral-500 mt-1">
+                  Manual overrides immediately modify the customer's wallet
+                  balance.
+                </p>
               </div>
 
-              <button type="submit" class="w-full bg-primary text-white text-xs font-bold rounded px-4 py-2 hover:bg-primary/95 transition-colors">
+              <button
+                type="submit"
+                class="w-full bg-primary text-white text-xs font-bold rounded px-4 py-2 hover:bg-primary/95 transition-colors"
+              >
                 Update Credits Balance
               </button>
             </form>
@@ -420,7 +500,9 @@ const formatDate = (dateStr: string) => {
 
         {/* Referrals Card */}
         <div class="bg-white border border-neutral-200 rounded-lg p-5 shadow-sm">
-          <h2 class="text-base font-bold text-neutral-900 border-b border-neutral-100 pb-2 mb-4">Referrals Made</h2>
+          <h2 class="text-base font-bold text-neutral-900 border-b border-neutral-100 pb-2 mb-4">
+            Referrals Made
+          </h2>
           <div class="overflow-x-auto">
             <table class="w-full text-left text-sm text-neutral-700 border-collapse">
               <thead>
@@ -428,26 +510,40 @@ const formatDate = (dateStr: string) => {
                   <th class="px-4 py-2">Referred Customer</th>
                   <th class="px-4 py-2">Phone</th>
                   <th class="px-4 py-2">Joined Date</th>
-                  <th class="px-4 py-2 text-right">Referral Reward (For Referrer)</th>
+                  <th class="px-4 py-2 text-right">
+                    Referral Reward (For Referrer)
+                  </th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-neutral-100">
                 {referralsMade.map((ref) => (
                   <tr class="hover:bg-neutral-50/50 transition-colors">
-                    <td class="px-4 py-2.5 font-semibold text-neutral-950">{ref.name}</td>
+                    <td class="px-4 py-2.5 font-semibold text-neutral-950">
+                      {ref.name}
+                    </td>
                     <td class="px-4 py-2.5">
-                      <a href={`tel:${ref.phone}`} class="text-primary hover:underline">
+                      <a
+                        href={`tel:${ref.phone}`}
+                        class="text-primary hover:underline"
+                      >
                         {ref.phone}
                       </a>
                     </td>
-                    <td class="px-4 py-2.5 text-xs text-neutral-400">{formatDate(ref.createdAt)}</td>
-                    <td class="px-4 py-2.5 text-right font-bold text-green-600 font-mono">+100 Pts</td>
+                    <td class="px-4 py-2.5 text-xs text-neutral-400">
+                      {formatDate(ref.createdAt)}
+                    </td>
+                    <td class="px-4 py-2.5 text-right font-bold text-green-600 font-mono">
+                      +100 Pts
+                    </td>
                   </tr>
                 ))}
 
                 {referralsMade.length === 0 && (
                   <tr>
-                    <td colspan="4" class="px-4 py-6 text-center text-neutral-400 text-xs">
+                    <td
+                      colspan="4"
+                      class="px-4 py-6 text-center text-neutral-400 text-xs"
+                    >
                       No referrals registered under this customer's code yet.
                     </td>
                   </tr>
@@ -459,7 +555,9 @@ const formatDate = (dateStr: string) => {
 
         {/* Ledger Transaction History Card */}
         <div class="bg-white border border-neutral-200 rounded-lg p-5 shadow-sm">
-          <h2 class="text-base font-bold text-neutral-900 border-b border-neutral-100 pb-2 mb-4">Points Transaction History Ledger</h2>
+          <h2 class="text-base font-bold text-neutral-900 border-b border-neutral-100 pb-2 mb-4">
+            Points Transaction History Ledger
+          </h2>
           <div class="overflow-x-auto">
             <table class="w-full text-left text-sm text-neutral-700 border-collapse">
               <thead>
@@ -473,28 +571,40 @@ const formatDate = (dateStr: string) => {
               <tbody class="divide-y divide-neutral-100">
                 {ledger.map((item) => (
                   <tr class="hover:bg-neutral-50/50 transition-colors">
-                    <td class="px-4 py-2.5 text-xs text-neutral-400">{formatDate(item.date)}</td>
+                    <td class="px-4 py-2.5 text-xs text-neutral-400">
+                      {formatDate(item.date)}
+                    </td>
                     <td class="px-4 py-2.5">
-                      <span class={`inline-block rounded px-2 py-0.5 text-[10px] font-bold uppercase ${
-                        item.type === 'signup_bonus' ? 'bg-blue-50 text-blue-700 border border-blue-100' :
-                        item.type === 'referral_bonus' ? 'bg-green-50 text-green-700 border border-green-100' :
-                        'bg-red-50 text-red-700 border border-red-100'
-                      }`}>
-                        {item.type.replace('_', ' ')}
+                      <span
+                        class={`inline-block rounded px-2 py-0.5 text-[10px] font-bold uppercase ${
+                          item.type === "signup_bonus"
+                            ? "bg-blue-50 text-blue-700 border border-blue-100"
+                            : item.type === "referral_bonus"
+                              ? "bg-green-50 text-green-700 border border-green-100"
+                              : "bg-red-50 text-red-700 border border-red-100"
+                        }`}
+                      >
+                        {item.type.replace("_", " ")}
                       </span>
                     </td>
                     <td class="px-4 py-2.5 text-neutral-800 text-xs sm:text-sm">
                       {item.description}
                     </td>
-                    <td class={`px-4 py-2.5 text-right font-bold font-mono ${item.points > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {item.points > 0 ? `+${item.points}` : `${item.points}`} Pts
+                    <td
+                      class={`px-4 py-2.5 text-right font-bold font-mono ${item.points > 0 ? "text-green-600" : "text-red-600"}`}
+                    >
+                      {item.points > 0 ? `+${item.points}` : `${item.points}`}{" "}
+                      Pts
                     </td>
                   </tr>
                 ))}
 
                 {ledger.length === 0 && (
                   <tr>
-                    <td colspan="4" class="px-4 py-6 text-center text-neutral-400 text-xs">
+                    <td
+                      colspan="4"
+                      class="px-4 py-6 text-center text-neutral-400 text-xs"
+                    >
                       No points transactions recorded yet.
                     </td>
                   </tr>
@@ -504,5 +614,6 @@ const formatDate = (dateStr: string) => {
           </div>
         </div>
       </div>
-    )}
+    )
+  }
 </AdminLayout>
