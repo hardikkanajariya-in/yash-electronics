@@ -898,7 +898,7 @@ if (action === 'bulk-images') {
         </div>
 
         <script>
-          const CLOUD_NAME = (document.getElementById('upload-dropzone') ? '' : '') || import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa';
+          const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa';
 
           // Search filtering
           const searchInput = document.getElementById('bulk-search') as HTMLInputElement;
