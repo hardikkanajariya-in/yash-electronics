@@ -2,6 +2,7 @@
 import type { Category, SiteSettings } from '../../types';
 import Container from '../ui/Container.astro';
 import { t, getLocalizedPath, getAlternateLocalePath } from '../../lib/translations';
+import { buildCloudinaryUrl } from '../../lib/cloudinary';
 
 interface Props {
   settings: SiteSettings;
@@ -46,7 +47,7 @@ const currentPath = Astro.url.pathname;
     <div class="flex items-center justify-between gap-4 py-3">
       <a href={getLocalizedPath('/', locale)} class="flex shrink-0 items-center gap-3">
         {settings.logoUrl ? (
-          <img src={settings.logoUrl} alt={settings.businessName} class="h-11 w-11 rounded-md object-contain" />
+          <img src={buildCloudinaryUrl(settings.logoUrl, { width: 88, height: 88 })} alt={settings.businessName} class="h-11 w-11 rounded-md object-contain" />
         ) : (
           <div class="flex h-11 w-11 items-center justify-center rounded-md bg-gradient-to-br from-primary to-primary-700 text-lg font-bold text-white shadow-sm">
             {settings.businessName.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}
