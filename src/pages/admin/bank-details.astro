@@ -236,12 +236,12 @@ const showForm = isAdding || editBank;
               <h3 class="font-bold text-neutral-900">{bank.bankName}</h3>
               <p class="text-xs text-neutral-500">{bank.branchName}</p>
             </div>
-            <div class="flex gap-2">
+            <div class="flex items-center gap-3">
               <a href={`/admin/bank-details?edit=${bank.id}`} class="text-xs font-semibold text-primary hover:underline">Edit</a>
-              <form method="post" class="inline">
+              <form method="post" class="inline-flex items-center m-0">
                 <input type="hidden" name="_action" value="delete" />
                 <input type="hidden" name="id" value={bank.id} />
-                <button type="button" onclick="confirmDelete(this, 'Delete Bank Details', 'Are you sure?')" class="text-xs font-semibold text-red-500 hover:underline cursor-pointer">Delete</button>
+                <button type="button" onclick="confirmDelete(this, 'Delete Bank Details', 'Are you sure?')" class="text-xs font-semibold text-red-500 hover:underline cursor-pointer bg-transparent border-none p-0">Delete</button>
               </form>
             </div>
           </div>
