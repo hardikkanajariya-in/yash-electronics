@@ -6,11 +6,15 @@ import { products, orders, orderItems, users, offers } from '../db/schema';
 import { eq, inArray, and } from 'drizzle-orm';
 import { getSessionUser, generateId } from '../lib/auth';
 import { getLocalizedPath } from '../lib/translations';
+import { getSettings } from '../services/cms';
+import { translateObject } from '../lib/translations';
 import { cloudinaryConfig } from '../config/cloudinary';
 
 export const prerender = false;
 
 const locale = Astro.currentLocale || 'gu';
+const rawSettings = await getSettings();
+const settings = translateObject(rawSettings, locale);
 
 // Authenticate user. Redirect to login if not logged in.
 Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -23,8 +27,8 @@ if (!currentUser) {
   );
 }
 
-let error = '';
-let successOrderId = '';
+let error = Astro.url.searchParams.get('error') || '';
+let successOrderId = Astro.url.searchParams.get('successOrderId') || '';
 
 // Handle Checkout Form Submission
 if (Astro.request.method === 'POST') {
@@ -162,7 +166,7 @@ if (Astro.request.method === 'POST') {
             .where(eq(users.id, currentUser.id));
         }
 
-        successOrderId = newOrderId;
+        return Astro.redirect(Astro.url.pathname + '?successOrderId=' + encodeURIComponent(newOrderId));
       }
     }
   } catch (e) {
@@ -174,7 +178,7 @@ if (Astro.request.method === 'POST') {
 // Inline translations
 const translations = {
   gu: {
-    title: 'મારું કાર્ટ - યશ ઇલેક્ટ્રોનિક્સ',
+    title: `મારું કાર્ટ - ${settings.businessName}`,
     header: 'શોપિંગ કાર્ટ',
     emptyCart: 'તમારું કાર્ટ ખાલી છે.',
     browseBtn: 'પ્રોડક્ટ્સ જુઓ',
@@ -189,7 +193,7 @@ const translations = {
     addressLabel: 'પૂરું ડિલિવરી સરનામું',
     placeOrderBtn: 'ઓર્ડર કરો (કેશ ઓન ડિલિવરી)',
     successTitle: 'ઓર્ડર સફળતાપૂર્વક થઈ ગયો છે!',
-    successDesc: 'યશ ઇલેક્ટ્રોનિક્સ પસંદ કરવા બદલ આભાર. તમારો ઓર્ડર સ્વીકારવામાં આવ્યો છે.',
+    successDesc: `${settings.businessName} પસંદ કરવા બદલ આભાર. તમારો ઓર્ડર સ્વીકારવામાં આવ્યો છે.`,
     orderIdText: 'ઓર્ડર ID:',
     orderNote: 'અમારી ટીમ ટૂંક સમયમાં ડિલિવરીની પુષ્ટિ કરવા માટે તમારો સંપર્ક કરશે.',
     backShopBtn: 'ખરીદી ચાલુ રાખો',
@@ -205,7 +209,7 @@ const translations = {
     pointsApplied: 'રીડીમ કરેલ પોઇન્ટ્સ',
   },
   en: {
-    title: 'My Cart - Yash Electronics',
+    title: `My Cart - ${settings.businessName}`,
     header: 'Shopping Cart',
     emptyCart: 'Your cart is empty.',
     browseBtn: 'Browse Products',
@@ -220,7 +224,7 @@ const translations = {
     addressLabel: 'Full Shipping Address',
     placeOrderBtn: 'Place Order (Cash on Delivery)',
     successTitle: 'Order Placed Successfully!',
-    successDesc: 'Thank you for shopping at Yash Electronics. Your order has been registered.',
+    successDesc: `Thank you for shopping at ${settings.businessName}. Your order has been registered.`,
     orderIdText: 'Order ID:',
     orderNote: 'Our team will contact you shortly to confirm the delivery details.',
     backShopBtn: 'Continue Shopping',

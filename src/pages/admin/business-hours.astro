@@ -11,8 +11,8 @@ Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate
 const currentUser = await getSessionUser(Astro.cookies);
 if (!currentUser || currentUser.role !== 'admin') return Astro.redirect('/admin/login');
 
-let message = '';
-let error = '';
+let message = Astro.url.searchParams.get('message') || '';
+let error = Astro.url.searchParams.get('error') || '';
 
 const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -44,9 +44,11 @@ if (Astro.request.method === 'POST') {
           });
         }
       }
-      message = 'Business hours saved successfully.';
+      return Astro.redirect('/admin/business-hours?message=' + encodeURIComponent('Business hours saved successfully.'));
     }
-  } catch (e: any) { error = 'Save failed: ' + (e.message || 'Unknown error'); }
+  } catch (e: any) {
+    error = 'Save failed: ' + (e.message || 'Unknown error');
+  }
 }
 
 let allHours: any[] = [];

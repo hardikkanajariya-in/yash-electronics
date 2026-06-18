@@ -48,7 +48,7 @@ const locale = Astro.currentLocale || 'gu';
       <div class="overflow-hidden rounded-lg border border-neutral-200 shadow-card">
         <CloudinaryImage
           publicId={settings.heroImage}
-          alt={locale === 'gu' ? "યશ ઇલેક્ટ્રોનિક્સ પર ઇલેક્ટ્રોનિક્સ અને ઘર વપરાશના ઉપકરણો" : "Electronics and home appliances at Yash Electronics"}
+          alt={locale === 'gu' ? `${settings.businessName} પર ઇલેક્ટ્રોનિક્સ અને ઘર વપરાશના ઉપકરણો` : `Electronics and home appliances at ${settings.businessName}`}
           width={640}
           height={480}
           class="aspect-[4/3] w-full"

@@ -19,8 +19,8 @@ if (!currentUser || currentUser.role !== 'admin') {
 const action = Astro.url.searchParams.get('action') || 'list';
 const productId = Astro.url.searchParams.get('id') || '';
 
-let error = '';
-let success = '';
+let error = Astro.url.searchParams.get('error') || '';
+let success = Astro.url.searchParams.get('success') || '';
 
 // Handle CSV Export and Template Downloads
 if (action === 'export') {
@@ -109,7 +109,7 @@ if (Astro.request.method === 'POST') {
         }
         if (importResult.success > 0) {
           clearCmsCache();
-          success = `Successfully imported/updated ${importResult.success} products!`;
+          return Astro.redirect('/admin/products?success=' + encodeURIComponent(`Successfully imported/updated ${importResult.success} products!`));
         }
       } else {
         error = 'Please select a valid CSV file.';
@@ -118,7 +118,7 @@ if (Astro.request.method === 'POST') {
       const idToDelete = formData.get('id')?.toString() || '';
       await db.delete(products).where(eq(products.id, idToDelete));
       clearCmsCache();
-      success = 'Product deleted successfully!';
+      return Astro.redirect('/admin/products?success=' + encodeURIComponent('Product deleted successfully!'));
     } else if (formAction === 'save') {
       const name = formData.get('name')?.toString() || '';
       const nameGu = formData.get('nameGu')?.toString() || '';
@@ -158,7 +158,7 @@ if (Astro.request.method === 'POST') {
           updatedAt: new Date().toISOString(),
         }).where(eq(products.id, productId));
         clearCmsCache();
-        success = 'Product updated successfully!';
+        return Astro.redirect('/admin/products?success=' + encodeURIComponent('Product updated successfully!'));
       } else {
         // Create new product
         const newId = generateId();
@@ -183,7 +183,7 @@ if (Astro.request.method === 'POST') {
           updatedAt: new Date().toISOString(),
         });
         clearCmsCache();
-        success = 'Product added successfully!';
+        return Astro.redirect('/admin/products?success=' + encodeURIComponent('Product added successfully!'));
       }
     }
   } catch (e: any) {

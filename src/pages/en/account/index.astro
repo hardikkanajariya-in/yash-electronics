@@ -6,10 +6,14 @@ import { orders, serviceRequests } from '../../../db/schema';
 import { eq, desc, or } from 'drizzle-orm';
 import { getSessionUser, clearSessionUser } from '../../../lib/auth';
 import { getLocalizedPath } from '../../../lib/translations';
+import { getSettings } from '../../../services/cms';
+import { translateObject } from '../../../lib/translations';
 
 export const prerender = false;
 
 const locale = 'en';
+const rawSettings = await getSettings();
+const settings = translateObject(rawSettings, locale);
 
 // Authenticate user
 Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -64,7 +68,7 @@ try {
 
 // English translations
 const t = {
-  title: 'My Account - Yash Electronics',
+  title: `My Account - ${settings.businessName}`,
   welcome: 'Welcome, {name}',
   logout: 'Sign Out',
   creditsTitle: 'Your Store Credits',
@@ -75,7 +79,7 @@ const t = {
   copyBtn: 'Copy Link',
   copiedMsg: 'Link copied to clipboard!',
   shareWa: 'Share on WhatsApp',
-  waText: 'Sign up at Yash Electronics and get ₹50 off on your first order! My referral code: {code}. Sign up here: {link}',
+  waText: `Sign up at ${settings.businessName} and get ₹50 off on your first order! My referral code: {code}. Sign up here: {link}`,
   historyTitle: 'Order History',
   noOrders: 'You have not placed any orders yet.',
   orderId: 'Order ID',

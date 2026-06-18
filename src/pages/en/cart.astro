@@ -6,11 +6,15 @@ import { products, orders, orderItems, users, offers } from '../../db/schema';
 import { eq, inArray, and } from 'drizzle-orm';
 import { getSessionUser, generateId } from '../../lib/auth';
 import { getLocalizedPath } from '../../lib/translations';
+import { getSettings } from '../../services/cms';
+import { translateObject } from '../../lib/translations';
 import { cloudinaryConfig } from '../../config/cloudinary';
 
 export const prerender = false;
 
 const locale = 'en';
+const rawSettings = await getSettings();
+const settings = translateObject(rawSettings, locale);
 
 // Authenticate user. Redirect to login if not logged in.
 Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -19,8 +23,8 @@ if (!currentUser) {
   return Astro.redirect(`/en/account/login?redirect=${encodeURIComponent('/en/cart')}`);
 }
 
-let error = '';
-let successOrderId = '';
+let error = Astro.url.searchParams.get('error') || '';
+let successOrderId = Astro.url.searchParams.get('successOrderId') || '';
 
 // Handle Checkout Form Submission
 if (Astro.request.method === 'POST') {
@@ -158,7 +162,7 @@ if (Astro.request.method === 'POST') {
             .where(eq(users.id, currentUser.id));
         }
 
-        successOrderId = newOrderId;
+        return Astro.redirect(Astro.url.pathname + '?successOrderId=' + encodeURIComponent(newOrderId));
       }
     }
   } catch (e) {
@@ -169,7 +173,7 @@ if (Astro.request.method === 'POST') {
 
 // Inline English translations
 const t = {
-  title: 'My Cart - Yash Electronics',
+  title: `My Cart - ${settings.businessName}`,
   header: 'Shopping Cart',
   emptyCart: 'Your cart is empty.',
   browseBtn: 'Browse Products',
@@ -184,7 +188,7 @@ const t = {
   addressLabel: 'Full Shipping Address',
   placeOrderBtn: 'Place Order (Cash on Delivery)',
   successTitle: 'Order Placed Successfully!',
-  successDesc: 'Thank you for shopping at Yash Electronics. Your order has been registered.',
+  successDesc: `Thank you for shopping at ${settings.businessName}. Your order has been registered.`,
   orderIdText: 'Order ID:',
   orderNote: 'Our team will contact you shortly to confirm the delivery details.',
   backShopBtn: 'Continue Shopping',

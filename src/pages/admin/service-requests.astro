@@ -14,8 +14,8 @@ if (!currentUser || currentUser.role !== 'admin') {
   return Astro.redirect('/admin/login');
 }
 
-let error = '';
-let success = '';
+let error = Astro.url.searchParams.get('error') || '';
+let success = Astro.url.searchParams.get('success') || '';
 
 // Handle POST actions: update status or tracking info
 if (Astro.request.method === 'POST') {
@@ -31,17 +31,17 @@ if (Astro.request.method === 'POST') {
           await db.update(serviceRequests)
             .set({ status: newStatus, updatedAt: new Date().toISOString() })
             .where(eq(serviceRequests.id, srId));
-          success = 'Service Request status updated successfully!';
+          return Astro.redirect('/admin/service-requests?success=' + encodeURIComponent('Service Request status updated successfully!'));
         }
       } else if (action === 'update_tracking') {
         const trackingInfo = formData.get('trackingInfo')?.toString().trim() || '';
         await db.update(serviceRequests)
           .set({ trackingInfo, updatedAt: new Date().toISOString() })
           .where(eq(serviceRequests.id, srId));
-        success = 'Tracking information updated successfully!';
+        return Astro.redirect('/admin/service-requests?success=' + encodeURIComponent('Tracking information updated successfully!'));
       } else if (action === 'delete') {
         await db.delete(serviceRequests).where(eq(serviceRequests.id, srId));
-        success = 'Service Request deleted successfully!';
+        return Astro.redirect('/admin/service-requests?success=' + encodeURIComponent('Service Request deleted successfully!'));
       }
     }
   } catch (e: any) {

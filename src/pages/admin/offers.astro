@@ -18,8 +18,8 @@ if (!currentUser || currentUser.role !== 'admin') {
 const action = Astro.url.searchParams.get('action') || 'list';
 const offerId = Astro.url.searchParams.get('id') || '';
 
-let error = '';
-let success = '';
+let error = Astro.url.searchParams.get('error') || '';
+let success = Astro.url.searchParams.get('success') || '';
 
 // Handle POST actions
 if (Astro.request.method === 'POST') {
@@ -31,7 +31,7 @@ if (Astro.request.method === 'POST') {
       const idToDelete = formData.get('id')?.toString() || '';
       await db.delete(offers).where(eq(offers.id, idToDelete));
       clearCmsCache();
-      success = 'Offer deleted successfully!';
+      return Astro.redirect('/admin/offers?success=' + encodeURIComponent('Offer deleted successfully!'));
     } else if (formAction === 'save') {
       const title = formData.get('title')?.toString() || '';
       const titleGu = formData.get('titleGu')?.toString().trim() || null;
@@ -73,7 +73,7 @@ if (Astro.request.method === 'POST') {
           discountCap: isNaN(discountCap as any) || discountCap === null ? null : discountCap,
         }).where(eq(offers.id, offerId));
         clearCmsCache();
-        success = 'Offer updated successfully!';
+        return Astro.redirect('/admin/offers?success=' + encodeURIComponent('Offer updated successfully!'));
       } else {
         // Create new
         const newId = generateId();
@@ -98,7 +98,7 @@ if (Astro.request.method === 'POST') {
           discountCap: isNaN(discountCap as any) || discountCap === null ? null : discountCap,
         });
         clearCmsCache();
-        success = 'Offer added successfully!';
+        return Astro.redirect('/admin/offers?success=' + encodeURIComponent('Offer added successfully!'));
       }
     }
   } catch (e: any) {
@@ -172,7 +172,7 @@ const allOffers = await db.select().from(offers);
                         <div>
                           <span class="font-mono font-bold">{off.couponCode}</span>
                           <span class="text-neutral-500"> ({off.discountType === 'percentage' ? `${off.discountValue}%` : `₹${off.discountValue}`})</span>
-                          {off.minOrderValue > 0 && <div class="text-[10px] text-neutral-500 font-sans mt-0.5">Min Order: ₹{off.minOrderValue}</div>}
+                          {off.minOrderValue! > 0 && <div class="text-[10px] text-neutral-500 font-sans mt-0.5">Min Order: ₹{off.minOrderValue}</div>}
                           {off.discountType === 'percentage' && off.discountCap && <div class="text-[10px] text-neutral-500 font-sans mt-0.5">Max Discount: ₹{off.discountCap}</div>}
                         </div>
                       ) : '-'}

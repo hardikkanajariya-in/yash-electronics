@@ -11,8 +11,8 @@ Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate
 const currentUser = await getSessionUser(Astro.cookies);
 if (!currentUser || currentUser.role !== 'admin') return Astro.redirect('/admin/login');
 
-let message = '';
-let error = '';
+let message = Astro.url.searchParams.get('message') || '';
+let error = Astro.url.searchParams.get('error') || '';
 
 if (Astro.request.method === 'POST') {
   try {
@@ -21,7 +21,10 @@ if (Astro.request.method === 'POST') {
 
     if (formAction === 'delete') {
       const deleteId = formData.get('id')?.toString();
-      if (deleteId) { await db.delete(bankDetails).where(eq(bankDetails.id, deleteId)); message = 'Bank detail deleted.'; }
+      if (deleteId) {
+        await db.delete(bankDetails).where(eq(bankDetails.id, deleteId));
+        return Astro.redirect('/admin/bank-details?message=' + encodeURIComponent('Bank detail deleted.'));
+      }
     } else if (formAction === 'save') {
       const id = formData.get('id')?.toString();
       const bankName = formData.get('bankName')?.toString().trim() || '';
@@ -36,13 +39,15 @@ if (Astro.request.method === 'POST') {
         error = 'All bank fields are required.';
       } else if (id) {
         await db.update(bankDetails).set({ bankName, accountHolderName, accountNumber, ifscCode, branchName, upiQrCode, bankQrCode }).where(eq(bankDetails.id, id));
-        message = 'Bank details updated.';
+        return Astro.redirect('/admin/bank-details?message=' + encodeURIComponent('Bank details updated.'));
       } else {
         await db.insert(bankDetails).values({ id: generateId(), bankName, accountHolderName, accountNumber, ifscCode, branchName, upiQrCode, bankQrCode, isActive: true });
-        message = 'Bank details added.';
+        return Astro.redirect('/admin/bank-details?message=' + encodeURIComponent('Bank details added.'));
       }
     }
-  } catch (e: any) { error = 'Operation failed: ' + (e.message || 'Unknown error'); }
+  } catch (e: any) {
+    error = 'Operation failed: ' + (e.message || 'Unknown error');
+  }
 }
 
 let allBankDetails: any[] = [];

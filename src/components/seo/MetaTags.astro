@@ -9,11 +9,15 @@ interface Props {
 }
 
 import { siteConfig } from '../../config/site';
-import { t } from '../../lib/translations';
+import { t, translateObject } from '../../lib/translations';
+import { getSettings } from '../../services/cms';
 
 const locale = Astro.currentLocale || 'gu';
-const localizedSiteName = t('site.name', locale);
-const localizedDefaultDescription = t('site.description', locale);
+const rawSettings = await getSettings();
+const settings = translateObject(rawSettings, locale);
+
+const localizedSiteName = settings.businessName || 'Yash Electronics';
+const localizedDefaultDescription = settings.tagline || t('site.description', locale);
 
 const {
   title,
@@ -43,7 +47,7 @@ const image = ogImage || `${siteUrl}/og-default.jpg`;
 <meta property="og:description" content={description} />
 <meta property="og:url" content={canonical} />
 <meta property="og:image" content={image} />
-<meta property="og:site_name" content={siteConfig.name} />
+<meta property="og:site_name" content={localizedSiteName} />
 <meta property="og:locale" content={siteConfig.locale} />
 
 <meta name="twitter:card" content="summary_large_image" />

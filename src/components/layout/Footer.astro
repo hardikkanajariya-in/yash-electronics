@@ -19,9 +19,9 @@ const year = new Date().getFullYear();
       <div>
         <div class="flex items-center gap-2 mb-3">
           <div class="flex h-9 w-9 items-center justify-center rounded-md bg-gradient-to-br from-primary to-primary-700 text-sm font-bold text-white">
-            YE
+            {settings.businessName.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}
           </div>
-          <p class="font-display text-lg font-bold text-white">YASH ELECTRONICS</p>
+          <p class="font-display text-lg font-bold text-white">{settings.businessName.toUpperCase()}</p>
         </div>
         <p class="text-sm text-neutral-400">{settings.tagline}</p>
         <p class="mt-3 text-sm leading-relaxed">
@@ -73,8 +73,9 @@ const year = new Date().getFullYear();
             <svg class="h-4 w-4 text-secondary mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             <div class="text-xs leading-relaxed">
               <p class="font-medium text-neutral-200">{t('hours.title', locale)}</p>
-              <p class="mt-1">Mon–Sat: 9:30 AM – 9:00 PM</p>
-              <p>Sun: Occasionally Open, 9:30 AM – 2:00 PM</p>
+              {settings.workingHours.split('|').map((h, i) => (
+                <p class={i === 0 ? "mt-1" : ""}>{h.trim()}</p>
+              ))}
             </div>
           </li>
         </ul>

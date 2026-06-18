@@ -14,8 +14,8 @@ if (!currentUser || currentUser.role !== 'admin') {
   return Astro.redirect('/admin/login');
 }
 
-let error = '';
-let success = '';
+let error = Astro.url.searchParams.get('error') || '';
+let success = Astro.url.searchParams.get('success') || '';
 
 const action = Astro.url.searchParams.get('action') || 'list';
 const customerId = Astro.url.searchParams.get('id') || '';
@@ -33,11 +33,11 @@ if (Astro.request.method === 'POST') {
         error = 'Credits must be a valid positive integer.';
       } else {
         await db.update(users).set({ credits: newCredits }).where(eq(users.id, targetId));
-        success = 'Customer credits updated successfully!';
+        return Astro.redirect(`/admin/customers?action=view&id=${targetId}&success=` + encodeURIComponent('Customer credits updated successfully!'));
       }
     } else if (formAction === 'delete' && targetId) {
       await db.delete(users).where(eq(users.id, targetId));
-      return Astro.redirect('/admin/customers?success=Customer+deleted+successfully');
+      return Astro.redirect('/admin/customers?success=' + encodeURIComponent('Customer deleted successfully!'));
     } else if (formAction === 'update_referral_settings') {
       const signupPoints = parseInt(formData.get('signup_bonus_points')?.toString() || '50', 10);
       const referrerPoints = parseInt(formData.get('referrer_bonus_points')?.toString() || '100', 10);
@@ -61,22 +61,12 @@ if (Astro.request.method === 'POST') {
           await db.insert(settings).values({ key: 'referrer_bonus_points', value: referrerPoints.toString() });
         }
         
-        success = 'Referral points settings updated successfully!';
+        return Astro.redirect('/admin/customers?success=' + encodeURIComponent('Referral points settings updated successfully!'));
       }
     }
   } catch (e: any) {
     error = e.message || 'Failed to perform action.';
   }
-}
-
-// Read query params messages
-const successParam = Astro.url.searchParams.get('success');
-if (successParam) {
-  success = successParam;
-}
-const errorParam = Astro.url.searchParams.get('error');
-if (errorParam) {
-  error = errorParam;
 }
 
 // Fetch global referral reward settings

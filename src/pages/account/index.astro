@@ -6,10 +6,14 @@ import { orders, serviceRequests } from '../../db/schema';
 import { eq, desc, or } from 'drizzle-orm';
 import { getSessionUser, clearSessionUser } from '../../lib/auth';
 import { getLocalizedPath } from '../../lib/translations';
+import { getSettings } from '../../services/cms';
+import { translateObject } from '../../lib/translations';
 
 export const prerender = false;
 
 const locale = Astro.currentLocale || 'gu';
+const rawSettings = await getSettings();
+const settings = translateObject(rawSettings, locale);
 
 // Authenticate user
 Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -65,7 +69,7 @@ try {
 // Inline translations
 const translations = {
   gu: {
-    title: 'મારું ખાતું - યશ ઇલેક્ટ્રોનિક્સ',
+    title: `મારું ખાતું - ${settings.businessName}`,
     welcome: 'સ્વાગત છે, {name}',
     logout: 'સાઇન આઉટ',
     creditsTitle: 'તમારી સ્ટોર ક્રેડિટ્સ',
@@ -76,7 +80,7 @@ const translations = {
     copyBtn: 'કોપી કરો',
     copiedMsg: 'લિંક કોપી થઈ ગઈ છે!',
     shareWa: 'વોટ્સએપ પર શેર કરો',
-    waText: 'યશ ઇલેક્ટ્રોનિક્સ પર રજીસ્ટ્રેશન કરો અને તમારા પહેલા ઓર્ડર પર મેળવો ₹૫૦ નું ડિસ્કાઉન્ટ! મારો રેફરલ કોડ: {code}. સાઇન અપ લિંક: {link}',
+    waText: `${settings.businessName} પર રજીસ્ટ્રેશન કરો અને તમારા પહેલા ઓર્ડર પર મેળવો ₹૫૦ નું ડિસ્કાઉન્ટ! મારો રેફરલ કોડ: {code}. સાઇન અપ લિંક: {link}`,
     historyTitle: 'ઓર્ડર હિસ્ટ્રી',
     noOrders: 'તમે હજી સુધી કોઈ ઓર્ડર કર્યો નથી.',
     orderId: 'ઓર્ડર ID',
@@ -94,7 +98,7 @@ const translations = {
     srDate: 'તારીખ',
   },
   en: {
-    title: 'My Account - Yash Electronics',
+    title: `My Account - ${settings.businessName}`,
     welcome: 'Welcome, {name}',
     logout: 'Sign Out',
     creditsTitle: 'Your Store Credits',
@@ -105,7 +109,7 @@ const translations = {
     copyBtn: 'Copy Link',
     copiedMsg: 'Link copied to clipboard!',
     shareWa: 'Share on WhatsApp',
-    waText: 'Sign up at Yash Electronics and get ₹50 off on your first order! My referral code: {code}. Sign up here: {link}',
+    waText: `Sign up at ${settings.businessName} and get ₹50 off on your first order! My referral code: {code}. Sign up here: {link}`,
     historyTitle: 'Order History',
     noOrders: 'You have not placed any orders yet.',
     orderId: 'Order ID',

@@ -13,8 +13,8 @@ const locale = Astro.currentLocale || 'gu';
 const rawSettings = await getSettings();
 const settings = translateObject(rawSettings, locale);
 
-let success = false;
-let error = '';
+let success = Astro.url.searchParams.get('success') === 'true';
+let error = Astro.url.searchParams.get('error') || '';
 
 if (Astro.request.method === 'POST') {
   try {
@@ -36,7 +36,7 @@ if (Astro.request.method === 'POST') {
         status: 'unread',
         createdAt: new Date().toISOString(),
       });
-      success = true;
+      return Astro.redirect(Astro.url.pathname + '?success=true');
     }
   } catch (e) {
     console.error('[Contact Submit Error]:', e);

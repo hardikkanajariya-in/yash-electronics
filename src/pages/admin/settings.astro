@@ -14,8 +14,8 @@ if (!currentUser || currentUser.role !== 'admin') {
   return Astro.redirect('/admin/login');
 }
 
-let message = '';
-let error = '';
+let message = Astro.url.searchParams.get('message') || '';
+let error = Astro.url.searchParams.get('error') || '';
 
 // Load current settings from database
 let dbSettingsList = await db.select().from(settings);
@@ -70,7 +70,7 @@ if (Astro.request.method === 'POST') {
     });
 
     clearCmsCache();
-    message = 'System settings updated successfully!';
+    return Astro.redirect('/admin/settings?message=' + encodeURIComponent('System settings updated successfully!'));
   } catch (e: any) {
     error = 'Failed to update settings: ' + (e.message || 'Unknown error');
   }

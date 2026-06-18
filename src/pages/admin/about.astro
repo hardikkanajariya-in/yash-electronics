@@ -11,8 +11,8 @@ Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate
 const currentUser = await getSessionUser(Astro.cookies);
 if (!currentUser || currentUser.role !== 'admin') return Astro.redirect('/admin/login');
 
-let message = '';
-let error = '';
+let message = Astro.url.searchParams.get('message') || '';
+let error = Astro.url.searchParams.get('error') || '';
 
 if (Astro.request.method === 'POST') {
   try {
@@ -21,7 +21,10 @@ if (Astro.request.method === 'POST') {
 
     if (formAction === 'delete') {
       const deleteId = formData.get('id')?.toString();
-      if (deleteId) { await db.delete(aboutInfo).where(eq(aboutInfo.id, deleteId)); message = 'Entry deleted.'; }
+      if (deleteId) {
+        await db.delete(aboutInfo).where(eq(aboutInfo.id, deleteId));
+        return Astro.redirect('/admin/about?message=' + encodeURIComponent('Entry deleted.'));
+      }
     } else if (formAction === 'save') {
       const id = formData.get('id')?.toString();
       const name = formData.get('name')?.toString().trim() || '';
@@ -30,16 +33,19 @@ if (Astro.request.method === 'POST') {
       const description = formData.get('description')?.toString().trim() || null;
       const sortOrder = Number(formData.get('sortOrder') || '0');
 
-      if (!name) { error = 'Name is required.'; }
-      else if (id) {
+      if (!name) {
+        error = 'Name is required.';
+      } else if (id) {
         await db.update(aboutInfo).set({ name, role, photo, description, sortOrder }).where(eq(aboutInfo.id, id));
-        message = 'Entry updated.';
+        return Astro.redirect('/admin/about?message=' + encodeURIComponent('Entry updated.'));
       } else {
         await db.insert(aboutInfo).values({ id: generateId(), name, role, photo, description, sortOrder });
-        message = 'Entry added.';
+        return Astro.redirect('/admin/about?message=' + encodeURIComponent('Entry added.'));
       }
     }
-  } catch (e: any) { error = 'Operation failed: ' + (e.message || 'Unknown error'); }
+  } catch (e: any) {
+    error = 'Operation failed: ' + (e.message || 'Unknown error');
+  }
 }
 
 let allEntries: any[] = [];

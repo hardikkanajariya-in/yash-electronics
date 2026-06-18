@@ -15,8 +15,8 @@ const locale = Astro.currentLocale || 'gu';
 Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
 const currentUser = await getSessionUser(Astro.cookies);
 
-let success = false;
-let error = '';
+let success = Astro.url.searchParams.get('success') === 'true';
+let error = Astro.url.searchParams.get('error') || '';
 
 if (Astro.request.method === 'POST') {
   try {
@@ -40,7 +40,7 @@ if (Astro.request.method === 'POST') {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
-      success = true;
+      return Astro.redirect(Astro.url.pathname + '?success=true');
     }
   } catch (e) {
     console.error('[Service Request Submit Error]:', e);

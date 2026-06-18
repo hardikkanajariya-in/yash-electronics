@@ -49,11 +49,11 @@ const currentPath = Astro.url.pathname;
           <img src={settings.logoUrl} alt={settings.businessName} class="h-11 w-11 rounded-md object-contain" />
         ) : (
           <div class="flex h-11 w-11 items-center justify-center rounded-md bg-gradient-to-br from-primary to-primary-700 text-lg font-bold text-white shadow-sm">
-            YE
+            {settings.businessName.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}
           </div>
         )}
         <div>
-          <p class="font-display text-lg font-extrabold leading-tight tracking-tight text-primary sm:text-xl">YASH ELECTRONICS</p>
+          <p class="font-display text-lg font-extrabold leading-tight tracking-tight text-primary sm:text-xl">{settings.businessName.toUpperCase()}</p>
           <p class="hidden text-[11px] text-neutral-500 sm:block">{settings.tagline}</p>
         </div>
       </a>

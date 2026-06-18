@@ -11,8 +11,8 @@ Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate
 const currentUser = await getSessionUser(Astro.cookies);
 if (!currentUser || currentUser.role !== 'admin') return Astro.redirect('/admin/login');
 
-let message = '';
-let error = '';
+let message = Astro.url.searchParams.get('message') || '';
+let error = Astro.url.searchParams.get('error') || '';
 
 if (Astro.request.method === 'POST') {
   try {
@@ -21,7 +21,10 @@ if (Astro.request.method === 'POST') {
 
     if (formAction === 'delete') {
       const deleteId = formData.get('id')?.toString();
-      if (deleteId) { await db.delete(services).where(eq(services.id, deleteId)); message = 'Service deleted.'; }
+      if (deleteId) {
+        await db.delete(services).where(eq(services.id, deleteId));
+        return Astro.redirect('/admin/services?message=' + encodeURIComponent('Service deleted.'));
+      }
     } else if (formAction === 'save') {
       const id = formData.get('id')?.toString();
       const title = formData.get('title')?.toString().trim() || '';
@@ -31,16 +34,19 @@ if (Astro.request.method === 'POST') {
       const sortOrder = Number(formData.get('sortOrder') || '0');
       const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
-      if (!title) { error = 'Title is required.'; }
-      else if (id) {
+      if (!title) {
+        error = 'Title is required.';
+      } else if (id) {
         await db.update(services).set({ title, slug, description, icon, image, sortOrder }).where(eq(services.id, id));
-        message = 'Service updated.';
+        return Astro.redirect('/admin/services?message=' + encodeURIComponent('Service updated.'));
       } else {
         await db.insert(services).values({ id: generateId(), title, slug, description, icon, image, sortOrder, isActive: true });
-        message = 'Service added.';
+        return Astro.redirect('/admin/services?message=' + encodeURIComponent('Service added.'));
       }
     }
-  } catch (e: any) { error = 'Operation failed: ' + (e.message || 'Unknown error'); }
+  } catch (e: any) {
+    error = 'Operation failed: ' + (e.message || 'Unknown error');
+  }
 }
 
 let allServices: any[] = [];

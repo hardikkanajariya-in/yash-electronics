@@ -35,6 +35,18 @@ const categories = translateObject(rawCategories, locale);
       noindex={noindex}
     />
     <OrganizationSchema settings={settings} />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#171717" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <script is:inline>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('ServiceWorker registered:', reg))
+            .catch(err => console.error('ServiceWorker registration failed:', err));
+        });
+      }
+    </script>
   </head>
   <body class="flex min-h-screen flex-col">
     {!hideHeaderFooter && <Header settings={settings} categories={categories} />}

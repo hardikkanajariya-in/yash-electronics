@@ -38,7 +38,7 @@ const serviceStaff = allMembers.filter(m => m.role === 'service_staff');
 
 <BaseLayout
   title={`${t('about.title', locale)} - ${settings.businessName}`}
-  description={locale === 'gu' ? 'યશ ઇલેક્ટ્રોનિક્સ - પેઢીઓથી વિશ્વાસપાત્ર ઇલેક્ટ્રોનિક્સ અને પાવર સોલ્યુશન્સ' : 'Yash Electronics - Trusted electronics & power solutions across generations'}
+  description={locale === 'gu' ? `${settings.businessName} - પેઢીઓથી વિશ્વાસપાત્ર ઇલેક્ટ્રોનિક્સ અને પાવર સોલ્યુશન્સ` : `${settings.businessName} - Trusted electronics & power solutions across generations`}
   canonicalUrl="/about"
 >
   <!-- Hero Section -->
@@ -70,8 +70,8 @@ const serviceStaff = allMembers.filter(m => m.role === 'service_staff');
         </h2>
         <p class="text-neutral-600 leading-relaxed max-w-2xl mx-auto">
           {locale === 'gu'
-            ? 'યશ ઇલેક્ટ્રોનિક્સ ખંભાળિયા, ગુજરાતમાં એક કૌટુંબિક વ્યવસાય છે. અમે ઇન્વર્ટર, બેટરી, સાઉન્ડ સિસ્ટમ અને DJ સ્પીકર સિસ્ટમમાં અસલી પ્રોડક્ટ્સ અને વ્યાવસાયિક સેવા પ્રદાન કરીએ છીએ.'
-            : 'Yash Electronics is a family-owned business in Khambhalia, Gujarat. We provide genuine products and professional service in Home Inverters, Batteries, Sound Systems, and DJ Speaker Systems.'}
+            ? `${settings.businessName} ${settings.city}, ${settings.state}માં એક કૌટુંબિક વ્યવસાય છે. અમે ઇન્વર્ટર, બેટરી, સાઉન્ડ સિસ્ટમ અને DJ સ્પીકર સિસ્ટમમાં અસલી પ્રોડક્ટ્સ અને વ્યાવસાયિક સેવા પ્રદાન કરીએ છીએ.`
+            : `${settings.businessName} is a family-owned business in ${settings.city}, ${settings.state}. We provide genuine products and professional service in Home Inverters, Batteries, Sound Systems, and DJ Speaker Systems.`}
         </p>
       </div>
 
@@ -79,7 +79,7 @@ const serviceStaff = allMembers.filter(m => m.role === 'service_staff');
         <div class="bg-gradient-to-br from-primary-50 to-white border border-primary-100 rounded-xl p-6 text-center">
           <span class="text-3xl mb-3 block">🏪</span>
           <h3 class="font-display text-lg font-bold text-primary mb-1">{locale === 'gu' ? 'સ્થાનિક દુકાન' : 'Local Store'}</h3>
-          <p class="text-sm text-neutral-600">{locale === 'gu' ? 'ખંભાળિયામાં જોધપુર ગેટ નજીક' : 'Near Jodhpur Gate, Khambhalia'}</p>
+          <p class="text-sm text-neutral-600">{settings.address}</p>
         </div>
         <div class="bg-gradient-to-br from-secondary-50 to-white border border-secondary-100 rounded-xl p-6 text-center">
           <span class="text-3xl mb-3 block">🔧</span>

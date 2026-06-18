@@ -11,8 +11,8 @@ Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate
 const currentUser = await getSessionUser(Astro.cookies);
 if (!currentUser || currentUser.role !== 'admin') return Astro.redirect('/admin/login');
 
-let message = '';
-let error = '';
+let message = Astro.url.searchParams.get('message') || '';
+let error = Astro.url.searchParams.get('error') || '';
 
 // Handle POST (Add/Edit/Delete)
 if (Astro.request.method === 'POST') {
@@ -24,7 +24,7 @@ if (Astro.request.method === 'POST') {
       const deleteId = formData.get('id')?.toString();
       if (deleteId) {
         await db.delete(teamMembers).where(eq(teamMembers.id, deleteId));
-        message = 'Team member deleted.';
+        return Astro.redirect('/admin/team?message=' + encodeURIComponent('Team member deleted.'));
       }
     } else if (formAction === 'save') {
       const id = formData.get('id')?.toString();
@@ -39,10 +39,10 @@ if (Astro.request.method === 'POST') {
         error = 'Name is required.';
       } else if (id) {
         await db.update(teamMembers).set({ name, phone, photo, role, department, sortOrder }).where(eq(teamMembers.id, id));
-        message = 'Team member updated.';
+        return Astro.redirect('/admin/team?message=' + encodeURIComponent('Team member updated.'));
       } else {
         await db.insert(teamMembers).values({ id: generateId(), name, phone, photo, role, department, sortOrder, isActive: true });
-        message = 'Team member added.';
+        return Astro.redirect('/admin/team?message=' + encodeURIComponent('Team member added.'));
       }
     }
   } catch (e: any) {

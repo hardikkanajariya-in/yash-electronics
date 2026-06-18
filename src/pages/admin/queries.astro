@@ -14,8 +14,8 @@ if (!currentUser || currentUser.role !== 'admin') {
   return Astro.redirect('/admin/login');
 }
 
-let error = '';
-let success = '';
+let error = Astro.url.searchParams.get('error') || '';
+let success = Astro.url.searchParams.get('success') || '';
 
 // Handle status updates or deletions
 if (Astro.request.method === 'POST') {
@@ -28,11 +28,11 @@ if (Astro.request.method === 'POST') {
       const newStatus = formData.get('status')?.toString() as any;
       if (['unread', 'read', 'resolved'].includes(newStatus)) {
         await db.update(contactQueries).set({ status: newStatus }).where(eq(contactQueries.id, queryId));
-        success = 'Query status updated successfully!';
+        return Astro.redirect('/admin/queries?success=' + encodeURIComponent('Query status updated successfully!'));
       }
     } else if (action === 'delete' && queryId) {
       await db.delete(contactQueries).where(eq(contactQueries.id, queryId));
-      success = 'Query deleted successfully!';
+      return Astro.redirect('/admin/queries?success=' + encodeURIComponent('Query deleted successfully!'));
     }
   } catch (e: any) {
     error = e.message || 'Failed to update query.';

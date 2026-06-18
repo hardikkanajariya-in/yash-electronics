@@ -3,7 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import Container from '../../components/ui/Container.astro';
 import ProductGrid from '../../components/product/ProductGrid.astro';
 import CatalogFilters from '../../components/product/CatalogFilters.astro';
-import { getCategories, getBrandsByCategory, getProducts, getCategoryBySlug } from '../../services/cms';
+import { getCategories, getBrandsByCategory, getProducts, getCategoryBySlug, getSettings } from '../../services/cms';
 import {
   filterProducts,
   sortProducts,
@@ -29,14 +29,16 @@ if (!rawCategory) {
 
 const category = translateObject(rawCategory, locale);
 
-const [rawAllProducts, rawCategories, rawCategoryBrands] = await Promise.all([
+const [rawAllProducts, rawCategories, rawCategoryBrands, rawSettings] = await Promise.all([
   getProducts(),
   getCategories(),
   getBrandsByCategory(rawCategory.slug),
+  getSettings(),
 ]);
 
 const allProducts = translateObject(rawAllProducts, locale);
 const categories = translateObject(rawCategories, locale);
+const settings = translateObject(rawSettings, locale);
 const brands = translateObject(rawCategoryBrands, locale);
 
 const params = Astro.url.searchParams;
@@ -57,7 +59,7 @@ products = sortProducts(products, filters.sort);
 
 <BaseLayout
   title={`${category.name} - ${locale === 'gu' ? 'ઇલેક્ટ્રોનિક્સ અને અપ્લાયન્સીસ' : 'Electronics & Appliances'}`}
-  description={category.description || (locale === 'gu' ? `યશ ઇલેક્ટ્રોનિક્સ પર ${category.name} ખરીદો. અસલી પ્રોડક્ટ્સ અને સ્થાનિક સપોર્ટ.` : `Shop ${category.name} at Yash Electronics. Genuine products with local support.`)}
+  description={category.description || (locale === 'gu' ? `${settings.businessName} પર ${category.name} ખરીદો. અસલી પ્રોડક્ટ્સ અને સ્થાનિક સપોર્ટ.` : `Shop ${category.name} at ${settings.businessName}. Genuine products with local support.`)}
   canonicalUrl={`/category/${category.slug}`}
 >
   <Container class="py-6">

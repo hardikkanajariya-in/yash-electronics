@@ -1,9 +1,14 @@
 ---
 import Container from '../ui/Container.astro';
 import SectionHeading from '../ui/SectionHeading.astro';
-import { t } from '../../lib/translations';
+import { t, translateObject } from '../../lib/translations';
+import { getSettings } from '../../services/cms';
 
 const locale = Astro.currentLocale || 'gu';
+const rawSettings = await getSettings();
+const settings = translateObject(rawSettings, locale);
+const businessName = settings.businessName || 'Yash Electronics';
+const whyTitle = locale === 'gu' ? `શા માટે ${businessName} પસંદ કરવું` : `Why Choose ${businessName}`;
 
 const localizedTrustPoints = [
   {
@@ -45,7 +50,7 @@ const icons: Record<string, string> = {
 <section class="section-padding bg-primary text-white">
   <Container>
     <SectionHeading
-      title={t('why.title', locale)}
+      title={whyTitle}
       subtitle={t('why.subtitle', locale)}
       align="center"
       class="[&_h2]:text-white [&_p]:text-primary-100"

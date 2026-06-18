@@ -18,8 +18,8 @@ if (!currentUser || currentUser.role !== 'admin') {
 const action = Astro.url.searchParams.get('action') || 'list';
 const brandId = Astro.url.searchParams.get('id') || '';
 
-let error = '';
-let success = '';
+let error = Astro.url.searchParams.get('error') || '';
+let success = Astro.url.searchParams.get('success') || '';
 
 // Handle POST actions
 if (Astro.request.method === 'POST') {
@@ -31,7 +31,7 @@ if (Astro.request.method === 'POST') {
       const idToDelete = formData.get('id')?.toString() || '';
       await db.delete(brands).where(eq(brands.id, idToDelete));
       clearCmsCache();
-      success = 'Brand deleted successfully!';
+      return Astro.redirect('/admin/brands?success=' + encodeURIComponent('Brand deleted successfully!'));
     } else if (formAction === 'save') {
       const name = formData.get('name')?.toString().trim() || '';
       const nameGu = formData.get('nameGu')?.toString().trim() || null;
@@ -55,7 +55,7 @@ if (Astro.request.method === 'POST') {
           isActive,
         }).where(eq(brands.id, brandId));
         clearCmsCache();
-        success = 'Brand updated successfully!';
+        return Astro.redirect('/admin/brands?success=' + encodeURIComponent('Brand updated successfully!'));
       } else {
         // Create new brand
         const newId = generateId();
@@ -69,7 +69,7 @@ if (Astro.request.method === 'POST') {
           isActive,
         });
         clearCmsCache();
-        success = 'Brand added successfully!';
+        return Astro.redirect('/admin/brands?success=' + encodeURIComponent('Brand added successfully!'));
       }
     }
   } catch (e: any) {

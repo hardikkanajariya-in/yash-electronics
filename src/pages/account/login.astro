@@ -5,6 +5,8 @@ import { db } from '../../db';
 import { users, referralHistory, settings } from '../../db/schema';
 import { eq, and } from 'drizzle-orm';
 import { hashPassword, setSessionUser, getSessionUser, generateId, generateReferralCode } from '../../lib/auth';
+import { getSettings } from '../../services/cms';
+import { translateObject } from '../../lib/translations';
 
 export const prerender = false;
 
@@ -22,6 +24,9 @@ try {
 } catch (e) {
   console.error('[Login] Failed to load referral points config:', e);
 }
+
+const rawSettings = await getSettings();
+const settingsObj = translateObject(rawSettings, locale);
 
 // Read redirect query param
 const redirectParam = Astro.url.searchParams.get('redirect') || '';
@@ -42,7 +47,7 @@ const refParam = Astro.url.searchParams.get('ref') || '';
 // Inline Translations
 const translations = {
   gu: {
-    title: 'યશ ઇલેક્ટ્રોનિક્સ - ખાતું',
+    title: `${settingsObj.businessName} - ખાતું`,
     loginTab: 'લોગિન',
     registerTab: 'રજીસ્ટ્રેશન',
     phoneLabel: 'ફોન નંબર',
@@ -59,7 +64,7 @@ const translations = {
     errGeneric: 'કંઈક ખોટું થયું. કૃપા કરીને ફરી પ્રયાસ કરો.',
   },
   en: {
-    title: 'Yash Electronics - Account',
+    title: `${settingsObj.businessName} - Account`,
     loginTab: 'Login',
     registerTab: 'Register',
     phoneLabel: 'Phone Number',

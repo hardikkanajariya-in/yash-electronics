@@ -14,8 +14,8 @@ if (!currentUser || currentUser.role !== 'admin') {
   return Astro.redirect('/admin/login');
 }
 
-let error = '';
-let success = '';
+let error = Astro.url.searchParams.get('error') || '';
+let success = Astro.url.searchParams.get('success') || '';
 
 // Handle Order Actions (Status update)
 if (Astro.request.method === 'POST') {
@@ -28,7 +28,7 @@ if (Astro.request.method === 'POST') {
       const newStatus = formData.get('status')?.toString() as any;
       if (['pending', 'processing', 'delivered', 'cancelled'].includes(newStatus)) {
         await db.update(orders).set({ status: newStatus }).where(eq(orders.id, orderId));
-        success = `Order status updated to ${newStatus} successfully!`;
+        return Astro.redirect('/admin/orders?success=' + encodeURIComponent(`Order status updated to ${newStatus} successfully!`));
       } else {
         error = 'Invalid status value.';
       }

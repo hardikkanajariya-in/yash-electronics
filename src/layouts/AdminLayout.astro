@@ -353,6 +353,36 @@ const drawerNavItems = [
           </div>
         </div>
       </div>
+    <!-- PWA Install Banner -->
+    <div
+      id="pwa-install-banner"
+      class="fixed bottom-20 md:bottom-6 right-4 left-4 md:left-auto md:w-96 bg-neutral-900 border border-neutral-800 text-white rounded-xl p-4 shadow-2xl z-[100] transform translate-y-full opacity-0 transition-all duration-300 hidden"
+    >
+      <div class="flex items-start gap-3">
+        <div class="h-12 w-12 rounded-lg bg-neutral-800 flex items-center justify-center text-white font-bold shrink-0">
+          <img src="/icon-192.png" alt="App Icon" class="h-full w-full object-cover rounded-lg" />
+        </div>
+        <div class="flex-1">
+          <h4 class="text-xs font-bold text-white">Install {businessName} App</h4>
+          <p class="text-[10px] text-neutral-400 mt-1 leading-relaxed">Install our app on your device for quick access and a better mobile experience.</p>
+          <div class="flex gap-2 mt-3 justify-end">
+            <button
+              id="pwa-dismiss-btn"
+              type="button"
+              class="px-3 py-1.5 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white text-[10px] font-bold transition-all cursor-pointer"
+            >
+              Later
+            </button>
+            <button
+              id="pwa-install-btn"
+              type="button"
+              class="px-4 py-1.5 rounded bg-primary hover:bg-primary/95 text-white text-[10px] font-bold transition-all cursor-pointer"
+            >
+              Install App
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </BaseLayout>
@@ -394,6 +424,53 @@ const drawerNavItems = [
           closeDrawer();
         }
       });
+    }
+
+    // PWA Install Prompt Handler
+    let deferredPrompt = null;
+    const pwaBanner = document.getElementById('pwa-install-banner');
+    const pwaInstallBtn = document.getElementById('pwa-install-btn');
+    const pwaDismissBtn = document.getElementById('pwa-dismiss-btn');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+
+      // Don't show if user dismissed it in this session/localStorage
+      if (localStorage.getItem('pwa-install-dismissed') === 'true') {
+        return;
+      }
+
+      if (pwaBanner) {
+        pwaBanner.classList.remove('hidden');
+        setTimeout(() => {
+          pwaBanner.classList.remove('translate-y-full', 'opacity-0');
+        }, 100);
+      }
+    });
+
+    pwaInstallBtn?.addEventListener('click', async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log('PWA installation outcome:', outcome);
+        deferredPrompt = null;
+      }
+      hidePwaBanner();
+    });
+
+    pwaDismissBtn?.addEventListener('click', () => {
+      localStorage.setItem('pwa-install-dismissed', 'true');
+      hidePwaBanner();
+    });
+
+    function hidePwaBanner() {
+      if (pwaBanner) {
+        pwaBanner.classList.add('translate-y-full', 'opacity-0');
+        setTimeout(() => {
+          pwaBanner.classList.add('hidden');
+        }, 300);
+      }
     }
   });
 </script>

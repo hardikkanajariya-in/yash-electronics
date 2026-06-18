@@ -18,8 +18,8 @@ if (!currentUser || currentUser.role !== 'admin') {
 const action = Astro.url.searchParams.get('action') || 'list';
 const categoryId = Astro.url.searchParams.get('id') || '';
 
-let error = '';
-let success = '';
+let error = Astro.url.searchParams.get('error') || '';
+let success = Astro.url.searchParams.get('success') || '';
 
 // Handle POST actions
 if (Astro.request.method === 'POST') {
@@ -31,7 +31,7 @@ if (Astro.request.method === 'POST') {
       const idToDelete = formData.get('id')?.toString() || '';
       await db.delete(categories).where(eq(categories.id, idToDelete));
       clearCmsCache();
-      success = 'Category deleted successfully!';
+      return Astro.redirect('/admin/categories?success=' + encodeURIComponent('Category deleted successfully!'));
     } else if (formAction === 'save') {
       const name = formData.get('name')?.toString().trim() || '';
       const nameGu = formData.get('nameGu')?.toString().trim() || null;
@@ -61,7 +61,7 @@ if (Astro.request.method === 'POST') {
           isActive,
         }).where(eq(categories.id, categoryId));
         clearCmsCache();
-        success = 'Category updated successfully!';
+        return Astro.redirect('/admin/categories?success=' + encodeURIComponent('Category updated successfully!'));
       } else {
         // Create new category
         const newId = generateId();
@@ -78,7 +78,7 @@ if (Astro.request.method === 'POST') {
           isActive,
         });
         clearCmsCache();
-        success = 'Category added successfully!';
+        return Astro.redirect('/admin/categories?success=' + encodeURIComponent('Category added successfully!'));
       }
     }
   } catch (e: any) {
