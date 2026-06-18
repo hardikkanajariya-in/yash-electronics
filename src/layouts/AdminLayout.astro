@@ -1,6 +1,8 @@
 ---
 import BaseLayout from './BaseLayout.astro';
 import Container from '../components/ui/Container.astro';
+import { db } from '../db';
+import { settings } from '../db/schema';
 import { getSessionUser } from '../lib/auth';
 
 interface Props {
@@ -9,7 +11,7 @@ interface Props {
   subtitle?: string;
 }
 
-const { title, activeTab, subtitle = 'Yash Electronics Admin Panel' } = Astro.props;
+const { title, activeTab, subtitle = 'Admin Panel' } = Astro.props;
 
 // Authenticate user check (pre-flight to make sure user exists)
 const currentUser = await getSessionUser(Astro.cookies);
@@ -18,7 +20,14 @@ if (!currentUser || currentUser.role !== 'admin') {
   return Astro.redirect('/admin/login');
 }
 
-// Side navigation links (14 items)
+const dbSettingsList = await db.select().from(settings);
+const currentSettings: Record<string, string> = {};
+dbSettingsList.forEach(s => {
+  currentSettings[s.key] = s.value;
+});
+const businessName = currentSettings.businessName || 'Yash Electronics';
+
+// Side navigation links (15 items)
 const menuItems = [
   { path: '/admin', label: 'Overview', icon: 'home', key: 'overview' },
   { path: '/admin/products', label: 'Products', icon: 'box', key: 'products' },
@@ -34,6 +43,7 @@ const menuItems = [
   { path: '/admin/about', label: 'About Info', icon: 'info', key: 'about' },
   { path: '/admin/bank-details', label: 'Bank Details', icon: 'credit-card', key: 'bank' },
   { path: '/admin/business-hours', label: 'Business Hours', icon: 'clock', key: 'hours' },
+  { path: '/admin/settings', label: 'Settings', icon: 'settings', key: 'settings' },
 ];
 
 // Mobile primary bottom nav (4 items)
@@ -56,6 +66,7 @@ const drawerNavItems = [
   { path: '/admin/about', label: 'About Info', icon: 'info', key: 'about' },
   { path: '/admin/bank-details', label: 'Bank Details', icon: 'credit-card', key: 'bank' },
   { path: '/admin/business-hours', label: 'Business Hours', icon: 'clock', key: 'hours' },
+  { path: '/admin/settings', label: 'Settings', icon: 'settings', key: 'settings' },
 ];
 ---
 
@@ -68,10 +79,10 @@ const drawerNavItems = [
       <div class="h-16 flex items-center px-6 border-b border-neutral-800 bg-neutral-950">
         <div class="flex items-center gap-2">
           <span class="h-8 w-8 flex items-center justify-center rounded-md bg-primary text-white font-bold text-sm">
-            YE
+            {businessName.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}
           </span>
           <div>
-            <h1 class="text-sm font-bold text-white tracking-wider leading-none">YASH ELECTRONICS</h1>
+            <h1 class="text-sm font-bold text-white tracking-wider leading-none uppercase">{businessName}</h1>
             <span class="text-[10px] text-neutral-500 font-semibold tracking-widest uppercase">Admin Panel</span>
           </div>
         </div>
@@ -148,6 +159,9 @@ const drawerNavItems = [
                 {item.icon === 'clock' && (
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 )}
+                {item.icon === 'settings' && (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                )}
               </span>
               <span>{item.label}</span>
             </a>
@@ -175,7 +189,7 @@ const drawerNavItems = [
         <div class="flex items-center gap-3">
           <!-- Mobile logo -->
           <span class="h-8 w-8 flex md:hidden items-center justify-center rounded-md bg-primary text-white font-bold text-sm">
-            YE
+            {businessName.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}
           </span>
           <div>
             <h2 class="text-sm sm:text-base font-bold text-neutral-900 leading-tight">{title}</h2>
@@ -317,6 +331,9 @@ const drawerNavItems = [
                     )}
                     {item.icon === 'clock' && (
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    )}
+                    {item.icon === 'settings' && (
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                     )}
                   </span>
                   <span class="truncate">{item.label}</span>
