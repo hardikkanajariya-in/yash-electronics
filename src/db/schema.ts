@@ -86,6 +86,8 @@ export const offers = pgTable('offers', {
   couponCode: text('coupon_code'),
   discountType: text('discount_type').$type<'percentage' | 'flat'>().default('flat'),
   discountValue: integer('discount_value').default(0),
+  minOrderValue: integer('min_order_value').default(0),
+  discountCap: integer('discount_cap'),
 });
 
 export const users = pgTable('users', {

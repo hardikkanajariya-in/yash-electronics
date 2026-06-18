@@ -84,21 +84,28 @@ if (Astro.request.method === 'POST') {
             );
 
           if (offer) {
-            let isExpired = false;
+            let isValid = true;
             if (offer.validUntil) {
               const expiry = new Date(offer.validUntil);
               const today = new Date();
               today.setHours(0, 0, 0, 0);
               if (expiry.getTime() < today.getTime()) {
-                isExpired = true;
+                isValid = false;
               }
             }
+            if (offer.minOrderValue && subtotal < offer.minOrderValue) {
+              isValid = false;
+            }
 
-            if (!isExpired) {
+            if (isValid) {
               appliedCoupon = offer.couponCode;
               const discountVal = offer.discountValue ?? 0;
               if (offer.discountType === 'percentage') {
-                couponDiscount = Math.round(subtotal * (discountVal / 100));
+                let calcDiscount = Math.round(subtotal * (discountVal / 100));
+                if (offer.discountCap && calcDiscount > offer.discountCap) {
+                  calcDiscount = offer.discountCap;
+                }
+                couponDiscount = calcDiscount;
               } else {
                 couponDiscount = discountVal;
               }
@@ -557,11 +564,20 @@ const t = translations[locale === 'en' ? 'en' : 'gu'];
       const data = await res.json();
 
       if (data.valid) {
-        activeCoupon = data;
-        succEl.textContent = locale === 'en' 
-          ? `Coupon ${data.code} applied successfully!` 
-          : `કૂપન ${data.code} સફળતાપૂર્વક લાગુ થઈ!`;
-        succEl.classList.remove('hidden');
+        const subtotal = getCart().reduce((sum, item) => sum + item.price * item.quantity, 0);
+        if (data.minOrderValue && subtotal < data.minOrderValue) {
+          activeCoupon = null;
+          errEl.textContent = locale === 'en' 
+            ? `Minimum order value of ₹${data.minOrderValue} required for this coupon.`
+            : `આ કૂપન માટે ન્યૂનતમ ₹${data.minOrderValue} નો ઓર્ડર જરૂરી છે.`;
+          errEl.classList.remove('hidden');
+        } else {
+          activeCoupon = data;
+          succEl.textContent = locale === 'en' 
+            ? `Coupon ${data.code} applied successfully!` 
+            : `કૂપન ${data.code} સફળતાપૂર્વક લાગુ થઈ!`;
+          succEl.classList.remove('hidden');
+        }
       } else {
         activeCoupon = null;
         errEl.textContent = data.message || (locale === 'en' ? 'Invalid coupon code.' : 'અમાન્ય કૂપન કોડ.');
@@ -588,17 +604,47 @@ const t = translations[locale === 'en' ? 'en' : 'gu'];
     const couponHiddenInput = document.getElementById('coupon-code-input');
 
     if (activeCoupon) {
-      if (activeCoupon.discountType === 'percentage') {
-        couponDiscount = Math.round(subtotal * (activeCoupon.discountValue / 100));
+      if (activeCoupon.minOrderValue && subtotal < activeCoupon.minOrderValue) {
+        const errEl = document.getElementById('coupon-error');
+        const succEl = document.getElementById('coupon-success');
+        if (errEl) {
+          errEl.textContent = locale === 'en'
+            ? `Minimum order value of ₹${activeCoupon.minOrderValue} required for this coupon.`
+            : `આ કૂપન માટે ન્યૂનતમ ₹${activeCoupon.minOrderValue} નો ઓર્ડર જરૂરી છે.`;
+          errEl.classList.remove('hidden');
+        }
+        if (succEl) succEl.classList.add('hidden');
+        couponDiscount = 0;
+        if (couponRow) couponRow.classList.add('hidden');
+        if (couponHiddenInput) couponHiddenInput.value = '';
       } else {
-        couponDiscount = activeCoupon.discountValue;
+        const errEl = document.getElementById('coupon-error');
+        const succEl = document.getElementById('coupon-success');
+        if (errEl && errEl.textContent.includes(locale === 'en' ? 'Minimum order' : 'ન્યૂનતમ')) {
+          errEl.classList.add('hidden');
+        }
+        if (succEl && activeCoupon.code) {
+          succEl.textContent = locale === 'en' 
+            ? `Coupon ${activeCoupon.code} applied successfully!` 
+            : `કૂપન ${activeCoupon.code} સફળતાપૂર્વક લાગુ થઈ!`;
+          succEl.classList.remove('hidden');
+        }
+
+        if (activeCoupon.discountType === 'percentage') {
+          couponDiscount = Math.round(subtotal * (activeCoupon.discountValue / 100));
+          if (activeCoupon.discountCap && couponDiscount > activeCoupon.discountCap) {
+            couponDiscount = activeCoupon.discountCap;
+          }
+        } else {
+          couponDiscount = activeCoupon.discountValue;
+        }
+        couponDiscount = Math.min(couponDiscount, subtotal);
+        
+        if (couponLabel) couponLabel.textContent = activeCoupon.code;
+        if (couponVal) couponVal.textContent = `-₹` + couponDiscount.toLocaleString('en-IN');
+        if (couponRow) couponRow.classList.remove('hidden');
+        if (couponHiddenInput) couponHiddenInput.value = activeCoupon.code;
       }
-      couponDiscount = Math.min(couponDiscount, subtotal);
-      
-      if (couponLabel) couponLabel.textContent = activeCoupon.code;
-      if (couponVal) couponVal.textContent = `-₹` + couponDiscount.toLocaleString('en-IN');
-      if (couponRow) couponRow.classList.remove('hidden');
-      if (couponHiddenInput) couponHiddenInput.value = activeCoupon.code;
     } else {
       if (couponRow) couponRow.classList.add('hidden');
       if (couponHiddenInput) couponHiddenInput.value = '';

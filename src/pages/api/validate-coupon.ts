@@ -52,6 +52,8 @@ export const GET = async ({ request }: { request: Request }) => {
         code: offer.couponCode,
         discountType: offer.discountType,
         discountValue: offer.discountValue,
+        minOrderValue: offer.minOrderValue,
+        discountCap: offer.discountCap,
       }),
       {
         status: 200,

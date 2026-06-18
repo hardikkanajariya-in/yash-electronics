@@ -49,6 +49,11 @@ export interface Offer {
   validUntil: string;
   isActive: boolean;
   sortOrder: number;
+  couponCode?: string | null;
+  discountType?: 'percentage' | 'flat' | null;
+  discountValue?: number | null;
+  minOrderValue?: number | null;
+  discountCap?: number | null;
 }
 
 export interface SiteSettings {
