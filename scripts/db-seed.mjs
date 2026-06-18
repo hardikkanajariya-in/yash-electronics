@@ -52,8 +52,8 @@ const settings = {
   heroTitle_gu: 'અસલી ઇન્વર્ટર, બેટરીઓ અને પ્રોફેશનલ ડીજે સિસ્ટમ્સ',
   heroSubtitle: 'Authorized dealer for Luminous, Microtek, Exide, Amaron, Livguard, JBL, Sony, Pioneer & more. Family-owned and service-oriented since 2000.',
   heroSubtitle_gu: 'લ્યુમિનસ, માઇક્રોટેક, એક્સાઇડ, અમરોન, લીવગાર્ડ, જેબીએલ, સોની, પાયોનિયર અને વધુ માટે અધિકૃત ડીલર. ૨૦૦૦ થી ગ્રાહક સેવાલક્ષી પારિવારિક વ્યવસાય.',
-  heroImage: 'yash-electronics/general/hero',
-  logoUrl: 'yash-electronics/general/logo',
+  heroImage: '/images/seed/hero.jpg',
+  logoUrl: '/icon-512.png',
   heroCtaText: 'Browse Catalog',
   heroCtaText_gu: 'બધી પ્રોડક્ટ્સ જુઓ',
   heroCtaLink: '/products',
@@ -67,23 +67,23 @@ const settings = {
 };
 
 const categories = [
-  { id: 'cat1', name: 'Home Inverters', nameGu: 'હોમ ઇન્વર્ટર', slug: 'home-inverters', description: 'High-performance home inverters and UPS for uninterrupted power supply.', descriptionGu: 'અવિરત પાવર સપ્લાય માટે ઉચ્ચ પ્રદર્શનવાળા હોમ ઇન્વર્ટર અને યુપીએસ.', icon: 'inverter', image: 'yash-electronics/categories/led-tv', sortOrder: 1, isActive: true },
-  { id: 'cat2', name: 'Batteries', nameGu: 'બેટરીઓ', slug: 'batteries', description: 'Long-lasting tubular and flat plate batteries for inverters and vehicles.', descriptionGu: 'ઇન્વર્ટર અને વાહનો માટે લાંબો સમય ચાલતી ટ્યુબ્યુલર અને ફ્લેટ પ્લેટ બેટરી.', icon: 'battery', image: 'yash-electronics/categories/refrigerator', sortOrder: 2, isActive: true },
-  { id: 'cat3', name: 'Sound Systems', nameGu: 'સાઉન્ડ સિસ્ટમ્સ', slug: 'sound-systems', description: 'Premium home theatres, soundbars, and consumer audio gear.', descriptionGu: 'પ્રીમિયમ હોમ થિયેટર્સ, સાઉન્ડબાર્સ અને કન્ઝ્યુમર ઓડિયો ગિયર.', icon: 'speaker', image: 'yash-electronics/categories/washing-machine', sortOrder: 3, isActive: true },
-  { id: 'cat4', name: 'DJ Speaker Systems', nameGu: 'ડીજે સ્પીકર સિસ્ટમ્સ', slug: 'dj-speaker-systems', description: 'Professional DJ speakers, amplifiers, mixers, and stage audio gear.', descriptionGu: 'પ્રોફેશનલ ડીજે સ્પીકર્સ, એમ્પ્લીફાયર, મિક્સર્સ અને સ્ટેજ ઓડિયો ગિયર.', icon: 'dj', image: 'yash-electronics/categories/microwave', sortOrder: 4, isActive: true },
+  { id: 'cat1', name: 'Home Inverters', nameGu: 'હોમ ઇન્વર્ટર', slug: 'home-inverters', description: 'High-performance home inverters and UPS for uninterrupted power supply.', descriptionGu: 'અવિરત પાવર સપ્લાય માટે ઉચ્ચ પ્રદર્શનવાળા હોમ ઇન્વર્ટર અને યુપીએસ.', icon: 'inverter', image: '/images/seed/categories/led-tv.jpg', sortOrder: 1, isActive: true },
+  { id: 'cat2', name: 'Batteries', nameGu: 'બેટરીઓ', slug: 'batteries', description: 'Long-lasting tubular and flat plate batteries for inverters and vehicles.', descriptionGu: 'ઇન્વર્ટર અને વાહનો માટે લાંબો સમય ચાલતી ટ્યુબ્યુલર અને ફ્લેટ પ્લેટ બેટરી.', icon: 'battery', image: '/images/seed/categories/refrigerator.jpg', sortOrder: 2, isActive: true },
+  { id: 'cat3', name: 'Sound Systems', nameGu: 'સાઉન્ડ સિસ્ટમ્સ', slug: 'sound-systems', description: 'Premium home theatres, soundbars, and consumer audio gear.', descriptionGu: 'પ્રીમિયમ હોમ થિયેટર્સ, સાઉન્ડબાર્સ અને કન્ઝ્યુમર ઓડિયો ગિયર.', icon: 'speaker', image: '/images/seed/categories/washing-machine.jpg', sortOrder: 3, isActive: true },
+  { id: 'cat4', name: 'DJ Speaker Systems', nameGu: 'ડીજે સ્પીકર સિસ્ટમ્સ', slug: 'dj-speaker-systems', description: 'Professional DJ speakers, amplifiers, mixers, and stage audio gear.', descriptionGu: 'પ્રોફેશનલ ડીજે સ્પીકર્સ, એમ્પ્લીફાયર, મિક્સર્સ અને સ્ટેજ ઓડિયો ગિયર.', icon: 'dj', image: '/images/seed/categories/microwave.jpg', sortOrder: 4, isActive: true },
 ];
 
 const brands = [
-  { id: 'b1', name: 'Luminous', nameGu: 'લ્યુમિનસ', slug: 'luminous', logo: 'yash-electronics/brands/sony', sortOrder: 1, isActive: true },
-  { id: 'b2', name: 'Microtek', nameGu: 'માઇક્રોટેક', slug: 'microtek', logo: 'yash-electronics/brands/samsung', sortOrder: 2, isActive: true },
-  { id: 'b3', name: 'Exide', nameGu: 'એક્સાઇડ', slug: 'exide', logo: 'yash-electronics/brands/haier', sortOrder: 3, isActive: true },
-  { id: 'b4', name: 'Amaron', nameGu: 'અમરોન', slug: 'amaron', logo: 'yash-electronics/brands/ifb', sortOrder: 4, isActive: true },
-  { id: 'b5', name: 'Livguard', nameGu: 'લીવગાર્ડ', slug: 'livguard', logo: 'yash-electronics/brands/iwis', sortOrder: 5, isActive: true },
-  { id: 'b6', name: 'JBL', nameGu: 'જેબીએલ', slug: 'jbl', logo: 'yash-electronics/brands/clt', sortOrder: 6, isActive: true },
-  { id: 'b7', name: 'Sony', nameGu: 'સોની', slug: 'sony', logo: 'yash-electronics/brands/trion', sortOrder: 7, isActive: true },
-  { id: 'b8', name: 'Pioneer', nameGu: 'પાયોનિયર', slug: 'pioneer', logo: 'yash-electronics/brands/komfy', sortOrder: 8, isActive: true },
-  { id: 'b9', name: 'Studio Master', nameGu: 'સ્ટુડિયો માસ્ટર', slug: 'studio-master', logo: 'yash-electronics/brands/daikin', sortOrder: 9, isActive: true },
-  { id: 'b10', name: 'Ahuja', nameGu: 'આહુજા', slug: 'ahuja', logo: 'yash-electronics/brands/voltas', sortOrder: 10, isActive: true },
+  { id: 'b1', name: 'Luminous', nameGu: 'લ્યુમિનસ', slug: 'luminous', logo: '/images/seed/brands/sony.svg', sortOrder: 1, isActive: true },
+  { id: 'b2', name: 'Microtek', nameGu: 'માઇક્રોટેક', slug: 'microtek', logo: '/images/seed/brands/samsung.svg', sortOrder: 2, isActive: true },
+  { id: 'b3', name: 'Exide', nameGu: 'એક્સાઇડ', slug: 'exide', logo: '/images/seed/brands/haier.svg', sortOrder: 3, isActive: true },
+  { id: 'b4', name: 'Amaron', nameGu: 'અમરોન', slug: 'amaron', logo: '/images/seed/brands/ifb.svg', sortOrder: 4, isActive: true },
+  { id: 'b5', name: 'Livguard', nameGu: 'લીવગાર્ડ', slug: 'livguard', logo: '/images/seed/brands/iwis.svg', sortOrder: 5, isActive: true },
+  { id: 'b6', name: 'JBL', nameGu: 'જેબીએલ', slug: 'jbl', logo: '/images/seed/brands/clt.svg', sortOrder: 6, isActive: true },
+  { id: 'b7', name: 'Sony', nameGu: 'સોની', slug: 'sony', logo: '/images/seed/brands/trion.svg', sortOrder: 7, isActive: true },
+  { id: 'b8', name: 'Pioneer', nameGu: 'પાયોનિયર', slug: 'pioneer', logo: '/images/seed/brands/komfy.svg', sortOrder: 8, isActive: true },
+  { id: 'b9', name: 'Studio Master', nameGu: 'સ્ટુડિયો માસ્ટર', slug: 'studio-master', logo: '/images/seed/brands/daikin.svg', sortOrder: 9, isActive: true },
+  { id: 'b10', name: 'Ahuja', nameGu: 'આહુજા', slug: 'ahuja', logo: '/images/seed/brands/voltas.svg', sortOrder: 10, isActive: true },
 ];
 
 const products = [
@@ -98,7 +98,7 @@ const products = [
     specifications: '{"Capacity":"900 VA","Output Waveform":"Pure Sine Wave","Max Charging Current":"15 A","Battery Support":"12V Single Battery","Warranty":"2 Years"}',
     mrp: 8500,
     offerPrice: 6800,
-    images: ['yash-electronics/products/sony-tv-1'],
+    images: ['/images/seed/products/sony-tv-1.jpg'],
     isFeatured: true,
     isActive: true,
     createdAt: '2026-05-15',
@@ -115,7 +115,7 @@ const products = [
     specifications: '{"Capacity":"950 VA","Output Waveform":"Pure Sine Wave","Input Voltage Range":"100V - 300V","Warranty":"2 Years"}',
     mrp: 7800,
     offerPrice: 5990,
-    images: ['yash-electronics/products/samsung-fridge-1'],
+    images: ['/images/seed/products/samsung-fridge-1.jpg'],
     isFeatured: true,
     isActive: true,
     createdAt: '2026-05-20',
@@ -132,7 +132,7 @@ const products = [
     specifications: '{"Capacity":"2000 VA / 24V","Output Waveform":"Pure Sine Wave","Battery Support":"24V Double Battery","Warranty":"2 Years"}',
     mrp: 18500,
     offerPrice: 14900,
-    images: ['yash-electronics/products/ifb-washer-1'],
+    images: ['/images/seed/products/ifb-washer-1.jpg'],
     isFeatured: false,
     isActive: true,
     createdAt: '2026-05-25',
@@ -149,7 +149,7 @@ const products = [
     specifications: '{"Capacity":"150 Ah","Battery Type":"Tall Tubular","Voltage":"12 V","Warranty":"36 Months"}',
     mrp: 16500,
     offerPrice: 12500,
-    images: ['yash-electronics/products/daikin-ac-1'],
+    images: ['/images/seed/products/daikin-ac-1.jpg'],
     isFeatured: true,
     isActive: true,
     createdAt: '2026-05-10',
@@ -166,7 +166,7 @@ const products = [
     specifications: '{"Capacity":"150 Ah","Battery Type":"Tall Tubular","Voltage":"12 V","Warranty":"42 Months"}',
     mrp: 17200,
     offerPrice: 13200,
-    images: ['yash-electronics/products/haier-microwave-1'],
+    images: ['/images/seed/products/haier-microwave-1.jpg'],
     isFeatured: true,
     isActive: true,
     createdAt: '2026-05-15',
@@ -183,7 +183,7 @@ const products = [
     specifications: '{"Capacity":"150 Ah","Battery Type":"Tall Tubular","Voltage":"12 V","Warranty":"60 Months"}',
     mrp: 15800,
     offerPrice: 11990,
-    images: ['yash-electronics/products/voltas-cooler-1'],
+    images: ['/images/seed/products/voltas-cooler-1.jpg'],
     isFeatured: false,
     isActive: true,
     createdAt: '2026-05-18',
@@ -200,7 +200,7 @@ const products = [
     specifications: '{"Total Power":"400 W","Audio Channels":"5.1 ch","Subwoofer Type":"Wired","Connectivity":"Bluetooth, HDMI ARC, Optical, USB","Warranty":"1 Year"}',
     mrp: 19990,
     offerPrice: 16990,
-    images: ['yash-electronics/products/blue-star-ac-1'],
+    images: ['/images/seed/products/blue-star-ac-1.jpg'],
     isFeatured: true,
     isActive: true,
     createdAt: '2026-05-22',
@@ -217,7 +217,7 @@ const products = [
     specifications: '{"Total Power":"590 W","Audio Channels":"5.1 ch","Subwoofer Type":"Wireless 10-inch","Features":"Dolby Atmos, MultiBeam, Chromecast Built-in","Warranty":"1 Year"}',
     mrp: 54999,
     offerPrice: 44999,
-    images: ['yash-electronics/products/samsung-microwave-1'],
+    images: ['/images/seed/products/samsung-microwave-1.jpg'],
     isFeatured: true,
     isActive: true,
     createdAt: '2026-05-28',
@@ -234,7 +234,7 @@ const products = [
     specifications: '{"Power Rating":"1300 W Peak / 650 W RMS","Woofer Size":"15 inch","Frequency Response":"45 Hz - 20 kHz","Max SPL":"128 dB","Warranty":"3 Years"}',
     mrp: 62000,
     offerPrice: 51900,
-    images: ['yash-electronics/products/sony-tv-2'],
+    images: ['/images/seed/products/sony-tv-2.jpg'],
     isFeatured: true,
     isActive: true,
     createdAt: '2026-06-01',
@@ -251,7 +251,7 @@ const products = [
     specifications: '{"Power Rating":"1200 W RMS / 2400 W Peak","Configuration":"Dual 15-inch Passive","Impedance":"4 Ohms","Max SPL":"134 dB","Warranty":"1 Year"}',
     mrp: 48000,
     offerPrice: 39900,
-    images: ['yash-electronics/products/sony-tv-1'],
+    images: ['/images/seed/products/sony-tv-1.jpg'],
     isFeatured: false,
     isActive: true,
     createdAt: '2026-06-02',
@@ -268,7 +268,7 @@ const products = [
     specifications: '{"Channels":"2","Deck Control":"2","Software":"rekordbox, Serato DJ Lite","Inputs":"1 Mic (1/4 inch)","Outputs":"1 Master (RCA), 1 Phones","Warranty":"1 Year"}',
     mrp: 34990,
     offerPrice: 29990,
-    images: ['yash-electronics/products/samsung-fridge-1'],
+    images: ['/images/seed/products/samsung-fridge-1.jpg'],
     isFeatured: true,
     isActive: true,
     createdAt: '2026-06-03',
@@ -285,7 +285,7 @@ const products = [
     specifications: '{"Power Output":"300W Max / 250W RMS","Inputs":"6 Mic, 2 Aux","Speaker Outputs":"4, 8, 70V, 100V","Features":"Built-in MP3 Player, USB, SD, Bluetooth, Remote","Warranty":"1 Year"}',
     mrp: 24500,
     offerPrice: 19900,
-    images: ['yash-electronics/products/ifb-washer-1'],
+    images: ['/images/seed/products/ifb-washer-1.jpg'],
     isFeatured: false,
     isActive: true,
     createdAt: '2026-06-04',
@@ -300,7 +300,7 @@ const offers = [
     slug: 'inverter-battery-combo',
     type: 'combo',
     description: 'Buy Luminous Zelio+ Inverter with Exide 150Ah Tubular Battery and get additional discount + free installation.',
-    image: 'yash-electronics/offers/combo-tv',
+    image: '/images/seed/offers/combo-tv.jpg',
     discountText: 'Save up to ₹3,000',
     validUntil: '2026-07-31',
     isActive: true,
@@ -312,7 +312,7 @@ const offers = [
     slug: 'dj-stage-pack-offer',
     type: 'bundle',
     description: 'Get two JBL EON715 Powered Speakers, Studio Master Mixer, and mic stands at a bundle price.',
-    image: 'yash-electronics/offers/kitchen-bundle',
+    image: '/images/seed/offers/kitchen-bundle.jpg',
     discountText: 'Bundle & Save 12%',
     validUntil: '2026-08-31',
     isActive: true,
@@ -324,7 +324,7 @@ const offers = [
     slug: 'battery-exchange-mela',
     type: 'weekly',
     description: 'Bring your old scrap battery of any brand and get flat ₹2,000 to ₹3,500 off on a new Exide or Amaron battery.',
-    image: 'yash-electronics/offers/ac-weekly',
+    image: '/images/seed/offers/ac-weekly.jpg',
     discountText: 'Up to ₹3,500 Off on Exchange',
     validUntil: '2026-06-30',
     isActive: true,
@@ -469,6 +469,85 @@ const businessHoursData = [
   { id: 'bh6', dayOfWeek: 6, label: 'Saturday', openTime: '09:30', closeTime: '21:00', isOpen: true, note: null },
 ];
 
+// Persistent Cache for uploaded Cloudinary image public IDs
+const uploadCachePath = path.resolve(process.cwd(), 'scripts', 'cloudinary-uploads.json');
+let uploadCache = {};
+try {
+  if (fs.existsSync(uploadCachePath)) {
+    uploadCache = JSON.parse(fs.readFileSync(uploadCachePath, 'utf8'));
+  }
+} catch (e) {
+  console.warn('[Seed] Warning: Could not read scripts/cloudinary-uploads.json cache file.');
+}
+
+function saveUploadCache() {
+  try {
+    fs.writeFileSync(uploadCachePath, JSON.stringify(uploadCache, null, 2), 'utf8');
+  } catch (e) {
+    console.warn('[Seed] Warning: Could not write scripts/cloudinary-uploads.json cache file.');
+  }
+}
+
+async function uploadImageIfNeeded(localPath, defaultPublicId) {
+  if (!localPath || typeof localPath !== 'string') return localPath;
+  if (!localPath.startsWith('/')) return localPath; // Already uploaded / public ID
+
+  if (uploadCache[localPath]) {
+    return uploadCache[localPath];
+  }
+
+  const cloudName = process.env.PUBLIC_CLOUDINARY_CLOUD_NAME;
+  const apiKey = process.env.CLOUDINARY_API_KEY;
+  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+  if (!cloudName || !apiKey || !apiSecret) {
+    console.warn(`[Seed] Cloudinary config missing for ${localPath}. Using default ID fallback: ${defaultPublicId}`);
+    return defaultPublicId;
+  }
+
+  try {
+    const absolutePath = path.join(process.cwd(), 'public', localPath);
+    if (!fs.existsSync(absolutePath)) {
+      console.warn(`[Seed] Warning: Local file not found at ${absolutePath}. Using default ID fallback: ${defaultPublicId}`);
+      return defaultPublicId;
+    }
+
+    const timestamp = Math.round(new Date().getTime() / 1000);
+    const paramString = `public_id=${defaultPublicId}&timestamp=${timestamp}${apiSecret}`;
+    const signature = crypto.createHash('sha1').update(paramString).digest('hex');
+
+    const fileBuffer = fs.readFileSync(absolutePath);
+    const base64File = `data:image/${path.extname(absolutePath).slice(1)};base64,${fileBuffer.toString('base64')}`;
+
+    const formData = new URLSearchParams();
+    formData.append('file', base64File);
+    formData.append('public_id', defaultPublicId);
+    formData.append('timestamp', String(timestamp));
+    formData.append('api_key', apiKey);
+    formData.append('signature', signature);
+
+    console.log(`[Seed] Cloudinary upload once: Uploading ${localPath} to Cloudinary as '${defaultPublicId}'...`);
+    const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    const data = await response.json();
+    if (data.secure_url) {
+      console.log(`[Seed] Upload success! Registered Cloudinary ID: ${data.public_id}`);
+      uploadCache[localPath] = data.public_id;
+      saveUploadCache();
+      return data.public_id;
+    } else {
+      console.error(`[Seed] Cloudinary upload failed for ${localPath}:`, data.error?.message || data);
+      return defaultPublicId;
+    }
+  } catch (error) {
+    console.error(`[Seed] Error uploading ${localPath} to Cloudinary:`, error);
+    return defaultPublicId;
+  }
+}
+
 async function seed() {
   console.log('[Seed] Connecting to database...');
   await client.connect();
@@ -493,6 +572,38 @@ async function seed() {
     await client.query('DELETE FROM about_info');
     await client.query('DELETE FROM bank_details');
     await client.query('DELETE FROM business_hours');
+
+    // 1. Resolve Settings Images
+    settings.heroImage = await uploadImageIfNeeded(settings.heroImage, 'yash-electronics/general/hero');
+    settings.logoUrl = await uploadImageIfNeeded(settings.logoUrl || '/icon-512.png', 'yash-electronics/general/logo');
+
+    // 2. Resolve Category Images
+    for (const category of categories) {
+      const filename = path.parse(category.image).name;
+      category.image = await uploadImageIfNeeded(category.image, `yash-electronics/categories/${filename}`);
+    }
+
+    // 3. Resolve Brand Logos
+    for (const brand of brands) {
+      const filename = path.parse(brand.logo).name;
+      brand.logo = await uploadImageIfNeeded(brand.logo, `yash-electronics/brands/${filename}`);
+    }
+
+    // 4. Resolve Product Images
+    for (const product of products) {
+      const uploadedImages = [];
+      for (const img of product.images) {
+        const filename = path.parse(img).name;
+        uploadedImages.push(await uploadImageIfNeeded(img, `yash-electronics/products/${filename}`));
+      }
+      product.images = uploadedImages;
+    }
+
+    // 5. Resolve Offer Images
+    for (const offer of offers) {
+      const filename = path.parse(offer.image).name;
+      offer.image = await uploadImageIfNeeded(offer.image, `yash-electronics/offers/${filename}`);
+    }
 
     console.log('[Seed] Inserting admin user (Mr. Paresh Mehta)...');
     await client.query(

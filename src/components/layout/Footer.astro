@@ -2,6 +2,7 @@
 import type { Category, SiteSettings } from '../../types';
 import Container from '../ui/Container.astro';
 import { t, getLocalizedPath } from '../../lib/translations';
+import { buildCloudinaryUrl } from '../../lib/cloudinary';
 
 interface Props {
   settings: SiteSettings;
@@ -18,9 +19,13 @@ const year = new Date().getFullYear();
     <div class="grid gap-8 py-10 md:grid-cols-2 lg:grid-cols-4">
       <div>
         <div class="flex items-center gap-2 mb-3">
-          <div class="flex h-9 w-9 items-center justify-center rounded-md bg-gradient-to-br from-primary to-primary-700 text-sm font-bold text-white">
-            {settings.businessName.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}
-          </div>
+          {settings.logoUrl ? (
+            <img src={buildCloudinaryUrl(settings.logoUrl, { width: 72, height: 72 })} alt={settings.businessName} class="h-9 w-9 rounded-md object-contain bg-white p-0.5" />
+          ) : (
+            <div class="flex h-9 w-9 items-center justify-center rounded-md bg-gradient-to-br from-primary to-primary-700 text-sm font-bold text-white">
+              {settings.businessName.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}
+            </div>
+          )}
           <p class="font-display text-lg font-bold text-white">{settings.businessName.toUpperCase()}</p>
         </div>
         <p class="text-sm text-neutral-400">{settings.tagline}</p>
