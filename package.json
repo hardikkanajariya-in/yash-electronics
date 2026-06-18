@@ -12,7 +12,8 @@
     "astro": "astro",
     "seed:images": "node scripts/download-seed-images.mjs",
     "db:push": "drizzle-kit push",
-    "db:seed": "node scripts/db-seed.mjs"
+    "db:seed": "node scripts/db-seed.mjs",
+    "db:fresh": "drizzle-kit push && node scripts/db-seed.mjs"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.9",
