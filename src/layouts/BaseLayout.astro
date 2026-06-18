@@ -221,5 +221,132 @@ const categories = translateObject(rawCategories, locale);
         });
       }
     </script>
+
+    <!-- PWA Install Banner (Site-wide) -->
+    <div
+      id="pwa-install-banner"
+      class="fixed bottom-6 right-4 left-4 md:left-auto md:w-96 bg-neutral-900 border border-neutral-800 text-white rounded-xl p-4 shadow-2xl z-[100] transform translate-y-full opacity-0 transition-all duration-300 hidden"
+    >
+      <div class="flex items-start gap-3">
+        <div class="h-12 w-12 rounded-lg bg-neutral-800 flex items-center justify-center text-white font-bold shrink-0">
+          <img src="/icon-192.png" alt="App Icon" class="h-full w-full object-cover rounded-lg" />
+        </div>
+        <div class="flex-1">
+          <h4 class="text-xs font-bold text-white">Install {settings.businessName} App</h4>
+          <p class="text-[10px] text-neutral-400 mt-1 leading-relaxed">
+            {locale === 'gu' 
+              ? 'ઝડપી ઍક્સેસ અને બહેતર અનુભવ માટે તમારા ઉપકરણ પર અમારી એપ ઇન્સ્ટોલ કરો.'
+              : 'Install our app on your device for quick access and a better mobile experience.'}
+          </p>
+          <div class="flex gap-2 mt-3 justify-end items-center">
+            <button
+              id="pwa-dismiss-never-btn"
+              type="button"
+              class="px-2.5 py-1.5 rounded bg-transparent hover:bg-neutral-800 text-neutral-400 hover:text-white text-[10px] font-semibold transition-all cursor-pointer mr-auto"
+            >
+              {locale === 'gu' ? 'ફરીથી ના પૂછશો' : "Don't ask again"}
+            </button>
+            <button
+              id="pwa-dismiss-btn"
+              type="button"
+              class="px-3 py-1.5 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white text-[10px] font-bold transition-all cursor-pointer"
+            >
+              {locale === 'gu' ? 'પછીથી' : 'Later'}
+            </button>
+            <button
+              id="pwa-install-btn"
+              type="button"
+              class="px-4 py-1.5 rounded bg-primary hover:bg-primary/95 text-white text-[10px] font-bold transition-all cursor-pointer"
+            >
+              {locale === 'gu' ? 'ઇન્સ્ટોલ' : 'Install'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script is:inline>
+      document.addEventListener('DOMContentLoaded', () => {
+        let deferredPrompt = null;
+        const pwaBanner = document.getElementById('pwa-install-banner');
+        const pwaInstallBtn = document.getElementById('pwa-install-btn');
+        const pwaDismissBtn = document.getElementById('pwa-dismiss-btn');
+        const pwaDismissNeverBtn = document.getElementById('pwa-dismiss-never-btn');
+        const pwaHeaderBtn = document.getElementById('pwa-install-header-btn');
+
+        // Check standalone mode
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        if (isStandalone) {
+          return;
+        }
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+          e.preventDefault();
+          deferredPrompt = e;
+
+          // 1. Show the header top bar button
+          if (pwaHeaderBtn) {
+            pwaHeaderBtn.classList.remove('hidden');
+            pwaHeaderBtn.classList.add('flex');
+          }
+
+          // 2. Show the pop-up banner unless dismissed permanently
+          const dismissedNever = localStorage.getItem('pwa-install-dismissed-never') === 'true';
+          const dismissedSession = sessionStorage.getItem('pwa-install-dismissed-session') === 'true';
+
+          if (!dismissedNever && !dismissedSession && pwaBanner) {
+            pwaBanner.classList.remove('hidden');
+            setTimeout(() => {
+              pwaBanner.classList.remove('translate-y-full', 'opacity-0');
+            }, 150);
+          }
+        });
+
+        const triggerInstall = async () => {
+          if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log('PWA installation outcome:', outcome);
+            deferredPrompt = null;
+          }
+          hidePwaBanner();
+          if (pwaHeaderBtn) {
+            pwaHeaderBtn.classList.add('hidden');
+            pwaHeaderBtn.classList.remove('flex');
+          }
+        };
+
+        pwaInstallBtn?.addEventListener('click', triggerInstall);
+        pwaHeaderBtn?.addEventListener('click', triggerInstall);
+
+        pwaDismissBtn?.addEventListener('click', () => {
+          sessionStorage.setItem('pwa-install-dismissed-session', 'true');
+          hidePwaBanner();
+        });
+
+        pwaDismissNeverBtn?.addEventListener('click', () => {
+          localStorage.setItem('pwa-install-dismissed-never', 'true');
+          hidePwaBanner();
+        });
+
+        function hidePwaBanner() {
+          if (pwaBanner) {
+            pwaBanner.classList.add('translate-y-full', 'opacity-0');
+            setTimeout(() => {
+              pwaBanner.classList.add('hidden');
+            }, 300);
+          }
+        }
+
+        window.addEventListener('appinstalled', () => {
+          deferredPrompt = null;
+          hidePwaBanner();
+          if (pwaHeaderBtn) {
+            pwaHeaderBtn.classList.add('hidden');
+            pwaHeaderBtn.classList.remove('flex');
+          }
+        });
+      });
+    </script>
   </body>
 </html>
