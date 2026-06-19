@@ -3,112 +3,76 @@ import { db } from '../db';
 import { settings, categories, brands, offers, teamMembers, services, aboutInfo, bankDetails, businessHours, referralHistory } from '../db/schema';
 import { eq, asc } from 'drizzle-orm';
 
-const API_URL = import.meta.env.SHEETS_API_URL;
-const API_KEY = import.meta.env.SHEETS_API_KEY;
-const USE_MOCK = import.meta.env.USE_MOCK_DATA === 'true' || !API_URL;
-
 let cachedData: CmsData | null = null;
-
-async function fetchFromApi(): Promise<CmsData> {
-  const url = new URL(API_URL);
-  if (API_KEY) url.searchParams.set('key', API_KEY);
-
-  const response = await fetch(url.toString(), {
-    headers: { Accept: 'application/json' },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Sheets API error: ${response.status} ${response.statusText}`);
-  }
-
-  const data = (await response.json()) as CmsData;
-
-  if (!data.settings || !data.products) {
-    throw new Error('Invalid CMS response: missing required data');
-  }
-
-  return data;
-}
 
 export async function getCmsData(): Promise<CmsData> {
   if (cachedData) return cachedData;
 
-  if (USE_MOCK) {
-    if (import.meta.env.DEV) {
-      console.warn(
-        '[CMS] Using mock data from database. Set SHEETS_API_URL in .env to connect Google Sheets.',
-      );
-    }
+  try {
+    const dbSettingsList = await db.select().from(settings);
+    const dbSettingsObj: any = {};
+    dbSettingsList.forEach(s => {
+      dbSettingsObj[s.key] = s.value;
+    });
+
+    const dbCategories = await db.select().from(categories);
+    const dbBrands = await db.select().from(brands);
     
-    try {
-      const dbSettingsList = await db.select().from(settings);
-      const dbSettingsObj: any = {};
-      dbSettingsList.forEach(s => {
-        dbSettingsObj[s.key] = s.value;
-      });
+    const dbProductsRaw = await db.query.products.findMany({
+      with: {
+        brand: true,
+        category: true,
+      }
+    });
 
-      const dbCategories = await db.select().from(categories);
-      const dbBrands = await db.select().from(brands);
-      
-      const dbProductsRaw = await db.query.products.findMany({
-        with: {
-          brand: true,
-          category: true,
-        }
-      });
+    const dbProducts = dbProductsRaw.map((p: any) => ({
+      id: p.id,
+      name: p.name,
+      nameGu: p.nameGu || '',
+      slug: p.slug,
+      brand: p.brand?.name || '',
+      brandGu: p.brand?.nameGu || '',
+      brandSlug: p.brand?.slug || '',
+      category: p.category?.name || '',
+      categoryGu: p.category?.nameGu || '',
+      categorySlug: p.category?.slug || '',
+      modelNumber: p.modelNumber || '',
+      description: p.description || '',
+      descriptionGu: p.descriptionGu || '',
+      specifications: p.specifications || '{}',
+      specificationsGu: p.specificationsGu || '',
+      mrp: p.mrp,
+      offerPrice: p.offerPrice,
+      images: p.images || [],
+      isFeatured: p.isFeatured,
+      isActive: p.isActive,
+      createdAt: p.createdAt,
+      updatedAt: p.updatedAt,
+    }));
 
-      const dbProducts = dbProductsRaw.map((p: any) => ({
-        id: p.id,
-        name: p.name,
-        nameGu: p.nameGu || '',
-        slug: p.slug,
-        brand: p.brand?.name || '',
-        brandGu: p.brand?.nameGu || '',
-        brandSlug: p.brand?.slug || '',
-        category: p.category?.name || '',
-        categoryGu: p.category?.nameGu || '',
-        categorySlug: p.category?.slug || '',
-        modelNumber: p.modelNumber || '',
-        description: p.description || '',
-        descriptionGu: p.descriptionGu || '',
-        specifications: p.specifications || '{}',
-        specificationsGu: p.specificationsGu || '',
-        mrp: p.mrp,
-        offerPrice: p.offerPrice,
-        images: p.images || [],
-        isFeatured: p.isFeatured,
-        isActive: p.isActive,
-        createdAt: p.createdAt,
-        updatedAt: p.updatedAt,
-      }));
+    const dbOffers = await db.select().from(offers);
 
-      const dbOffers = await db.select().from(offers);
-
-      const data: CmsData = {
-        settings: dbSettingsObj,
-        categories: dbCategories.map((c) => ({
-          ...c,
-          description: c.description ?? '',
-          icon: c.icon ?? '',
-          image: c.image ?? '',
-        })),
-        brands: dbBrands.map((b) => ({
-          ...b,
-          logo: b.logo ?? '',
-        })),
-        products: dbProducts,
-        offers: dbOffers as CmsData['offers'],
-      };
-      cachedData = data;
-      return data;
-    } catch (e) {
-      console.error('[CMS] Database fallback error:', e);
-      throw e;
-    }
+    const data: CmsData = {
+      settings: dbSettingsObj,
+      categories: dbCategories.map((c) => ({
+        ...c,
+        description: c.description ?? '',
+        icon: c.icon ?? '',
+        image: c.image ?? '',
+      })),
+      brands: dbBrands.map((b) => ({
+        ...b,
+        logo: b.logo ?? '',
+      })),
+      products: dbProducts,
+      offers: dbOffers as CmsData['offers'],
+    };
+    cachedData = data;
+    return data;
+  } catch (e) {
+    console.error('[CMS] Database load error:', e);
+    throw e;
   }
-
-  cachedData = await fetchFromApi();
-  return cachedData;
 }
 
 export async function getSettings() {
@@ -189,7 +153,7 @@ export async function getTeamMembers() {
   }
 }
 
-export async function getTeamByDepartment(department: 'sales' | 'service') {
+export async function getTeamByDepartment(department: 'sales' | 'service' | 'chief_account' | 'account_staff') {
   const members = await getTeamMembers();
   return members.filter((m) => m.department === department);
 }

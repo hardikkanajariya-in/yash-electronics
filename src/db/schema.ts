@@ -172,7 +172,7 @@ export const teamMembers = pgTable('team_members', {
   photo: text('photo'),
   phone: text('phone'),
   role: text('role').$type<'sales_head' | 'sales_staff' | 'service_head' | 'service_staff'>().notNull(),
-  department: text('department').$type<'sales' | 'service'>().notNull(),
+  department: text('department').$type<'sales' | 'service' | 'chief_account' | 'account_staff'>().notNull(),
   sortOrder: integer('sort_order').notNull().default(0),
   isActive: boolean('is_active').notNull().default(true),
 });

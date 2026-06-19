@@ -111,6 +111,8 @@ const showForm = isAdding || editMember;
             <select name="department" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none">
               <option value="sales" selected={editMember?.department === 'sales'}>Sales</option>
               <option value="service" selected={editMember?.department === 'service'}>Service</option>
+              <option value="chief_account" selected={editMember?.department === 'chief_account'}>Chief Account</option>
+              <option value="account_staff" selected={editMember?.department === 'account_staff'}>Account Staff</option>
             </select>
           </div>
           <div>
@@ -249,7 +251,7 @@ const showForm = isAdding || editMember;
           {allMembers.map(member => (
             <tr class="hover:bg-neutral-50 transition-colors">
               <td class="px-4 py-3 font-medium text-neutral-900">{member.name}</td>
-              <td class="px-4 py-3 text-neutral-600 hidden sm:table-cell capitalize">{member.department}</td>
+              <td class="px-4 py-3 text-neutral-600 hidden sm:table-cell capitalize">{member.department.replace('_', ' ')}</td>
               <td class="px-4 py-3 text-neutral-600 hidden md:table-cell">
                 <span class={`inline-block rounded px-2 py-0.5 text-[10px] font-semibold uppercase border ${
                   member.role.includes('head') ? 'bg-primary-50 text-primary border-primary-200' : 'bg-neutral-50 text-neutral-600 border-neutral-200'

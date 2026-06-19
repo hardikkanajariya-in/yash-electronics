@@ -110,7 +110,7 @@ export interface TeamMember {
   photo: string | null;
   phone: string | null;
   role: 'sales_head' | 'sales_staff' | 'service_head' | 'service_staff';
-  department: 'sales' | 'service';
+  department: 'sales' | 'service' | 'chief_account' | 'account_staff';
   sortOrder: number;
   isActive: boolean;
 }
