@@ -134,7 +134,7 @@ const currentPath = Astro.url.pathname;
     </Container>
   </div>
 
-  <div id="mobile-menu" class="hidden border-t border-neutral-200 bg-white lg:hidden">
+  <div id="mobile-menu" class="hidden border-t border-neutral-200 bg-white lg:hidden max-h-[calc(100vh-5rem)] overflow-y-auto">
     <Container>
       <form action={getLocalizedPath('/products', locale)} method="get" class="py-3">
         <input

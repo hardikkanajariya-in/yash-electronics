@@ -7,6 +7,7 @@ interface Props {
   alt: string;
   width?: number;
   height?: number;
+  crop?: string;
   class?: string;
   loading?: 'lazy' | 'eager';
   sizes?: string;
@@ -21,6 +22,7 @@ const {
   alt,
   width = 400,
   height,
+  crop,
   class: className = '',
   loading = 'lazy',
   sizes = '100vw',
@@ -28,9 +30,11 @@ const {
 } = Astro.props;
 
 const publicId = publicIdProp ?? src ?? '';
-const imgSrc = buildCloudinaryUrl(publicId, { width, height });
+const imgSrc = buildCloudinaryUrl(publicId, { width, height, crop });
 const srcSet = isLocalImage(publicId) ? undefined : buildSrcSet(publicId, [320, 480, 640, 768, 1024]);
 const imgLoading = priority ? 'eager' : loading;
+const hasObjectFit = className.includes('object-');
+const defaultFitClass = hasObjectFit ? '' : 'object-cover';
 ---
 
 <img
@@ -42,5 +46,5 @@ const imgLoading = priority ? 'eager' : loading;
   height={height}
   loading={imgLoading}
   decoding="async"
-  class:list={['object-cover', className]}
+  class:list={[defaultFitClass, className]}
 />

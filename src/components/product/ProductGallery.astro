@@ -17,7 +17,8 @@ const displayImages = images.length > 0 ? images : [''];
       alt={productName}
       width={600}
       height={600}
-      class="aspect-square w-full"
+      crop="limit"
+      class="aspect-square w-full object-contain p-4"
       priority
       sizes="(max-width: 768px) 100vw, 50vw"
     />
@@ -36,7 +37,8 @@ const displayImages = images.length > 0 ? images : [''];
             alt={`${productName} - view ${i + 1}`}
             width={120}
             height={120}
-            class="aspect-square w-full"
+            crop="limit"
+            class="aspect-square w-full object-contain p-1"
           />
         </button>
       ))}

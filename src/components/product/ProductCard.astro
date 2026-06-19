@@ -24,7 +24,8 @@ const primaryImage = product.images[0] || '';
           alt={product.name}
           width={280}
           height={280}
-          class="h-full w-full transition-transform duration-200 group-hover:scale-105"
+          crop="limit"
+          class="h-full w-full object-contain p-2 transition-transform duration-200 group-hover:scale-105"
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
         />
       )}
@@ -60,7 +61,7 @@ const primaryImage = product.images[0] || '';
   </a>
 
   {/* Actions */}
-  <div class="p-3 pt-0 mt-auto flex gap-2 border-t border-neutral-100 pt-3.5">
+  <div class="p-3 pt-0 mt-auto flex flex-col sm:flex-row gap-2 border-t border-neutral-100 pt-3.5">
     <button
       type="button"
       data-action="add-to-cart"
@@ -68,7 +69,7 @@ const primaryImage = product.images[0] || '';
       data-product-name={product.name}
       data-product-price={product.offerPrice > 0 ? product.offerPrice : product.mrp}
       data-product-image={product.images[0] || ''}
-      class="flex-1 rounded border border-primary/45 px-2 py-1.5 text-center text-xs font-bold text-primary hover:bg-primary/5 transition-colors focus:outline-none cursor-pointer"
+      class="w-full sm:flex-1 rounded border border-primary/45 px-2 py-1.5 text-center text-xs font-bold text-primary hover:bg-primary/5 transition-colors focus:outline-none cursor-pointer"
     >
       🛒 {locale === 'en' ? 'Add' : 'કાર્ટ'}
     </button>
@@ -79,7 +80,7 @@ const primaryImage = product.images[0] || '';
       data-product-name={product.name}
       data-product-price={product.offerPrice > 0 ? product.offerPrice : product.mrp}
       data-product-image={product.images[0] || ''}
-      class="flex-1 rounded bg-secondary px-2 py-1.5 text-center text-xs font-bold text-white hover:bg-secondary/95 transition-colors focus:outline-none cursor-pointer"
+      class="w-full sm:flex-1 rounded bg-secondary px-2 py-1.5 text-center text-xs font-bold text-white hover:bg-secondary/95 transition-colors focus:outline-none cursor-pointer"
     >
       ⚡ {locale === 'en' ? 'Buy' : 'ખરીદો'}
     </button>
