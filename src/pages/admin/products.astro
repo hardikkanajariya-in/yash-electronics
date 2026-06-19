@@ -2,12 +2,19 @@
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import { db } from '../../db';
 import { products, categories, brands } from '../../db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and, or, ilike, sql, asc, desc } from 'drizzle-orm';
 import { getSessionUser, generateId } from '../../lib/auth';
 import { importProductsFromCsv, exportProductsToCsv } from '../../lib/csv';
 import { clearCmsCache } from '../../services/cms';
 
 export const prerender = false;
+
+const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa';
+function getProductImageUrl(img: string | undefined | null) {
+  if (!img) return '/images/placeholder-product.svg';
+  if (img.startsWith('http') || img.startsWith('/')) return img;
+  return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_100,h_100,c_fill,f_auto,q_auto/${img}`;
+}
 
 // Authenticate
 Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -91,67 +98,13 @@ const [allCategories, allBrands] = await Promise.all([
   db.select().from(brands),
 ]);
 
+let redirectUrl = '';
+
 // Handle POST actions (Create, Update, Delete, Import)
 if (Astro.request.method === 'POST') {
   try {
     const formData = await Astro.request.formData();
     const formAction = formData.get('formAction')?.toString() || '';
-
-    if (formAction === 'bulk_add_image') {
-      const prodId = formData.get('productId')?.toString() || '';
-      const imageUrl = formData.get('imageUrl')?.toString() || '';
-      
-      const [prod] = await db.select().from(products).where(eq(products.id, prodId));
-      if (!prod) {
-        return new Response(JSON.stringify({ success: false, error: 'Product not found' }), {
-          status: 404,
-          headers: { 'Content-Type': 'application/json' }
-        });
-      }
-      
-      const currentImages = prod.images || [];
-      if (!currentImages.includes(imageUrl)) {
-        currentImages.push(imageUrl);
-      }
-      
-      await db.update(products).set({
-        images: currentImages,
-        updatedAt: new Date().toISOString()
-      }).where(eq(products.id, prodId));
-      
-      clearCmsCache();
-      
-      return new Response(JSON.stringify({ success: true, images: currentImages }), {
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-
-    if (formAction === 'bulk_remove_image') {
-      const prodId = formData.get('productId')?.toString() || '';
-      const imageUrl = formData.get('imageUrl')?.toString() || '';
-      
-      const [prod] = await db.select().from(products).where(eq(products.id, prodId));
-      if (!prod) {
-        return new Response(JSON.stringify({ success: false, error: 'Product not found' }), {
-          status: 404,
-          headers: { 'Content-Type': 'application/json' }
-        });
-      }
-      
-      const currentImages = prod.images || [];
-      const updatedImages = currentImages.filter(img => img !== imageUrl);
-      
-      await db.update(products).set({
-        images: updatedImages,
-        updatedAt: new Date().toISOString()
-      }).where(eq(products.id, prodId));
-      
-      clearCmsCache();
-      
-      return new Response(JSON.stringify({ success: true, images: updatedImages }), {
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
 
     if (formAction === 'import_csv') {
       const file = formData.get('csvFile') as File;
@@ -163,7 +116,7 @@ if (Astro.request.method === 'POST') {
         }
         if (importResult.success > 0) {
           clearCmsCache();
-          return Astro.redirect('/admin/products?success=' + encodeURIComponent(`Successfully imported/updated ${importResult.success} products!`));
+          redirectUrl = '/admin/products?success=' + encodeURIComponent(`Successfully imported/updated ${importResult.success} products!`);
         }
       } else {
         error = 'Please select a valid CSV file.';
@@ -172,7 +125,7 @@ if (Astro.request.method === 'POST') {
       const idToDelete = formData.get('id')?.toString() || '';
       await db.delete(products).where(eq(products.id, idToDelete));
       clearCmsCache();
-      return Astro.redirect('/admin/products?success=' + encodeURIComponent('Product deleted successfully!'));
+      redirectUrl = '/admin/products?success=' + encodeURIComponent('Product deleted successfully!');
     } else if (formAction === 'save') {
       const name = formData.get('name')?.toString() || '';
       const nameGu = formData.get('nameGu')?.toString() || '';
@@ -212,7 +165,7 @@ if (Astro.request.method === 'POST') {
           updatedAt: new Date().toISOString(),
         }).where(eq(products.id, productId));
         clearCmsCache();
-        return Astro.redirect('/admin/products?success=' + encodeURIComponent('Product updated successfully!'));
+        redirectUrl = '/admin/products?success=' + encodeURIComponent('Product updated successfully!');
       } else {
         // Create new product
         const newId = generateId();
@@ -237,12 +190,16 @@ if (Astro.request.method === 'POST') {
           updatedAt: new Date().toISOString(),
         });
         clearCmsCache();
-        return Astro.redirect('/admin/products?success=' + encodeURIComponent('Product added successfully!'));
+        redirectUrl = '/admin/products?success=' + encodeURIComponent('Product added successfully!');
       }
     }
   } catch (e: any) {
     error = e.message || 'Failed to save product. Ensure slug is unique.';
   }
+}
+
+if (redirectUrl) {
+  return Astro.redirect(redirectUrl);
 }
 
 // Fetch single product if in edit mode
@@ -252,7 +209,6 @@ if (action === 'edit' && productId) {
   editProduct = found;
 }
 
-import { and, or, ilike, sql, asc, desc } from 'drizzle-orm';
 
 const search = Astro.url.searchParams.get('search')?.trim() || '';
 const brandFilter = Astro.url.searchParams.get('brand') || '';
@@ -346,28 +302,24 @@ if (action === 'bulk-images') {
 
 <AdminLayout title="Manage Products" activeTab="products" subtitle="Add, edit, or delete store products">
     {action === 'list' && (
-      <div class="flex flex-wrap items-center justify-end gap-2 mb-6 bg-white border border-neutral-200 rounded-lg p-3 shadow-sm">
-        <a href="/admin/products?action=export" class="text-xs font-semibold text-neutral-700 border border-neutral-300 bg-white hover:bg-neutral-50 rounded-md px-3 py-1.5 transition-colors flex items-center gap-1">
+      <div class="grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-end gap-2 mb-6 bg-white border border-neutral-200 rounded-lg p-3 shadow-sm">
+        <a href="/admin/products?action=export" class="text-xs font-semibold text-neutral-700 border border-neutral-300 bg-white hover:bg-neutral-50 rounded-md px-3 py-1.5 transition-colors flex items-center justify-center gap-1">
           📤 Export CSV
         </a>
 
-        <a href="/admin/products?action=bulk-images" class="text-xs font-semibold text-neutral-700 border border-neutral-300 bg-white hover:bg-neutral-50 rounded-md px-3 py-1.5 transition-colors flex items-center gap-1">
-          🖼️ Bulk Manage Images
-        </a>
-        
-        <form method="post" enctype="multipart/form-data" class="inline-block m-0">
+        <form method="post" enctype="multipart/form-data" class="m-0 w-full sm:w-auto">
           <input type="hidden" name="formAction" value="import_csv" />
-          <label class="text-xs font-semibold text-neutral-700 border border-neutral-300 bg-white hover:bg-neutral-50 rounded-md px-3 py-1.5 transition-colors cursor-pointer flex items-center gap-1">
+          <label class="text-xs font-semibold text-neutral-700 border border-neutral-300 bg-white hover:bg-neutral-50 rounded-md px-3 py-1.5 transition-colors cursor-pointer flex items-center justify-center gap-1 w-full">
             📥 Import CSV
             <input type="file" name="csvFile" accept=".csv" class="hidden" onchange="this.form.submit()" />
           </label>
         </form>
-        
-        <a href="/admin/products?action=template" class="text-[11px] font-semibold text-primary hover:underline px-1 py-1 transition-colors">
-          Get Template
+
+        <a href="/admin/products?action=bulk-images" class="col-span-2 sm:col-span-1 text-xs font-semibold text-neutral-700 border border-neutral-300 bg-white hover:bg-neutral-50 rounded-md px-3 py-1.5 transition-colors flex items-center justify-center gap-1">
+          🖼️ Bulk Manage Images
         </a>
 
-        <a href="/admin/products?action=add" class="text-xs font-semibold text-white bg-primary hover:bg-primary/95 rounded-md px-3 py-1.5 transition-colors">
+        <a href="/admin/products?action=add" class="col-span-2 sm:col-span-1 text-xs font-bold text-white bg-primary hover:bg-primary/95 rounded-md px-4 py-1.5 transition-colors text-center flex items-center justify-center">
           + Add Product
         </a>
       </div>
@@ -389,8 +341,8 @@ if (action === 'bulk-images') {
       <div class="space-y-4">
         {/* Search, Sort, Filter Controls */}
         <div class="bg-white border border-neutral-200 rounded-lg p-4 shadow-sm">
-          <form method="get" class="flex flex-wrap gap-3 items-center w-full">
-            <div class="relative flex-1 min-w-[200px]">
+          <form method="get" class="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:items-center sm:gap-3 w-full">
+            <div class="relative col-span-2 sm:flex-1 sm:min-w-[200px]">
               <input
                 type="text"
                 name="search"
@@ -401,27 +353,27 @@ if (action === 'bulk-images') {
               <span class="absolute left-2.5 top-2.5 text-neutral-400 text-xs">🔍</span>
             </div>
             
-            <select name="brand" class="rounded border border-neutral-300 px-3 py-1.5 text-xs focus:border-primary focus:outline-none cursor-pointer">
+            <select name="brand" class="col-span-1 rounded border border-neutral-300 px-3 py-1.5 text-xs focus:border-primary focus:outline-none cursor-pointer w-full sm:w-auto">
               <option value="">All Brands</option>
               {allBrands.map(b => (
                 <option value={b.id} selected={brandFilter === b.id}>{b.name}</option>
               ))}
             </select>
 
-            <select name="category" class="rounded border border-neutral-300 px-3 py-1.5 text-xs focus:border-primary focus:outline-none cursor-pointer">
+            <select name="category" class="col-span-1 rounded border border-neutral-300 px-3 py-1.5 text-xs focus:border-primary focus:outline-none cursor-pointer w-full sm:w-auto">
               <option value="">All Categories</option>
               {allCategories.map(c => (
                 <option value={c.id} selected={categoryFilter === c.id}>{c.name}</option>
               ))}
             </select>
 
-            <select name="status" class="rounded border border-neutral-300 px-3 py-1.5 text-xs focus:border-primary focus:outline-none cursor-pointer">
+            <select name="status" class="col-span-1 rounded border border-neutral-300 px-3 py-1.5 text-xs focus:border-primary focus:outline-none cursor-pointer w-full sm:w-auto">
               <option value="all" selected={statusFilter === 'all'}>All Status</option>
               <option value="active" selected={statusFilter === 'active'}>Active Only</option>
               <option value="inactive" selected={statusFilter === 'inactive'}>Inactive Only</option>
             </select>
 
-            <select name="sort" class="rounded border border-neutral-300 px-3 py-1.5 text-xs focus:border-primary focus:outline-none cursor-pointer">
+            <select name="sort" class="col-span-1 rounded border border-neutral-300 px-3 py-1.5 text-xs focus:border-primary focus:outline-none cursor-pointer w-full sm:w-auto">
               <option value="name-asc" selected={sort === 'name-asc'}>Name (A-Z)</option>
               <option value="name-desc" selected={sort === 'name-desc'}>Name (Z-A)</option>
               <option value="price-asc" selected={sort === 'price-asc'}>Price (Low to High)</option>
@@ -429,15 +381,17 @@ if (action === 'bulk-images') {
               <option value="latest" selected={sort === 'latest'}>Newest First</option>
             </select>
 
-            <button type="submit" class="bg-neutral-800 text-white rounded px-4 py-1.5 text-xs font-semibold hover:bg-neutral-900 transition-colors cursor-pointer">
-              Filter
-            </button>
+            <div class="col-span-2 sm:col-span-1 flex gap-2 w-full sm:w-auto">
+              <button type="submit" class="flex-1 sm:flex-initial bg-neutral-800 text-white rounded px-4 py-1.5 text-xs font-semibold hover:bg-neutral-900 transition-colors cursor-pointer text-center">
+                Filter
+              </button>
 
-            {(search || brandFilter || categoryFilter || statusFilter !== 'all' || sort !== 'name-asc') && (
-              <a href="/admin/products" class="bg-neutral-100 text-neutral-700 rounded px-4 py-1.5 text-xs font-semibold hover:bg-neutral-200 transition-colors text-center flex items-center">
-                Clear
-              </a>
-            )}
+              {(search || brandFilter || categoryFilter || statusFilter !== 'all' || sort !== 'name-asc') && (
+                <a href="/admin/products" class="flex-1 sm:flex-initial bg-neutral-100 text-neutral-700 rounded px-4 py-1.5 text-xs font-semibold hover:bg-neutral-200 transition-colors text-center flex items-center justify-center">
+                  Clear
+                </a>
+              )}
+            </div>
           </form>
         </div>
 
@@ -446,6 +400,7 @@ if (action === 'bulk-images') {
           <table class="w-full text-left text-sm text-neutral-700 border-collapse">
             <thead>
               <tr class="bg-neutral-50 border-b border-neutral-200 font-semibold text-neutral-900">
+                <th class="p-3 w-16">Image</th>
                 <th class="p-3">Product Name</th>
                 <th class="p-3">Model</th>
                 <th class="p-3">Category</th>
@@ -458,6 +413,9 @@ if (action === 'bulk-images') {
             <tbody>
               {allProducts.map((prod) => (
                 <tr class="border-b border-neutral-100 hover:bg-neutral-50/50">
+                  <td class="p-3">
+                    <img src={getProductImageUrl(prod.images?.[0])} class="w-10 h-10 object-cover rounded border border-neutral-200 shadow-sm bg-neutral-50" alt={prod.name} />
+                  </td>
                   <td class="p-3 font-medium text-neutral-900">{prod.name}</td>
                   <td class="p-3 text-xs text-neutral-500">{prod.modelNumber || '-'}</td>
                   <td class="p-3 text-xs text-neutral-600">{prod.category?.name || '—'}</td>
@@ -493,7 +451,7 @@ if (action === 'bulk-images') {
               ))}
               {allProducts.length === 0 && (
                 <tr>
-                  <td colspan="7" class="p-8 text-center text-neutral-500">No products found. Add some to get started.</td>
+                  <td colspan="8" class="p-8 text-center text-neutral-500">No products found. Add some to get started.</td>
                 </tr>
               )}
             </tbody>
@@ -503,34 +461,44 @@ if (action === 'bulk-images') {
         {/* Mobile View Native List (flat items with divider lines) */}
         <div class="md:hidden bg-white border border-neutral-200 rounded-lg shadow-sm divide-y divide-neutral-100">
           {allProducts.map((prod) => (
-            <div class="p-4 flex gap-3 items-center justify-between">
+            <div class="p-4 flex gap-3 items-center relative pr-20 min-h-[5.5rem]">
+              <!-- Thumbnail -->
+              <img 
+                src={getProductImageUrl(prod.images?.[0])} 
+                class="w-16 h-16 object-cover rounded border border-neutral-200 shadow-sm bg-neutral-50 shrink-0" 
+                alt={prod.name} 
+              />
+              
               <div class="flex-1 min-w-0">
-                <div class="font-bold text-sm text-neutral-900 truncate">{prod.name}</div>
-                <div class="flex items-center gap-2 mt-1">
+                <div class="font-bold text-sm text-neutral-900 truncate pr-2">{prod.name}</div>
+                
+                <div class="flex items-center gap-2 mt-0.5">
                   <span class="text-xs font-semibold text-primary">₹{prod.offerPrice.toLocaleString('en-IN')}</span>
                   {prod.mrp > prod.offerPrice && (
                     <span class="text-xs text-neutral-400 line-through">₹{prod.mrp.toLocaleString('en-IN')}</span>
                   )}
                 </div>
-                <div class="text-[10px] text-neutral-500 mt-1 flex flex-wrap gap-2 items-center">
+
+                <div class="text-[10px] text-neutral-500 mt-1 flex flex-wrap gap-x-2 gap-y-0.5 items-center">
                   <span>Model: {prod.modelNumber || '—'}</span>
                   <span>•</span>
                   <span>Cat: {prod.category?.name || '—'}</span>
                   <span>•</span>
-                  <span class="flex items-center gap-1">
-                    <span class={`w-1.5 h-1.5 rounded-full ${prod.isActive ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                    <span class={prod.isActive ? "text-green-600 font-semibold" : "text-red-600 font-semibold"}>
-                      {prod.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                  </span>
-                  {prod.isFeatured && (
-                    <span class="text-yellow-600 font-medium bg-yellow-50 px-1 rounded">Featured</span>
-                  )}
+                  <div class="flex items-center gap-1.5">
+                    <span class={`w-2 h-2 rounded-full ${prod.isActive ? 'bg-green-500' : 'bg-red-500'}`} title={prod.isActive ? 'Active' : 'Inactive'}></span>
+                    {prod.isFeatured && <span class="w-2 h-2 rounded-full bg-yellow-500" title="Featured"></span>}
+                  </div>
                 </div>
               </div>
-              <div class="flex items-center gap-3 shrink-0">
-                <a href={"/admin/products?action=edit&id=" + prod.id} class="text-xs font-bold text-primary bg-primary/10 px-2.5 py-1.5 rounded hover:bg-primary/20">
-                  Edit
+
+              <!-- Corner Actions -->
+              <div class="absolute top-4 right-4 flex items-center gap-2">
+                <a 
+                  href={"/admin/products?action=edit&id=" + prod.id} 
+                  class="w-8 h-8 rounded-full border border-neutral-200 hover:border-primary/30 hover:bg-primary/5 flex items-center justify-center text-xs text-neutral-600 hover:text-primary transition-colors cursor-pointer"
+                  title="Edit"
+                >
+                  ✏️
                 </a>
                 <form method="post" class="inline m-0">
                   <input type="hidden" name="formAction" value="delete" />
@@ -538,9 +506,10 @@ if (action === 'bulk-images') {
                   <button 
                     type="button" 
                     onclick="window.confirmDelete(this, 'Delete Product', 'Are you sure you want to delete this product?')"
-                    class="text-xs font-bold text-red-600 bg-red-50 px-2.5 py-1.5 rounded hover:bg-red-100 cursor-pointer"
+                    class="w-8 h-8 rounded-full border border-red-100 bg-red-50 hover:bg-red-100 flex items-center justify-center text-xs text-red-600 transition-colors cursor-pointer"
+                    title="Delete"
                   >
-                    Delete
+                    🗑️
                   </button>
                 </form>
               </div>
@@ -760,6 +729,13 @@ if (action === 'bulk-images') {
               </div>
             </div>
 
+            <input type="file" id="camera-picker" accept="image/*" capture="environment" class="hidden" />
+            <div class="mt-2">
+              <button type="button" id="open-camera-btn" class="w-full py-2 px-3 border border-neutral-300 hover:border-primary hover:text-primary rounded-md text-xs font-semibold flex items-center justify-center gap-1.5 bg-white transition-colors cursor-pointer shadow-sm">
+                📷 Open Camera & Take Photo
+              </button>
+            </div>
+
             <div id="upload-progress-container" class="hidden mt-3 space-y-1.5">
               <div class="flex justify-between text-[11px] font-semibold text-neutral-500">
                 <span id="upload-status">Uploading...</span>
@@ -953,8 +929,14 @@ if (action === 'bulk-images') {
             });
           }
 
-          filePicker?.addEventListener('change', async () => {
-            const files = filePicker.files;
+          const cameraPicker = document.getElementById('camera-picker') as HTMLInputElement;
+          const openCameraBtn = document.getElementById('open-camera-btn');
+
+          openCameraBtn?.addEventListener('click', () => {
+            cameraPicker?.click();
+          });
+
+          async function uploadFiles(files: FileList | null, pickerElement: HTMLInputElement) {
             if (!files || files.length === 0) return;
 
             progressContainer?.classList.remove('hidden');
@@ -981,7 +963,15 @@ if (action === 'bulk-images') {
             }
 
             progressContainer?.classList.add('hidden');
-            filePicker.value = '';
+            pickerElement.value = '';
+          }
+
+          filePicker?.addEventListener('change', () => {
+            uploadFiles(filePicker.files, filePicker);
+          });
+
+          cameraPicker?.addEventListener('change', () => {
+            uploadFiles(cameraPicker.files, cameraPicker);
           });
 
           function uploadFileWithProgress(file: File, onProgress: (pct: number) => void): Promise<string> {
@@ -1232,7 +1222,7 @@ if (action === 'bulk-images') {
             }
             
             try {
-              const res = await fetch('/admin/products', {
+              const res = await fetch('/api/bulk-image', {
                 method: 'POST',
                 body: new URLSearchParams({
                   formAction: 'bulk_remove_image',
@@ -1367,7 +1357,7 @@ if (action === 'bulk-images') {
                   });
                   
                   if (publicId) {
-                    const res = await fetch('/admin/products', {
+                    const res = await fetch('/api/bulk-image', {
                       method: 'POST',
                       body: new URLSearchParams({
                         formAction: 'bulk_add_image',
