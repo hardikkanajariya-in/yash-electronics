@@ -27,12 +27,50 @@ const sortLabelKeys: Record<string, string> = {
   'price-asc': 'sort.priceAsc',
   'price-desc': 'sort.priceDesc',
 };
+
+const activeFiltersCount = [
+  currentFilters.category,
+  currentFilters.brand,
+  currentFilters.minPrice,
+  currentFilters.maxPrice,
+  currentFilters.sort && currentFilters.sort !== 'featured' ? currentFilters.sort : undefined,
+].filter(Boolean).length;
 ---
 
 <aside class="rounded-lg border border-neutral-200 bg-white p-4">
-  <h2 class="font-semibold text-neutral-900">{t('filter.title', locale)}</h2>
+  <!-- Mobile Toggle Header Button -->
+  <button
+    type="button"
+    id="mobile-filter-toggle"
+    class="flex w-full items-center justify-between lg:hidden focus:outline-none"
+  >
+    <h2 class="font-semibold text-neutral-900 flex items-center gap-2">
+      <svg class="h-4 w-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+      </svg>
+      {t('filter.title', locale)}
+      {activeFiltersCount > 0 && (
+        <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">
+          {activeFiltersCount}
+        </span>
+      )}
+    </h2>
+    <span id="filter-toggle-icon" class="text-xs text-neutral-500 transition-transform duration-200">
+      ▼
+    </span>
+  </button>
 
-  <form method="get" action={baseUrl} class="mt-4 space-y-5">
+  <!-- Static desktop header -->
+  <div class="hidden lg:flex items-center gap-2 mb-4">
+    <h2 class="font-semibold text-neutral-900">{t('filter.title', locale)}</h2>
+    {activeFiltersCount > 0 && (
+      <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">
+        {activeFiltersCount}
+      </span>
+    )}
+  </div>
+
+  <form id="filters-form" method="get" action={baseUrl} class="hidden lg:block mt-4 space-y-5">
     {currentFilters.search && (
       <input type="hidden" name="search" value={currentFilters.search} />
     )}
@@ -69,7 +107,8 @@ const sortLabelKeys: Record<string, string> = {
       </select>
     </div>
 
-    <div class="grid grid-cols-2 gap-2">
+    <!-- Stack min/max price on mobile, grid on sm+ screens -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-2">
       <div>
         <label for="minPrice" class="block text-sm font-medium text-neutral-700">{t('filter.minPrice', locale)}</label>
         <input
@@ -80,7 +119,7 @@ const sortLabelKeys: Record<string, string> = {
           max={priceRange.max}
           value={currentFilters.minPrice ?? ''}
           placeholder={String(priceRange.min)}
-          class="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+          class="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
         />
       </div>
       <div>
@@ -93,7 +132,7 @@ const sortLabelKeys: Record<string, string> = {
           max={priceRange.max}
           value={currentFilters.maxPrice ?? ''}
           placeholder={String(priceRange.max)}
-          class="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+          class="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
         />
       </div>
     </div>
@@ -119,3 +158,17 @@ const sortLabelKeys: Record<string, string> = {
     </div>
   </form>
 </aside>
+
+<script>
+  const toggleBtn = document.getElementById('mobile-filter-toggle');
+  const filtersForm = document.getElementById('filters-form');
+  const toggleIcon = document.getElementById('filter-toggle-icon');
+
+  if (toggleBtn && filtersForm && toggleIcon) {
+    toggleBtn.addEventListener('click', () => {
+      filtersForm.classList.toggle('hidden');
+      const isExpanded = !filtersForm.classList.contains('hidden');
+      toggleIcon.style.transform = isExpanded ? 'rotate(180deg)' : 'rotate(0deg)';
+    });
+  }
+</script>
