@@ -856,19 +856,36 @@ if (action === 'bulk-images') {
 
           function createSpecRow(key = '', val = '', keyGu = '', valGu = '') {
             const div = document.createElement('div');
-            div.className = 'spec-row border border-neutral-200 rounded-md p-3 bg-neutral-50/50 space-y-2 relative';
+            div.className = 'spec-row border border-neutral-200 rounded-md p-3 bg-neutral-50/50 space-y-3 relative';
             div.innerHTML = `
-              <div class="flex gap-2 items-center">
-                <span class="text-[10px] font-bold text-neutral-400 w-6 uppercase shrink-0">EN</span>
-                <input type="text" placeholder="Spec Name (e.g. Screen Size)" value="${key}" class="spec-key flex-1 rounded-md border border-neutral-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary" />
-                <input type="text" placeholder="Value (e.g. 55 inch)" value="${val}" class="spec-val flex-1 rounded-md border border-neutral-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary" />
+              <div class="flex items-center justify-between border-b border-neutral-200/60 pb-2">
+                <span class="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Specification Item</span>
+                <button type="button" class="remove-spec-btn text-red-500 hover:text-red-700 transition-colors text-xs font-semibold focus:outline-none cursor-pointer">
+                  ✕ Remove
+                </button>
               </div>
-              <div class="flex gap-2 items-center">
-                <span class="text-[10px] font-bold text-neutral-400 w-6 uppercase shrink-0">GU</span>
-                <input type="text" placeholder="ગુજરાતી નામ (વૈકલ્પિક)" value="${keyGu}" class="spec-key-gu flex-1 rounded-md border border-neutral-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary" />
-                <input type="text" placeholder="ગુજરાતી કિંમત (વૈકલ્પિક)" value="${valGu}" class="spec-val-gu flex-1 rounded-md border border-neutral-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary" />
+              <div class="space-y-3">
+                <!-- English spec inputs -->
+                <div class="flex flex-col sm:flex-row gap-2 sm:items-center">
+                  <div class="w-8 shrink-0">
+                    <span class="text-[9px] font-black text-neutral-500 bg-neutral-200/80 px-1.5 py-0.5 rounded uppercase">EN</span>
+                  </div>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 flex-1">
+                    <input type="text" placeholder="Spec Name (e.g. Screen Size)" value="${key}" class="spec-key w-full rounded-md border border-neutral-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary" />
+                    <input type="text" placeholder="Value (e.g. 55 inch)" value="${val}" class="spec-val w-full rounded-md border border-neutral-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary" />
+                  </div>
+                </div>
+                <!-- Gujarati spec inputs -->
+                <div class="flex flex-col sm:flex-row gap-2 sm:items-center">
+                  <div class="w-8 shrink-0">
+                    <span class="text-[9px] font-black text-neutral-500 bg-neutral-200/80 px-1.5 py-0.5 rounded uppercase">GU</span>
+                  </div>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 flex-1">
+                    <input type="text" placeholder="ગુજરાતી નામ (વૈકલ્પિક)" value="${keyGu}" class="spec-key-gu w-full rounded-md border border-neutral-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary" />
+                    <input type="text" placeholder="ગુજરાતી કિંમત (વૈકલ્પિક)" value="${valGu}" class="spec-val-gu w-full rounded-md border border-neutral-300 px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary" />
+                  </div>
+                </div>
               </div>
-              <button type="button" class="remove-spec-btn absolute right-2 top-2 text-neutral-400 hover:text-red-500 p-1 rounded transition-colors text-xs">✕ Remove</button>
             `;
             
             div.querySelector('.spec-key')?.addEventListener('input', saveSpecsData);
