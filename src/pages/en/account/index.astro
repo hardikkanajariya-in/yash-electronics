@@ -275,14 +275,39 @@ const waShareUrl = `https://wa.me/?text=${encodeURIComponent(
               </div>
 
               <div class="space-y-2.5">
-                <div>
-                  <h3 class="text-xs font-bold text-neutral-400 uppercase">{t.srProduct}</h3>
-                  <p class="text-sm font-semibold text-neutral-800">{sr.productName}</p>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 bg-neutral-100/40 rounded p-3 text-xs text-neutral-700">
+                  <div>
+                    <span class="font-bold text-neutral-400 uppercase block text-[9px]">Category</span>
+                    <span class="font-semibold text-neutral-850">{sr.productCategory || '—'}</span>
+                  </div>
+                  <div>
+                    <span class="font-bold text-neutral-400 uppercase block text-[9px]">Brand</span>
+                    <span class="font-semibold text-neutral-850">{sr.brandName || '—'}</span>
+                  </div>
+                  <div>
+                    <span class="font-bold text-neutral-400 uppercase block text-[9px]">Model No</span>
+                    <span class="font-semibold text-neutral-850">{sr.modelNumber || '—'}</span>
+                  </div>
+                  <div>
+                    <span class="font-bold text-neutral-400 uppercase block text-[9px]">Village / City</span>
+                    <span class="font-semibold text-neutral-850">{sr.village || '—'}</span>
+                  </div>
+                  <div>
+                    <span class="font-bold text-neutral-400 uppercase block text-[9px]">Pincode</span>
+                    <span class="font-semibold text-neutral-850 font-mono">{sr.pincode || '—'}</span>
+                  </div>
                 </div>
 
+                {sr.address && (
+                  <div class="text-xs bg-neutral-100/40 rounded p-3 text-neutral-700">
+                    <span class="font-bold text-neutral-400 uppercase block text-[9px]">Address</span>
+                    <span class="font-medium text-neutral-850">{sr.address}</span>
+                  </div>
+                )}
+
                 <div>
-                  <h3 class="text-xs font-bold text-neutral-400 uppercase">{t.srDetails}</h3>
-                  <p class="text-xs text-neutral-600 whitespace-pre-line leading-relaxed">{sr.complaintDetails}</p>
+                  <h3 class="text-xs font-bold text-neutral-400 uppercase">Fault / Issue</h3>
+                  <p class="text-xs text-neutral-600 whitespace-pre-line leading-relaxed">{sr.fault || sr.complaintDetails}</p>
                 </div>
 
                 {sr.trackingInfo && (

@@ -21,14 +21,22 @@ let error = Astro.url.searchParams.get('error') || '';
 if (Astro.request.method === 'POST') {
   try {
     const formData = await Astro.request.formData();
-    const productName = formData.get('productName')?.toString().trim() || '';
-    const complaintDetails = formData.get('complaintDetails')?.toString().trim() || '';
     const customerName = currentUser ? currentUser.name : (formData.get('customerName')?.toString().trim() || '');
     const customerPhone = currentUser ? currentUser.phone : (formData.get('customerPhone')?.toString().trim() || '');
+    const address = formData.get('address')?.toString().trim() || '';
+    const pincode = formData.get('pincode')?.toString().trim() || '';
+    const village = formData.get('village')?.toString().trim() || '';
+    const productCategory = formData.get('productCategory')?.toString().trim() || '';
+    const brandName = formData.get('brandName')?.toString().trim() || '';
+    const modelNumber = formData.get('modelNumber')?.toString().trim() || '';
+    const fault = formData.get('fault')?.toString().trim() || '';
 
-    if (!productName || !complaintDetails || !customerName || !customerPhone) {
-      error = 'All fields are required.';
+    if (!customerName || !customerPhone || !address || !pincode || !village || !productCategory || !brandName || !fault) {
+      error = 'All required fields must be filled.';
     } else {
+      const productName = `${brandName} ${modelNumber}`.trim();
+      const complaintDetails = fault;
+
       await db.insert(serviceRequests).values({
         id: generateId(),
         userId: currentUser?.id || null,
@@ -36,6 +44,13 @@ if (Astro.request.method === 'POST') {
         customerPhone,
         productName,
         complaintDetails,
+        address,
+        pincode,
+        village,
+        productCategory,
+        brandName,
+        modelNumber: modelNumber || null,
+        fault,
         status: 'pending',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -56,10 +71,20 @@ const pageT = {
   customerPhone: 'Mobile Number *',
   namePlaceholder: 'Enter your full name',
   phonePlaceholder: 'Enter 10-digit mobile number',
-  productName: 'Product Name *',
-  productPlaceholder: 'e.g. Luminous Inverter 1100 or Battery Model',
-  details: 'Complaint / Issue Details *',
-  detailsPlaceholder: 'Please describe the issue in detail (e.g., no backup, making noise...)',
+  address: 'Address *',
+  addressPlaceholder: 'Enter your full shipping address',
+  pincode: 'Pincode *',
+  pincodePlaceholder: 'Enter 6-digit pincode',
+  village: 'Village / City *',
+  villagePlaceholder: 'Enter village or city name',
+  productCategory: 'Product Category *',
+  productCategoryPlaceholder: 'e.g. Inverter, Battery, Solar',
+  brandName: 'Brand Name *',
+  brandNamePlaceholder: 'e.g. Luminous, Exide, Microtek',
+  modelNumber: 'Model Number (Optional)',
+  modelNumberPlaceholder: 'e.g. Zelio+ 1100',
+  fault: 'Fault / Issue *',
+  faultPlaceholder: 'Please describe the issue in detail (e.g. no backup, making noise)',
   submit: 'Submit Request',
   backToAccount: '← Back to My Account',
   successMsg: 'Your service request has been successfully submitted! You can track it in your account panel.',
@@ -141,29 +166,101 @@ const pageT = {
           )}
 
           <div>
-            <label for="productName" class="block text-sm font-semibold text-neutral-700 mb-1">
-              {pageT.productName}
+            <label for="address" class="block text-sm font-semibold text-neutral-700 mb-1">
+              {pageT.address}
+            </label>
+            <textarea
+              id="address"
+              name="address"
+              required
+              rows="2"
+              placeholder={pageT.addressPlaceholder}
+              class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-shadow"
+            ></textarea>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label for="village" class="block text-sm font-semibold text-neutral-700 mb-1">
+                {pageT.village}
+              </label>
+              <input
+                type="text"
+                id="village"
+                name="village"
+                required
+                placeholder={pageT.villagePlaceholder}
+                class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-shadow"
+              />
+            </div>
+            <div>
+              <label for="pincode" class="block text-sm font-semibold text-neutral-700 mb-1">
+                {pageT.pincode}
+              </label>
+              <input
+                type="text"
+                id="pincode"
+                name="pincode"
+                required
+                pattern="[0-9]{6}"
+                placeholder={pageT.pincodePlaceholder}
+                class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-shadow"
+              />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label for="productCategory" class="block text-sm font-semibold text-neutral-700 mb-1">
+                {pageT.productCategory}
+              </label>
+              <input
+                type="text"
+                id="productCategory"
+                name="productCategory"
+                required
+                placeholder={pageT.productCategoryPlaceholder}
+                class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-shadow"
+              />
+            </div>
+            <div>
+              <label for="brandName" class="block text-sm font-semibold text-neutral-700 mb-1">
+                {pageT.brandName}
+              </label>
+              <input
+                type="text"
+                id="brandName"
+                name="brandName"
+                required
+                placeholder={pageT.brandNamePlaceholder}
+                class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-shadow"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label for="modelNumber" class="block text-sm font-semibold text-neutral-700 mb-1">
+              {pageT.modelNumber}
             </label>
             <input
               type="text"
-              id="productName"
-              name="productName"
-              required
-              placeholder={pageT.productPlaceholder}
+              id="modelNumber"
+              name="modelNumber"
+              placeholder={pageT.modelNumberPlaceholder}
               class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-shadow"
             />
           </div>
 
           <div>
-            <label for="complaintDetails" class="block text-sm font-semibold text-neutral-700 mb-1">
-              {pageT.details}
+            <label for="fault" class="block text-sm font-semibold text-neutral-700 mb-1">
+              {pageT.fault}
             </label>
             <textarea
-              id="complaintDetails"
-              name="complaintDetails"
+              id="fault"
+              name="fault"
               required
-              rows="5"
-              placeholder={pageT.detailsPlaceholder}
+              rows="4"
+              placeholder={pageT.faultPlaceholder}
               class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-shadow"
             ></textarea>
           </div>

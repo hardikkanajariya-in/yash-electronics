@@ -2,7 +2,7 @@
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import { db } from '../../db';
 import { serviceRequests } from '../../db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and, or, ilike, sql } from 'drizzle-orm';
 import { getSessionUser } from '../../lib/auth';
 
 export const prerender = false;
@@ -31,17 +31,17 @@ if (Astro.request.method === 'POST') {
           await db.update(serviceRequests)
             .set({ status: newStatus, updatedAt: new Date().toISOString() })
             .where(eq(serviceRequests.id, srId));
-          return Astro.redirect('/admin/service-requests?success=' + encodeURIComponent('Service Request status updated successfully!'));
+          return Astro.redirect(Astro.url.pathname + '?success=' + encodeURIComponent('Service Request status updated successfully!'));
         }
       } else if (action === 'update_tracking') {
         const trackingInfo = formData.get('trackingInfo')?.toString().trim() || '';
         await db.update(serviceRequests)
           .set({ trackingInfo, updatedAt: new Date().toISOString() })
           .where(eq(serviceRequests.id, srId));
-        return Astro.redirect('/admin/service-requests?success=' + encodeURIComponent('Tracking information updated successfully!'));
+        return Astro.redirect(Astro.url.pathname + '?success=' + encodeURIComponent('Tracking information updated successfully!'));
       } else if (action === 'delete') {
         await db.delete(serviceRequests).where(eq(serviceRequests.id, srId));
-        return Astro.redirect('/admin/service-requests?success=' + encodeURIComponent('Service Request deleted successfully!'));
+        return Astro.redirect(Astro.url.pathname + '?success=' + encodeURIComponent('Service Request deleted successfully!'));
       }
     }
   } catch (e: any) {
@@ -49,31 +49,82 @@ if (Astro.request.method === 'POST') {
   }
 }
 
-// Fetch all service requests with customer details
+const search = Astro.url.searchParams.get('search')?.trim() || '';
+const statusFilter = Astro.url.searchParams.get('status') || 'all';
+const page = Number(Astro.url.searchParams.get('page') || '1');
+const limit = 10;
+const offset = (page - 1) * limit;
+
+// Build search and filter conditions
+const conditions = [];
+
+if (statusFilter !== 'all') {
+  conditions.push(eq(serviceRequests.status, statusFilter as any));
+}
+
+if (search) {
+  conditions.push(
+    or(
+      ilike(serviceRequests.customerName, `%${search}%`),
+      ilike(serviceRequests.customerPhone, `%${search}%`),
+      ilike(serviceRequests.village, `%${search}%`),
+      ilike(serviceRequests.brandName, `%${search}%`),
+      ilike(serviceRequests.productCategory, `%${search}%`),
+      ilike(serviceRequests.fault, `%${search}%`),
+      ilike(serviceRequests.productName, `%${search}%`),
+      ilike(serviceRequests.complaintDetails, `%${search}%`)
+    )
+  );
+}
+
+const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
 let allRequests: any[] = [];
+let totalCount = 0;
+
 try {
   allRequests = await db.query.serviceRequests.findMany({
+    where: whereClause,
     orderBy: [desc(serviceRequests.createdAt)],
+    limit,
+    offset,
     with: {
       user: true,
     },
   });
+
+  const [countRes] = await db
+    .select({ count: sql`count(*)` })
+    .from(serviceRequests)
+    .where(whereClause);
+  totalCount = Number(countRes?.count || 0);
 } catch (e) {
   console.error('[Admin SRs] Failed to fetch service requests:', e);
 }
 
-// Stats for counts
-const counts = {
-  all: allRequests.length,
-  pending: allRequests.filter(r => r.status === 'pending').length,
-  in_progress: allRequests.filter(r => r.status === 'in_progress').length,
-  resolved: allRequests.filter(r => r.status === 'resolved').length,
-  cancelled: allRequests.filter(r => r.status === 'cancelled').length,
-};
+const totalPages = Math.ceil(totalCount / limit);
+
+// Fetch overall counts for status badges
+let statsCounts = { all: 0, pending: 0, in_progress: 0, resolved: 0, cancelled: 0 };
+try {
+  const allCounts = await db
+    .select({ status: serviceRequests.status, count: sql<number>`count(*)` })
+    .from(serviceRequests)
+    .groupBy(serviceRequests.status);
+
+  allCounts.forEach((c) => {
+    if (c.status === 'pending') statsCounts.pending = Number(c.count);
+    else if (c.status === 'in_progress') statsCounts.in_progress = Number(c.count);
+    else if (c.status === 'resolved') statsCounts.resolved = Number(c.count);
+    else if (c.status === 'cancelled') statsCounts.cancelled = Number(c.count);
+  });
+  statsCounts.all = statsCounts.pending + statsCounts.in_progress + statsCounts.resolved + statsCounts.cancelled;
+} catch (e) {
+  console.error('[Admin SRs] Failed to fetch counts:', e);
+}
 ---
 
 <AdminLayout title="Service Requests" activeTab="service-requests" subtitle="Track, process and provide updates on customer product complaints">
-
 
     {error && (
       <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md p-3 mb-4">
@@ -86,23 +137,50 @@ const counts = {
       </div>
     )}
 
+    {/* Search & Filter Bar */}
+    <div class="bg-white border border-neutral-200 rounded-lg p-4 shadow-sm mb-6">
+      <form method="get" class="flex flex-wrap gap-3 items-center justify-between w-full">
+        <input type="hidden" name="status" value={statusFilter} />
+        <div class="relative flex-1 max-w-md w-full">
+          <input
+            type="text"
+            name="search"
+            value={search}
+            placeholder="Search customer, phone, village, fault..."
+            class="w-full rounded border border-neutral-300 pl-8 pr-3 py-1.5 text-xs focus:border-primary focus:outline-none"
+          />
+          <span class="absolute left-2.5 top-2.5 text-neutral-400 text-xs">🔍</span>
+        </div>
+        <div class="flex gap-2">
+          <button type="submit" class="bg-neutral-800 text-white rounded px-4 py-1.5 text-xs font-semibold hover:bg-neutral-900 transition-colors cursor-pointer">
+            Search
+          </button>
+          {search && (
+            <a href={`?status=${statusFilter}`} class="bg-neutral-100 text-neutral-700 rounded px-4 py-1.5 text-xs font-semibold hover:bg-neutral-200 transition-colors text-center flex items-center">
+              Clear
+            </a>
+          )}
+        </div>
+      </form>
+    </div>
+
     <!-- Navigation Tabs / Filters -->
     <nav class="flex border-b border-neutral-200 gap-2 mb-6 overflow-x-auto text-xs font-medium pb-2 select-none whitespace-nowrap">
-      <button onclick="filterSR('all')" id="tab-all" class="border-b-2 border-primary text-primary px-3 py-2 font-bold focus:outline-none">
-        All ({counts.all})
-      </button>
-      <button onclick="filterSR('pending')" id="tab-pending" class="text-neutral-600 hover:text-primary px-3 py-2 focus:outline-none">
-        Pending ({counts.pending})
-      </button>
-      <button onclick="filterSR('in_progress')" id="tab-in_progress" class="text-neutral-600 hover:text-primary px-3 py-2 focus:outline-none">
-        In Progress ({counts.in_progress})
-      </button>
-      <button onclick="filterSR('resolved')" id="tab-resolved" class="text-neutral-600 hover:text-primary px-3 py-2 focus:outline-none">
-        Resolved ({counts.resolved})
-      </button>
-      <button onclick="filterSR('cancelled')" id="tab-cancelled" class="text-neutral-600 hover:text-primary px-3 py-2 focus:outline-none">
-        Cancelled ({counts.cancelled})
-      </button>
+      <a href={`?status=all&search=${search}`} class={`px-3 py-2 font-bold focus:outline-none border-b-2 ${statusFilter === 'all' ? 'border-primary text-primary' : 'border-transparent text-neutral-600 hover:text-primary'}`}>
+        All ({statsCounts.all})
+      </a>
+      <a href={`?status=pending&search=${search}`} class={`px-3 py-2 font-bold focus:outline-none border-b-2 ${statusFilter === 'pending' ? 'border-primary text-primary' : 'border-transparent text-neutral-600 hover:text-primary'}`}>
+        Pending ({statsCounts.pending})
+      </a>
+      <a href={`?status=in_progress&search=${search}`} class={`px-3 py-2 font-bold focus:outline-none border-b-2 ${statusFilter === 'in_progress' ? 'border-primary text-primary' : 'border-transparent text-neutral-600 hover:text-primary'}`}>
+        In Progress ({statsCounts.in_progress})
+      </a>
+      <a href={`?status=resolved&search=${search}`} class={`px-3 py-2 font-bold focus:outline-none border-b-2 ${statusFilter === 'resolved' ? 'border-primary text-primary' : 'border-transparent text-neutral-600 hover:text-primary'}`}>
+        Resolved ({statsCounts.resolved})
+      </a>
+      <a href={`?status=cancelled&search=${search}`} class={`px-3 py-2 font-bold focus:outline-none border-b-2 ${statusFilter === 'cancelled' ? 'border-primary text-primary' : 'border-transparent text-neutral-600 hover:text-primary'}`}>
+        Cancelled ({statsCounts.cancelled})
+      </a>
     </nav>
 
     <!-- Service Requests List -->
@@ -117,7 +195,7 @@ const counts = {
         });
 
         return (
-          <div data-status={sr.status} class="sr-card bg-white border border-neutral-200 rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow">
+          <div data-status={sr.status} class="sr-card bg-white border border-neutral-200 rounded-lg shadow-sm p-4 sm:p-5 hover:shadow-md transition-shadow">
             <div class="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-100 pb-3 mb-3">
               <div>
                 <span class="text-[10px] text-neutral-400 font-bold uppercase">Customer</span>
@@ -131,7 +209,7 @@ const counts = {
                   sr.status === 'resolved' ? 'bg-green-50 text-green-700 border-green-200' :
                   'bg-neutral-50 text-neutral-700 border-neutral-200'
                 }`}>
-                  {sr.status}
+                  {sr.status.replace('_', ' ')}
                 </span>
               </div>
             </div>
@@ -142,17 +220,35 @@ const counts = {
                 <span>
                   📞 Phone: <a href={`tel:${sr.user?.phone || sr.customerPhone}`} class="text-primary hover:underline font-medium">{sr.user?.phone || sr.customerPhone}</a>
                 </span>
+                {sr.village && (
+                  <span>
+                    📍 Village / City: <span class="font-semibold text-neutral-800">{sr.village}</span>
+                  </span>
+                )}
+                {sr.pincode && (
+                  <span>
+                    📮 Pincode: <span class="font-semibold text-neutral-800 font-mono">{sr.pincode}</span>
+                  </span>
+                )}
               </div>
 
               {/* Product Info & Complaint Description */}
-              <div class="grid md:grid-cols-2 gap-4">
+              <div class="grid md:grid-cols-3 gap-4">
                 <div class="border border-neutral-100 rounded-md p-3 bg-neutral-50/50">
-                  <h4 class="text-xs font-bold text-neutral-500 uppercase mb-1">Product</h4>
-                  <p class="text-sm font-semibold text-neutral-800">{sr.productName}</p>
+                  <h4 class="text-xs font-bold text-neutral-500 uppercase mb-1">Product Details</h4>
+                  <div class="space-y-0.5 text-xs text-neutral-700">
+                    <div><span class="font-semibold text-neutral-400">Category:</span> {sr.productCategory || '—'}</div>
+                    <div><span class="font-semibold text-neutral-400">Brand:</span> {sr.brandName || '—'}</div>
+                    <div><span class="font-semibold text-neutral-400">Model No:</span> {sr.modelNumber || '—'}</div>
+                  </div>
                 </div>
                 <div class="border border-neutral-100 rounded-md p-3 bg-neutral-50/50">
-                  <h4 class="text-xs font-bold text-neutral-500 uppercase mb-1">Complaint Details</h4>
-                  <p class="text-xs text-neutral-700 whitespace-pre-wrap leading-relaxed">{sr.complaintDetails}</p>
+                  <h4 class="text-xs font-bold text-neutral-500 uppercase mb-1">Fault / Issue</h4>
+                  <p class="text-xs text-neutral-700 whitespace-pre-wrap leading-relaxed">{sr.fault || sr.complaintDetails}</p>
+                </div>
+                <div class="border border-neutral-100 rounded-md p-3 bg-neutral-50/50">
+                  <h4 class="text-xs font-bold text-neutral-500 uppercase mb-1">Address</h4>
+                  <p class="text-xs text-neutral-700 whitespace-pre-wrap leading-relaxed">{sr.address || '—'}</p>
                 </div>
               </div>
 
@@ -175,7 +271,7 @@ const counts = {
                   </div>
                   
                   <div>
-                    <button type="submit" class="w-full text-xs font-semibold bg-neutral-800 text-white hover:bg-neutral-900 rounded px-3 py-2 transition-colors">
+                    <button type="submit" class="w-full text-xs font-semibold bg-neutral-800 text-white hover:bg-neutral-900 rounded px-3 py-2 transition-colors cursor-pointer">
                       Update Info
                     </button>
                   </div>
@@ -202,7 +298,7 @@ const counts = {
                   <span class="text-[11px] text-neutral-400">Change Status:</span>
                   <select
                     name="status"
-                    class="rounded border border-neutral-300 px-2 py-1 text-xs focus:border-primary focus:outline-none"
+                    class="rounded border border-neutral-300 px-2 py-1 text-xs focus:border-primary focus:outline-none cursor-pointer"
                     onchange="this.form.submit()"
                   >
                     <option value="pending" selected={sr.status === 'pending'}>Pending</option>
@@ -223,30 +319,68 @@ const counts = {
         </div>
       )}
     </div>
+
+    {/* Pagination Controls */}
+    {totalPages > 1 && (
+      <div class="flex items-center justify-between border-t border-neutral-200 bg-white px-4 py-3 sm:px-6 rounded-lg shadow-sm mt-6">
+        <div class="flex flex-1 justify-between sm:hidden">
+          <a
+            href={page > 1 ? `?page=${page - 1}&status=${statusFilter}&search=${search}` : '#'}
+            class={`relative inline-flex items-center rounded-md border border-neutral-300 bg-white px-4 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-50 ${page <= 1 ? 'pointer-events-none opacity-50' : ''}`}
+          >
+            Previous
+          </a>
+          <a
+            href={page < totalPages ? `?page=${page + 1}&status=${statusFilter}&search=${search}` : '#'}
+            class={`relative ml-3 inline-flex items-center rounded-md border border-neutral-300 bg-white px-4 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-50 ${page >= totalPages ? 'pointer-events-none opacity-50' : ''}`}
+          >
+            Next
+          </a>
+        </div>
+        <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+          <div>
+            <p class="text-xs text-neutral-700">
+              Showing
+              <span class="font-semibold">{Math.min(offset + 1, totalCount)}</span>
+              to
+              <span class="font-semibold">{Math.min(offset + limit, totalCount)}</span>
+              of
+              <span class="font-semibold">{totalCount}</span>
+              results
+            </p>
+          </div>
+          <div>
+            <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+              <a
+                href={page > 1 ? `?page=${page - 1}&status=${statusFilter}&search=${search}` : '#'}
+                class={`relative inline-flex items-center rounded-l-md px-2 py-2 text-neutral-400 ring-1 ring-inset ring-neutral-300 hover:bg-neutral-50 focus:z-20 focus:outline-offset-0 ${page <= 1 ? 'pointer-events-none opacity-50' : ''}`}
+              >
+                <span class="sr-only">Previous</span>
+                <span>◀</span>
+              </a>
+              {Array.from({ length: totalPages }).map((_, idx) => {
+                const pNum = idx + 1;
+                const isCurrent = pNum === page;
+                return (
+                  <a
+                    href={`?page=${pNum}&status=${statusFilter}&search=${search}`}
+                    aria-current={isCurrent ? "page" : undefined}
+                    class={`relative inline-flex items-center px-3 py-2 text-xs font-semibold ${isCurrent ? 'z-10 bg-primary text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary' : 'text-neutral-900 ring-1 ring-inset ring-neutral-300 hover:bg-neutral-50 focus:z-20 focus:outline-offset-0'}`}
+                  >
+                    {pNum}
+                  </a>
+                );
+              })}
+              <a
+                href={page < totalPages ? `?page=${page + 1}&status=${statusFilter}&search=${search}` : '#'}
+                class={`relative inline-flex items-center rounded-r-md px-2 py-2 text-neutral-400 ring-1 ring-inset ring-neutral-300 hover:bg-neutral-50 focus:z-20 focus:outline-offset-0 ${page >= totalPages ? 'pointer-events-none opacity-50' : ''}`}
+              >
+                <span class="sr-only">Next</span>
+                <span>▶</span>
+              </a>
+            </nav>
+          </div>
+        </div>
+      </div>
+    )}
 </AdminLayout>
-
-<script is:inline>
-  function filterSR(status) {
-    const tabs = ['all', 'pending', 'in_progress', 'resolved', 'cancelled'];
-    tabs.forEach(t => {
-      const el = document.getElementById(`tab-${t}`);
-      if (el) {
-        if (t === status) {
-          el.className = "border-b-2 border-primary text-primary px-3 py-2 font-bold focus:outline-none";
-        } else {
-          el.className = "text-neutral-600 hover:text-primary px-3 py-2 focus:outline-none";
-        }
-      }
-    });
-
-    const cards = document.querySelectorAll('.sr-card');
-    cards.forEach(card => {
-      const cardStatus = card.getAttribute('data-status');
-      if (status === 'all' || cardStatus === status) {
-        card.style.display = 'block';
-      } else {
-        card.style.display = 'none';
-      }
-    });
-  }
-</script>

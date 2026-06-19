@@ -252,8 +252,81 @@ if (action === 'edit' && productId) {
   editProduct = found;
 }
 
-// Fetch all products for list view
-const allProducts = await db.select().from(products);
+import { and, or, ilike, sql, asc, desc } from 'drizzle-orm';
+
+const search = Astro.url.searchParams.get('search')?.trim() || '';
+const brandFilter = Astro.url.searchParams.get('brand') || '';
+const categoryFilter = Astro.url.searchParams.get('category') || '';
+const statusFilter = Astro.url.searchParams.get('status') || 'all'; // all, active, inactive
+const sort = Astro.url.searchParams.get('sort') || 'name-asc';
+const page = Number(Astro.url.searchParams.get('page') || '1');
+const limit = 10;
+const offset = (page - 1) * limit;
+
+const conditions = [];
+
+if (statusFilter === 'active') {
+  conditions.push(eq(products.isActive, true));
+} else if (statusFilter === 'inactive') {
+  conditions.push(eq(products.isActive, false));
+}
+
+if (brandFilter) {
+  conditions.push(eq(products.brandId, brandFilter));
+}
+
+if (categoryFilter) {
+  conditions.push(eq(products.categoryId, categoryFilter));
+}
+
+if (search) {
+  conditions.push(
+    or(
+      ilike(products.name, `%${search}%`),
+      ilike(products.nameGu, `%${search}%`),
+      ilike(products.modelNumber, `%${search}%`),
+      ilike(products.slug, `%${search}%`),
+      ilike(products.description, `%${search}%`),
+      ilike(products.descriptionGu, `%${search}%`)
+    )
+  );
+}
+
+const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+let orderByClause = [asc(products.name)];
+if (sort === 'name-desc') {
+  orderByClause = [desc(products.name)];
+} else if (sort === 'price-asc') {
+  orderByClause = [asc(products.offerPrice)];
+} else if (sort === 'price-desc') {
+  orderByClause = [desc(products.offerPrice)];
+} else if (sort === 'latest') {
+  orderByClause = [desc(products.createdAt)];
+}
+
+// Fetch paginated products for list view
+let allProducts: any[] = [];
+let totalCount = 0;
+
+try {
+  allProducts = await db.query.products.findMany({
+    where: whereClause,
+    orderBy: orderByClause,
+    limit,
+    offset,
+  });
+
+  const [countRes] = await db
+    .select({ count: sql`count(*)` })
+    .from(products)
+    .where(whereClause);
+  totalCount = Number(countRes?.count || 0);
+} catch (e) {
+  console.error('[Admin Products] Failed to fetch products:', e);
+}
+
+const totalPages = Math.ceil(totalCount / limit);
 const emptySpecifications = '{}';
 
 // Fetch products with brand/category details for bulk images view
@@ -310,8 +383,63 @@ if (action === 'bulk-images') {
 
     <!-- LIST VIEW -->
     {action === 'list' && (
-      <div class="bg-white border border-neutral-200 rounded-lg shadow-sm overflow-hidden">
-        <div class="overflow-x-auto">
+      <div class="space-y-4">
+        {/* Search, Sort, Filter Controls */}
+        <div class="bg-white border border-neutral-200 rounded-lg p-4 shadow-sm">
+          <form method="get" class="flex flex-wrap gap-3 items-center w-full">
+            <div class="relative flex-1 min-w-[200px]">
+              <input
+                type="text"
+                name="search"
+                value={search}
+                placeholder="Search products..."
+                class="w-full rounded border border-neutral-300 pl-8 pr-3 py-1.5 text-xs focus:border-primary focus:outline-none"
+              />
+              <span class="absolute left-2.5 top-2.5 text-neutral-400 text-xs">🔍</span>
+            </div>
+            
+            <select name="brand" class="rounded border border-neutral-300 px-3 py-1.5 text-xs focus:border-primary focus:outline-none cursor-pointer">
+              <option value="">All Brands</option>
+              {allBrands.map(b => (
+                <option value={b.id} selected={brandFilter === b.id}>{b.name}</option>
+              ))}
+            </select>
+
+            <select name="category" class="rounded border border-neutral-300 px-3 py-1.5 text-xs focus:border-primary focus:outline-none cursor-pointer">
+              <option value="">All Categories</option>
+              {allCategories.map(c => (
+                <option value={c.id} selected={categoryFilter === c.id}>{c.name}</option>
+              ))}
+            </select>
+
+            <select name="status" class="rounded border border-neutral-300 px-3 py-1.5 text-xs focus:border-primary focus:outline-none cursor-pointer">
+              <option value="all" selected={statusFilter === 'all'}>All Status</option>
+              <option value="active" selected={statusFilter === 'active'}>Active Only</option>
+              <option value="inactive" selected={statusFilter === 'inactive'}>Inactive Only</option>
+            </select>
+
+            <select name="sort" class="rounded border border-neutral-300 px-3 py-1.5 text-xs focus:border-primary focus:outline-none cursor-pointer">
+              <option value="name-asc" selected={sort === 'name-asc'}>Name (A-Z)</option>
+              <option value="name-desc" selected={sort === 'name-desc'}>Name (Z-A)</option>
+              <option value="price-asc" selected={sort === 'price-asc'}>Price (Low to High)</option>
+              <option value="price-desc" selected={sort === 'price-desc'}>Price (High to Low)</option>
+              <option value="latest" selected={sort === 'latest'}>Newest First</option>
+            </select>
+
+            <button type="submit" class="bg-neutral-800 text-white rounded px-4 py-1.5 text-xs font-semibold hover:bg-neutral-900 transition-colors cursor-pointer">
+              Filter
+            </button>
+
+            {(search || brandFilter || categoryFilter || statusFilter !== 'all' || sort !== 'name-asc') && (
+              <a href="/admin/products" class="bg-neutral-100 text-neutral-700 rounded px-4 py-1.5 text-xs font-semibold hover:bg-neutral-200 transition-colors text-center flex items-center">
+                Clear
+              </a>
+            )}
+          </form>
+        </div>
+
+        {/* Desktop View Table */}
+        <div class="hidden md:block bg-white border border-neutral-200 rounded-lg shadow-sm overflow-hidden">
           <table class="w-full text-left text-sm text-neutral-700 border-collapse">
             <thead>
               <tr class="bg-neutral-50 border-b border-neutral-200 font-semibold text-neutral-900">
@@ -340,11 +468,11 @@ if (action === 'bulk-images') {
                     </span>
                     {prod.isFeatured && <span class="inline-block rounded bg-yellow-50 text-yellow-700 border border-yellow-200 px-2 py-0.5 text-xs font-medium ml-1">Featured</span>}
                   </td>
-                  <td class="p-3 text-right flex justify-end gap-2">
+                  <td class="p-3 text-right flex justify-end gap-2 items-center h-12">
                     <a href={"/admin/products?action=edit&id=" + prod.id} class="text-xs font-semibold text-primary hover:underline">
                       Edit
                     </a>
-                    <form method="post" class="inline">
+                    <form method="post" class="inline m-0">
                       <input type="hidden" name="formAction" value="delete" />
                       <input type="hidden" name="id" value={prod.id} />
                       <button 
@@ -366,6 +494,116 @@ if (action === 'bulk-images') {
             </tbody>
           </table>
         </div>
+
+        {/* Mobile View Native List (flat items with divider lines) */}
+        <div class="md:hidden bg-white border border-neutral-200 rounded-lg shadow-sm divide-y divide-neutral-100">
+          {allProducts.map((prod) => (
+            <div class="p-4 flex gap-3 items-center justify-between">
+              <div class="flex-1 min-w-0">
+                <div class="font-bold text-sm text-neutral-900 truncate">{prod.name}</div>
+                <div class="flex items-center gap-2 mt-1">
+                  <span class="text-xs font-semibold text-primary">₹{prod.offerPrice.toLocaleString('en-IN')}</span>
+                  {prod.mrp > prod.offerPrice && (
+                    <span class="text-xs text-neutral-400 line-through">₹{prod.mrp.toLocaleString('en-IN')}</span>
+                  )}
+                </div>
+                <div class="text-[10px] text-neutral-500 mt-1 flex flex-wrap gap-2 items-center">
+                  <span>Model: {prod.modelNumber || '—'}</span>
+                  <span>•</span>
+                  <span class={prod.isActive ? "text-green-600 font-medium" : "text-red-600 font-medium"}>
+                    {prod.isActive ? 'Active' : 'Inactive'}
+                  </span>
+                  {prod.isFeatured && (
+                    <span class="text-yellow-600 font-medium bg-yellow-50 px-1 rounded">Featured</span>
+                  )}
+                </div>
+              </div>
+              <div class="flex items-center gap-3 shrink-0">
+                <a href={"/admin/products?action=edit&id=" + prod.id} class="text-xs font-bold text-primary bg-primary/10 px-2.5 py-1.5 rounded hover:bg-primary/20">
+                  Edit
+                </a>
+                <form method="post" class="inline m-0">
+                  <input type="hidden" name="formAction" value="delete" />
+                  <input type="hidden" name="id" value={prod.id} />
+                  <button 
+                    type="button" 
+                    onclick="window.confirmDelete(this, 'Delete Product', 'Are you sure you want to delete this product?')"
+                    class="text-xs font-bold text-red-600 bg-red-50 px-2.5 py-1.5 rounded hover:bg-red-100 cursor-pointer"
+                  >
+                    Delete
+                  </button>
+                </form>
+              </div>
+            </div>
+          ))}
+          {allProducts.length === 0 && (
+            <div class="p-8 text-center text-neutral-500 text-sm">No products found.</div>
+          )}
+        </div>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div class="flex items-center justify-between border-t border-neutral-200 bg-white px-4 py-3 sm:px-6 rounded-lg shadow-sm">
+            <div class="flex flex-1 justify-between sm:hidden">
+              <a
+                href={page > 1 ? `?page=${page - 1}&search=${search}&brand=${brandFilter}&category=${categoryFilter}&status=${statusFilter}&sort=${sort}` : '#'}
+                class={`relative inline-flex items-center rounded-md border border-neutral-300 bg-white px-4 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-50 ${page <= 1 ? 'pointer-events-none opacity-50' : ''}`}
+              >
+                Previous
+              </a>
+              <a
+                href={page < totalPages ? `?page=${page + 1}&search=${search}&brand=${brandFilter}&category=${categoryFilter}&status=${statusFilter}&sort=${sort}` : '#'}
+                class={`relative ml-3 inline-flex items-center rounded-md border border-neutral-300 bg-white px-4 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-50 ${page >= totalPages ? 'pointer-events-none opacity-50' : ''}`}
+              >
+                Next
+              </a>
+            </div>
+            <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+              <div>
+                <p class="text-xs text-neutral-700">
+                  Showing
+                  <span class="font-semibold">{Math.min(offset + 1, totalCount)}</span>
+                  to
+                  <span class="font-semibold">{Math.min(offset + limit, totalCount)}</span>
+                  of
+                  <span class="font-semibold">{totalCount}</span>
+                  results
+                </p>
+              </div>
+              <div>
+                <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                  <a
+                    href={page > 1 ? `?page=${page - 1}&search=${search}&brand=${brandFilter}&category=${categoryFilter}&status=${statusFilter}&sort=${sort}` : '#'}
+                    class={`relative inline-flex items-center rounded-l-md px-2 py-2 text-neutral-400 ring-1 ring-inset ring-neutral-300 hover:bg-neutral-50 focus:z-20 focus:outline-offset-0 ${page <= 1 ? 'pointer-events-none opacity-50' : ''}`}
+                  >
+                    <span class="sr-only">Previous</span>
+                    <span>◀</span>
+                  </a>
+                  {Array.from({ length: totalPages }).map((_, idx) => {
+                    const pNum = idx + 1;
+                    const isCurrent = pNum === page;
+                    return (
+                      <a
+                        href={`?page=${pNum}&search=${search}&brand=${brandFilter}&category=${categoryFilter}&status=${statusFilter}&sort=${sort}`}
+                        aria-current={isCurrent ? "page" : undefined}
+                        class={`relative inline-flex items-center px-3 py-2 text-xs font-semibold ${isCurrent ? 'z-10 bg-primary text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary' : 'text-neutral-900 ring-1 ring-inset ring-neutral-300 hover:bg-neutral-50 focus:z-20 focus:outline-offset-0'}`}
+                      >
+                        {pNum}
+                      </a>
+                    );
+                  })}
+                  <a
+                    href={page < totalPages ? `?page=${page + 1}&search=${search}&brand=${brandFilter}&category=${categoryFilter}&status=${statusFilter}&sort=${sort}` : '#'}
+                    class={`relative inline-flex items-center rounded-r-md px-2 py-2 text-neutral-400 ring-1 ring-inset ring-neutral-300 hover:bg-neutral-50 focus:z-20 focus:outline-offset-0 ${page >= totalPages ? 'pointer-events-none opacity-50' : ''}`}
+                  >
+                    <span class="sr-only">Next</span>
+                    <span>▶</span>
+                  </a>
+                </nav>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     )}
 
@@ -431,30 +669,42 @@ if (action === 'bulk-images') {
 
           <div class="grid gap-4 sm:grid-cols-2">
             <div>
-              <label for="brandId" class="block text-sm font-semibold text-neutral-700 mb-1">Brand</label>
-              <select
-                id="brandId"
-                name="brandId"
-                class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none"
-              >
-                <option value="">Select Brand</option>
-                {allBrands.map(b => (
-                  <option value={b.id} selected={editProduct?.brandId === b.id}>{b.name}</option>
-                ))}
-              </select>
+              <label class="block text-sm font-semibold text-neutral-700 mb-1">Brand</label>
+              <div class="relative searchable-dropdown" id="brand-dropdown">
+                <input
+                  type="text"
+                  placeholder="Search & Select Brand..."
+                  class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none pr-8 dropdown-input"
+                  value={allBrands.find(b => b.id === editProduct?.brandId)?.name || ''}
+                />
+                <span class="absolute right-2.5 top-2.5 text-neutral-400 pointer-events-none text-[10px]">▼</span>
+                <input type="hidden" name="brandId" id="brandId" class="dropdown-value" value={editProduct?.brandId || ''} />
+                <div class="absolute z-50 left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-white border border-neutral-200 rounded-md shadow-lg hidden dropdown-menu">
+                  <div class="py-1 px-3 text-xs text-neutral-400 hover:bg-neutral-50 cursor-pointer dropdown-option" data-value="">None (Select Brand)</div>
+                  {allBrands.map(b => (
+                    <div class="py-1.5 px-3 text-sm hover:bg-neutral-100 cursor-pointer dropdown-option" data-value={b.id} data-search={b.name.toLowerCase()}>{b.name}</div>
+                  ))}
+                </div>
+              </div>
             </div>
             <div>
-              <label for="categoryId" class="block text-sm font-semibold text-neutral-700 mb-1">Category</label>
-              <select
-                id="categoryId"
-                name="categoryId"
-                class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none"
-              >
-                <option value="">Select Category</option>
-                {allCategories.map(c => (
-                  <option value={c.id} selected={editProduct?.categoryId === c.id}>{c.name}</option>
-                ))}
-              </select>
+              <label class="block text-sm font-semibold text-neutral-700 mb-1">Category</label>
+              <div class="relative searchable-dropdown" id="category-dropdown">
+                <input
+                  type="text"
+                  placeholder="Search & Select Category..."
+                  class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none pr-8 dropdown-input"
+                  value={allCategories.find(c => c.id === editProduct?.categoryId)?.name || ''}
+                />
+                <span class="absolute right-2.5 top-2.5 text-neutral-400 pointer-events-none text-[10px]">▼</span>
+                <input type="hidden" name="categoryId" id="categoryId" class="dropdown-value" value={editProduct?.categoryId || ''} />
+                <div class="absolute z-50 left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-white border border-neutral-200 rounded-md shadow-lg hidden dropdown-menu">
+                  <div class="py-1 px-3 text-xs text-neutral-400 hover:bg-neutral-50 cursor-pointer dropdown-option" data-value="">None (Select Category)</div>
+                  {allCategories.map(c => (
+                    <div class="py-1.5 px-3 text-sm hover:bg-neutral-100 cursor-pointer dropdown-option" data-value={c.id} data-search={c.name.toLowerCase()}>{c.name}</div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -772,6 +1022,56 @@ if (action === 'bulk-images') {
 
           addSpecBtn?.addEventListener('click', () => {
             createSpecRow();
+          });
+
+          // Searchable Dropdowns JS Logic
+          document.querySelectorAll('.searchable-dropdown').forEach(dropdown => {
+            const input = dropdown.querySelector('.dropdown-input') as HTMLInputElement;
+            const hidden = dropdown.querySelector('.dropdown-value') as HTMLInputElement;
+            const menu = dropdown.querySelector('.dropdown-menu') as HTMLDivElement;
+            const options = dropdown.querySelectorAll('.dropdown-option');
+
+            input.addEventListener('focus', () => {
+              // Close all other dropdowns first
+              document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.add('hidden'));
+              menu.classList.remove('hidden');
+            });
+
+            input.addEventListener('input', () => {
+              const query = input.value.toLowerCase().trim();
+              options.forEach(opt => {
+                const searchVal = opt.getAttribute('data-search') || '';
+                const val = opt.getAttribute('data-value') || '';
+                if (!val || searchVal.includes(query)) {
+                  (opt as HTMLDivElement).style.display = 'block';
+                } else {
+                  (opt as HTMLDivElement).style.display = 'none';
+                }
+              });
+            });
+
+            options.forEach(opt => {
+              opt.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const val = opt.getAttribute('data-value') || '';
+                const label = opt.textContent || '';
+                hidden.value = val;
+                input.value = val ? label : '';
+                menu.classList.add('hidden');
+                hidden.dispatchEvent(new Event('change', { bubbles: true }));
+              });
+            });
+
+            // Close on click outside
+            document.addEventListener('click', (e) => {
+              if (!dropdown.contains(e.target as Node)) {
+                menu.classList.add('hidden');
+                // Restore label if empty or invalid input
+                const currentVal = hidden.value;
+                const match = Array.from(options).find(o => o.getAttribute('data-value') === currentVal);
+                input.value = match && currentVal ? match.textContent || '' : '';
+              }
+            });
           });
 
           renderPreviews();
