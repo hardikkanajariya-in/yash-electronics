@@ -67,8 +67,8 @@ allHours.forEach(h => hoursMap.set(h.dayOfWeek, h));
     <form method="post" class="bg-white border border-neutral-200 rounded-lg shadow-sm overflow-hidden">
       <input type="hidden" name="_action" value="save_all" />
       
-      <table class="w-full text-sm">
-        <thead class="bg-neutral-50 border-b border-neutral-200">
+      <table class="w-full text-sm block md:table">
+        <thead class="hidden md:table-header-group bg-neutral-50 border-b border-neutral-200">
           <tr>
             <th class="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase w-28">Day</th>
             <th class="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase w-16">Open?</th>
@@ -77,43 +77,49 @@ allHours.forEach(h => hoursMap.set(h.dayOfWeek, h));
             <th class="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase">Note</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-neutral-100">
+        <tbody class="divide-y divide-neutral-100 md:divide-y block md:table-row-group p-4 md:p-0 space-y-4 md:space-y-0">
           {dayNames.map((dayName, i) => {
             const existing = hoursMap.get(i);
             const defaultOpen = i !== 0; // Closed Sunday by default
             const defaultOpenTime = i === 0 ? '09:30' : '09:30';
             const defaultCloseTime = i === 0 ? '14:00' : '21:00';
             return (
-              <tr class:list={['hover:bg-neutral-50 transition-colors', i === 0 ? 'bg-yellow-50/30' : '']}>
-                <td class="px-4 py-3">
-                  <span class="font-medium text-neutral-900">{dayName}</span>
+              <tr class:list={['flex flex-col md:table-row hover:bg-neutral-50 transition-colors p-4 md:p-0 rounded-lg md:rounded-none border border-neutral-100 md:border-b md:border-neutral-100 space-y-3 md:space-y-0 bg-neutral-50/20 md:bg-transparent', i === 0 ? 'bg-yellow-50/20 md:bg-yellow-50/30' : '']}>
+                <td class="block md:table-cell px-0 py-0 md:px-4 md:py-3">
+                  <span class="font-bold md:font-medium text-sm text-neutral-900">{dayName}</span>
                   {existing && <input type="hidden" name={`id_${i}`} value={existing.id} />}
                 </td>
-                <td class="px-4 py-3">
-                  <input
-                    type="checkbox"
-                    name={`isOpen_${i}`}
-                    checked={existing ? existing.isOpen : defaultOpen}
-                    class="rounded border-neutral-300 text-primary focus:ring-primary"
-                  />
+                <td class="block md:table-cell px-0 py-0 md:px-4 md:py-3">
+                  <label class="flex items-center gap-1.5 cursor-pointer md:cursor-auto">
+                    <input
+                      type="checkbox"
+                      name={`isOpen_${i}`}
+                      checked={existing ? existing.isOpen : defaultOpen}
+                      class="rounded border-neutral-300 text-primary focus:ring-primary"
+                    />
+                    <span class="md:hidden text-xs font-semibold text-neutral-600">Open today</span>
+                  </label>
                 </td>
-                <td class="px-4 py-3">
+                <td class="block md:table-cell px-0 py-0 md:px-4 md:py-3">
+                  <span class="block md:hidden text-[10px] font-bold text-neutral-400 uppercase mb-1">Open Time</span>
                   <input
                     type="time"
                     name={`openTime_${i}`}
                     value={existing?.openTime || defaultOpenTime}
-                    class="rounded border border-neutral-300 px-2 py-1 text-xs focus:border-primary focus:outline-none"
+                    class="w-full md:w-auto rounded border border-neutral-300 px-2 py-1 text-xs focus:border-primary focus:outline-none"
                   />
                 </td>
-                <td class="px-4 py-3">
+                <td class="block md:table-cell px-0 py-0 md:px-4 md:py-3">
+                  <span class="block md:hidden text-[10px] font-bold text-neutral-400 uppercase mb-1">Close Time</span>
                   <input
                     type="time"
                     name={`closeTime_${i}`}
                     value={existing?.closeTime || defaultCloseTime}
-                    class="rounded border border-neutral-300 px-2 py-1 text-xs focus:border-primary focus:outline-none"
+                    class="w-full md:w-auto rounded border border-neutral-300 px-2 py-1 text-xs focus:border-primary focus:outline-none"
                   />
                 </td>
-                <td class="px-4 py-3">
+                <td class="block md:table-cell px-0 py-0 md:px-4 md:py-3">
+                  <span class="block md:hidden text-[10px] font-bold text-neutral-400 uppercase mb-1">Note</span>
                   <input
                     type="text"
                     name={`note_${i}`}
@@ -128,8 +134,8 @@ allHours.forEach(h => hoursMap.set(h.dayOfWeek, h));
         </tbody>
       </table>
 
-      <div class="px-4 py-4 bg-neutral-50 border-t border-neutral-200">
-        <button type="submit" class="btn-primary text-xs">Save All Hours</button>
+      <div class="px-4 py-4 bg-neutral-50 border-t border-neutral-200 flex justify-end">
+        <button type="submit" class="btn-primary text-xs w-full sm:w-auto text-center">Save All Hours</button>
       </div>
     </form>
 </AdminLayout>

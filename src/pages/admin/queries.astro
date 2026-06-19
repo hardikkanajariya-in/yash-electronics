@@ -130,8 +130,8 @@ try {
     )}
 
     <!-- Navigation Tabs / Filters -->
-    <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
-      <nav class="flex border-b border-neutral-200 gap-2 overflow-x-auto text-xs font-medium pb-1 select-none whitespace-nowrap">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+      <nav class="flex border-b border-neutral-200 gap-2 overflow-x-auto text-xs font-medium pb-1 select-none whitespace-nowrap no-scrollbar w-full md:w-auto">
         <a href={`?status=all&search=${search}&sort=${sort}`} class={`px-3 py-2 font-semibold border-b-2 ${statusFilter === 'all' ? 'border-primary text-primary font-bold' : 'text-neutral-600 hover:text-primary border-transparent'}`}>
           All ({allCount})
         </a>
@@ -147,9 +147,9 @@ try {
       </nav>
 
       {/* Search, Sort, Filter Controls */}
-      <form method="get" class="flex flex-wrap gap-3 items-center w-full sm:w-auto">
+      <form method="get" class="flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center w-full md:w-auto">
         <input type="hidden" name="status" value={statusFilter} />
-        <div class="relative w-64">
+        <div class="relative w-full sm:w-64">
           <input
             type="text"
             name="search"
@@ -160,20 +160,22 @@ try {
           <span class="absolute left-2.5 top-2.5 text-neutral-400 text-xs">🔍</span>
         </div>
 
-        <select name="sort" class="rounded border border-neutral-300 px-3 py-1.5 text-xs focus:border-primary focus:outline-none cursor-pointer">
+        <select name="sort" class="w-full sm:w-auto rounded border border-neutral-300 px-3 py-1.5 text-xs focus:border-primary focus:outline-none cursor-pointer">
           <option value="created-desc" selected={sort === 'created-desc'}>Date Created (Newest)</option>
           <option value="created-asc" selected={sort === 'created-asc'}>Date Created (Oldest)</option>
         </select>
 
-        <button type="submit" class="bg-neutral-800 text-white rounded px-4 py-1.5 text-xs font-semibold hover:bg-neutral-900 transition-colors cursor-pointer">
-          Filter
-        </button>
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+          <button type="submit" class="flex-1 sm:flex-initial bg-neutral-800 text-white rounded px-4 py-1.5 text-xs font-semibold hover:bg-neutral-900 transition-colors cursor-pointer text-center">
+            Filter
+          </button>
 
-        {(search || sort !== 'created-desc') && (
-          <a href={`?status=${statusFilter}`} class="bg-neutral-100 text-neutral-700 rounded px-4 py-1.5 text-xs font-semibold hover:bg-neutral-200 transition-colors text-center flex items-center">
-            Clear
-          </a>
-        )}
+          {(search || sort !== 'created-desc') && (
+            <a href={`?status=${statusFilter}`} class="flex-1 sm:flex-initial bg-neutral-100 text-neutral-700 rounded px-4 py-1.5 text-xs font-semibold hover:bg-neutral-200 transition-colors text-center justify-center flex items-center">
+              Clear
+            </a>
+          )}
+        </div>
       </form>
     </div>
 
@@ -398,3 +400,13 @@ try {
       )}
     </div>
 </AdminLayout>
+
+<style>
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+</style>

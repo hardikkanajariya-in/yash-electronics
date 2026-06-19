@@ -224,9 +224,14 @@ const iconOptions = [
       </div>
     )}
 
-    {!showForm && <div class="flex justify-end mb-4"><a href="/admin/services?action=add" class="btn-primary text-xs">+ Add Service</a></div>}
+    {!showForm && (
+      <div class="flex justify-end mb-4 w-full">
+        <a href="/admin/services?action=add" class="w-full sm:w-auto text-center btn-primary text-xs">+ Add Service</a>
+      </div>
+    )}
 
-    <div class="bg-white border border-neutral-200 rounded-lg shadow-sm overflow-hidden">
+    {/* Desktop Table View */}
+    <div class="hidden md:block bg-white border border-neutral-200 rounded-lg shadow-sm overflow-hidden">
       <table class="w-full text-sm">
         <thead class="bg-neutral-50 border-b border-neutral-200">
           <tr>
@@ -262,5 +267,58 @@ const iconOptions = [
           {allServices.length === 0 && <tr><td colspan="4" class="px-4 py-8 text-center text-neutral-500">No services yet.</td></tr>}
         </tbody>
       </table>
+    </div>
+
+    {/* Mobile Card List View */}
+    <div class="md:hidden space-y-4">
+      {allServices.map(service => {
+        const matchingIcon = iconOptions.find(opt => opt.value === service.icon);
+        const displayIcon = matchingIcon ? matchingIcon.label : '💼';
+        return (
+          <div class="bg-white border border-neutral-200 rounded-lg p-4 shadow-sm relative pr-20">
+            <div class="flex items-center gap-2">
+              <span class="text-xl shrink-0">{displayIcon}</span>
+              <div class="min-w-0 flex-1">
+                <h3 class="font-bold text-sm text-neutral-900 truncate">{service.title}</h3>
+                <span class={`inline-block rounded mt-1 px-1.5 py-0.5 text-[9px] font-bold border ${service.isActive ? 'bg-green-50 text-green-700 border-green-200' : 'bg-neutral-50 text-neutral-600 border-neutral-200'}`}>
+                  {service.isActive ? 'Active' : 'Inactive'}
+                </span>
+              </div>
+            </div>
+            
+            {service.description && (
+              <p class="text-xs text-neutral-500 mt-2 leading-relaxed whitespace-pre-wrap">{service.description}</p>
+            )}
+
+            {/* Corner Actions */}
+            <div class="absolute top-4 right-4 flex items-center gap-2">
+              <a 
+                href={`/admin/services?edit=${service.id}`} 
+                class="w-8 h-8 rounded-full border border-neutral-200 hover:border-primary/30 hover:bg-primary/5 flex items-center justify-center text-xs text-neutral-600 hover:text-primary transition-colors cursor-pointer"
+                title="Edit"
+              >
+                ✏️
+              </a>
+              <form method="post" class="inline m-0">
+                <input type="hidden" name="_action" value="delete" />
+                <input type="hidden" name="id" value={service.id} />
+                <button 
+                  type="button" 
+                  onclick="confirmDelete(this, 'Delete Service', 'Are you sure?')"
+                  class="w-8 h-8 rounded-full border border-red-100 bg-red-50 hover:bg-red-100 flex items-center justify-center text-xs text-red-600 transition-colors cursor-pointer"
+                  title="Delete"
+                >
+                  🗑️
+                </button>
+              </form>
+            </div>
+          </div>
+        );
+      })}
+      {allServices.length === 0 && (
+        <div class="bg-white border border-neutral-200 rounded-lg p-8 text-center text-neutral-500 text-sm">
+          No services yet.
+        </div>
+      )}
     </div>
 </AdminLayout>

@@ -139,9 +139,9 @@ try {
 
     {/* Search & Filter Bar */}
     <div class="bg-white border border-neutral-200 rounded-lg p-4 shadow-sm mb-6">
-      <form method="get" class="flex flex-wrap gap-3 items-center justify-between w-full">
+      <form method="get" class="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between w-full">
         <input type="hidden" name="status" value={statusFilter} />
-        <div class="relative flex-1 max-w-md w-full">
+        <div class="relative flex-1">
           <input
             type="text"
             name="search"
@@ -151,12 +151,12 @@ try {
           />
           <span class="absolute left-2.5 top-2.5 text-neutral-400 text-xs">🔍</span>
         </div>
-        <div class="flex gap-2">
-          <button type="submit" class="bg-neutral-800 text-white rounded px-4 py-1.5 text-xs font-semibold hover:bg-neutral-900 transition-colors cursor-pointer">
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+          <button type="submit" class="flex-1 sm:flex-initial bg-neutral-800 text-white rounded px-4 py-1.5 text-xs font-semibold hover:bg-neutral-900 transition-colors cursor-pointer text-center">
             Search
           </button>
           {search && (
-            <a href={`?status=${statusFilter}`} class="bg-neutral-100 text-neutral-700 rounded px-4 py-1.5 text-xs font-semibold hover:bg-neutral-200 transition-colors text-center flex items-center">
+            <a href={`?status=${statusFilter}`} class="flex-1 sm:flex-initial bg-neutral-100 text-neutral-700 rounded px-4 py-1.5 text-xs font-semibold hover:bg-neutral-200 transition-colors text-center justify-center flex items-center">
               Clear
             </a>
           )}
@@ -165,7 +165,7 @@ try {
     </div>
 
     <!-- Navigation Tabs / Filters -->
-    <nav class="flex border-b border-neutral-200 gap-2 mb-6 overflow-x-auto text-xs font-medium pb-2 select-none whitespace-nowrap">
+    <nav class="flex border-b border-neutral-200 gap-2 mb-6 overflow-x-auto text-xs font-medium pb-2 select-none whitespace-nowrap no-scrollbar">
       <a href={`?status=all&search=${search}`} class={`px-3 py-2 font-bold focus:outline-none border-b-2 ${statusFilter === 'all' ? 'border-primary text-primary' : 'border-transparent text-neutral-600 hover:text-primary'}`}>
         All ({statsCounts.all})
       </a>
@@ -279,7 +279,7 @@ try {
               </div>
 
               {/* Actions Footer */}
-              <div class="flex items-center justify-between border-t border-neutral-100 pt-3 mt-3">
+              <div class="flex flex-wrap items-center justify-between gap-3 border-t border-neutral-100 pt-3 mt-3">
                 <form method="post" class="inline">
                   <input type="hidden" name="formAction" value="delete" />
                   <input type="hidden" name="srId" value={sr.id} />
@@ -384,3 +384,13 @@ try {
       </div>
     )}
 </AdminLayout>
+
+<style>
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+</style>

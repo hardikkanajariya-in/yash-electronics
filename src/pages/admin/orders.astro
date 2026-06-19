@@ -80,7 +80,7 @@ const counts = {
     )}
 
     <!-- Navigation Tabs / Filters -->
-    <nav class="flex border-b border-neutral-200 gap-2 mb-6 overflow-x-auto text-xs font-medium pb-2 select-none whitespace-nowrap">
+    <nav class="flex border-b border-neutral-200 gap-2 mb-6 overflow-x-auto text-xs font-medium pb-2 select-none whitespace-nowrap no-scrollbar">
       <button onclick="filterOrders('all')" id="tab-all" class="border-b-2 border-primary text-primary px-3 py-2 font-bold focus:outline-none">
         All ({counts.all})
       </button>
@@ -97,7 +97,7 @@ const counts = {
         Cancelled ({counts.cancelled})
       </button>
     </nav>
-
+ 
     <!-- Orders List/Grid -->
     <div class="space-y-4" id="orders-container">
       {allOrders.map((order) => {
@@ -139,9 +139,9 @@ const counts = {
                 </span>
               </div>
             </div>
-
+ 
             {/* Content Row: Grid */}
-            <div class="grid gap-6 md:grid-cols-3">
+            <div class="grid gap-4 sm:gap-6 md:grid-cols-3">
               {/* Customer Info */}
               <div class="space-y-2 text-sm">
                 <h4 class="text-xs font-bold uppercase text-neutral-400">Customer Details</h4>
@@ -251,3 +251,13 @@ const counts = {
     });
   }
 </script>
+
+<style>
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+</style>
