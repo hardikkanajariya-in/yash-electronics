@@ -1,11 +1,12 @@
 ---
 import AdminLayout from '../../layouts/AdminLayout.astro';
-import { db } from '../../db';
+import { db, pool } from '../../db';
 import { products, categories, brands } from '../../db/schema';
 import { eq, and, or, ilike, sql, asc, desc } from 'drizzle-orm';
 import { getSessionUser, generateId } from '../../lib/auth';
 import { importProductsFromCsv, exportProductsToCsv } from '../../lib/csv';
 import { clearCmsCache } from '../../services/cms';
+import { seedReviewsForProduct } from '../../lib/review-seeder';
 
 export const prerender = false;
 
@@ -189,6 +190,11 @@ if (Astro.request.method === 'POST') {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         });
+        
+        // Seed 3 to 10 reviews
+        const categorySlug = allCategories.find(c => c.id === categoryId)?.slug || null;
+        await seedReviewsForProduct(pool, newId, categorySlug);
+
         clearCmsCache();
         redirectUrl = '/admin/products?success=' + encodeURIComponent('Product added successfully!');
       }

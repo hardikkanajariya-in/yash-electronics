@@ -1,7 +1,8 @@
-import { db } from '../db';
+import { db, pool } from '../db';
 import { products, brands, categories } from '../db/schema';
 import { eq } from 'drizzle-orm';
 import { generateId } from './auth';
+import { seedReviewsForProduct } from './review-seeder';
 
 // Simple slugify function
 export function slugify(text: string): string {
@@ -282,8 +283,9 @@ export async function importProductsFromCsv(csvText: string) {
           updatedAt: now,
         }).where(eq(products.id, existingProduct.id));
       } else {
+        const newId = generateId();
         await db.insert(products).values({
-          id: generateId(),
+          id: newId,
           name,
           nameGu,
           slug,
@@ -302,6 +304,10 @@ export async function importProductsFromCsv(csvText: string) {
           createdAt: now,
           updatedAt: now,
         });
+
+        // Seed 3 to 10 reviews
+        const categorySlug = allCategoriesList.find(c => c.id === categoryId)?.slug || null;
+        await seedReviewsForProduct(pool, newId, categorySlug);
       }
       successCount++;
     } catch (e: any) {

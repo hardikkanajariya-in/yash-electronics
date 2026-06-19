@@ -58,7 +58,7 @@ export const products = pgTable('products', {
   updatedAt: text('updated_at').notNull(),
 });
 
-export const productsRelations = relations(products, ({ one }) => ({
+export const productsRelations = relations(products, ({ one, many }) => ({
   brand: one(brands, {
     fields: [products.brandId],
     references: [brands.id],
@@ -67,6 +67,7 @@ export const productsRelations = relations(products, ({ one }) => ({
     fields: [products.categoryId],
     references: [categories.id],
   }),
+  reviews: many(reviews),
 }));
 
 export const offers = pgTable('offers', {
@@ -286,3 +287,29 @@ export const serviceRequestsRelations = relations(serviceRequests, ({ one }) => 
     references: [users.id],
   }),
 }));
+
+/**
+ * Reviews — Product ratings and reviews submitted by customers
+ */
+export const reviews = pgTable('reviews', {
+  id: varchar('id', { length: 255 }).primaryKey(),
+  productId: varchar('product_id', { length: 255 }).references(() => products.id, { onDelete: 'cascade' }).notNull(),
+  userId: varchar('user_id', { length: 255 }).references(() => users.id, { onDelete: 'cascade' }),
+  userName: text('user_name').notNull(),
+  rating: integer('rating').notNull(),
+  comment: text('comment').notNull(),
+  purchaseSource: text('purchase_source').$type<'online' | 'instore' | 'seeded'>().notNull().default('online'),
+  createdAt: text('created_at').notNull(),
+});
+
+export const reviewsRelations = relations(reviews, ({ one }) => ({
+  product: one(products, {
+    fields: [reviews.productId],
+    references: [products.id],
+  }),
+  user: one(users, {
+    fields: [reviews.userId],
+    references: [users.id],
+  }),
+}));
+
