@@ -27,6 +27,17 @@ dbSettingsList.forEach(s => {
 });
 const businessName = currentSettings.businessName || 'Yash Electronics';
 
+const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa';
+const logoUrl = currentSettings.logoUrl;
+let logoDisplayUrl = '';
+if (logoUrl) {
+  if (logoUrl.startsWith('http') || logoUrl.startsWith('/')) {
+    logoDisplayUrl = logoUrl;
+  } else {
+    logoDisplayUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_100,h_100,c_fill,f_auto,q_auto/${logoUrl}`;
+  }
+}
+
 // Side navigation links (15 items)
 const menuItems = [
   { path: '/admin', label: 'Overview', icon: 'home', key: 'overview' },
@@ -78,9 +89,13 @@ const drawerNavItems = [
       <!-- Sidebar Header -->
       <div class="h-16 flex items-center px-6 border-b border-neutral-800 bg-neutral-950">
         <div class="flex items-center gap-2">
-          <span class="h-8 w-8 flex items-center justify-center rounded-md bg-primary text-white font-bold text-sm">
-            {businessName.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}
-          </span>
+          {logoDisplayUrl ? (
+            <img src={logoDisplayUrl} class="h-8 w-8 object-contain rounded-md bg-white p-0.5 border border-neutral-800" alt={businessName} />
+          ) : (
+            <span class="h-8 w-8 flex items-center justify-center rounded-md bg-primary text-white font-bold text-sm">
+              {businessName.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}
+            </span>
+          )}
           <div>
             <h1 class="text-sm font-bold text-white tracking-wider leading-none uppercase">{businessName}</h1>
             <span class="text-[10px] text-neutral-500 font-semibold tracking-widest uppercase">Admin Panel</span>
@@ -188,9 +203,13 @@ const drawerNavItems = [
       <header class="h-16 bg-white border-b border-neutral-200 flex items-center justify-between px-4 sm:px-6 sticky top-0 z-20 shadow-sm">
         <div class="flex items-center gap-3">
           <!-- Mobile logo -->
-          <span class="h-8 w-8 flex md:hidden items-center justify-center rounded-md bg-primary text-white font-bold text-sm">
-            {businessName.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}
-          </span>
+          {logoDisplayUrl ? (
+            <img src={logoDisplayUrl} class="h-8 w-8 object-contain rounded-md bg-white p-0.5 border border-neutral-250 md:hidden" alt={businessName} />
+          ) : (
+            <span class="h-8 w-8 flex md:hidden items-center justify-center rounded-md bg-primary text-white font-bold text-sm">
+              {businessName.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}
+            </span>
+          )}
           <div>
             <h2 class="text-sm sm:text-base font-bold text-neutral-900 leading-tight">{title}</h2>
             <p class="hidden sm:block text-[10px] text-neutral-400 font-medium">{subtitle}</p>
