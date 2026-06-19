@@ -33,9 +33,10 @@ let success = Astro.url.searchParams.get('success') || '';
 // Handle CSV Export and Template Downloads
 if (action === 'export') {
   try {
-    return new Response(await exportProductsToCsv(), {
+    const csvContent = await exportProductsToCsv();
+    return new Response('\uFEFF' + csvContent, {
       headers: {
-        'Content-Type': 'text/csv',
+        'Content-Type': 'text/csv; charset=utf-8',
         'Content-Disposition': 'attachment; filename="yash_electronics_products.csv"',
       }
     });
@@ -83,10 +84,10 @@ if (action === 'template') {
   ];
   
   return new Response(
-    headers.join(',') + '\r\n' + sampleRow.map(v => '"' + v.replace(/"/g, '""') + '"').join(','),
+    '\uFEFF' + headers.join(',') + '\r\n' + sampleRow.map(v => '"' + v.replace(/"/g, '""') + '"').join(','),
     {
       headers: {
-        'Content-Type': 'text/csv',
+        'Content-Type': 'text/csv; charset=utf-8',
         'Content-Disposition': 'attachment; filename="products_csv_template.csv"',
       }
     }
