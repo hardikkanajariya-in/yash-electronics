@@ -313,3 +313,36 @@ export const reviewsRelations = relations(reviews, ({ one }) => ({
   }),
 }));
 
+/**
+ * Notifications — For in-app notification tracking
+ */
+export const notifications = pgTable('notifications', {
+  id: varchar('id', { length: 255 }).primaryKey(),
+  type: text('type').$type<'contact' | 'service' | 'order'>().notNull(),
+  title: text('title').notNull(),
+  message: text('message').notNull(),
+  referenceId: text('reference_id').notNull(),
+  isRead: boolean('is_read').notNull().default(false),
+  createdAt: text('created_at').notNull(),
+});
+
+/**
+ * Push Subscriptions — For offline Web Push notifications via service worker
+ */
+export const pushSubscriptions = pgTable('push_subscriptions', {
+  id: varchar('id', { length: 255 }).primaryKey(),
+  userId: varchar('user_id', { length: 255 }).references(() => users.id, { onDelete: 'cascade' }),
+  endpoint: text('endpoint').notNull().unique(),
+  p256dh: text('p256dh').notNull(),
+  auth: text('auth').notNull(),
+  createdAt: text('created_at').notNull(),
+});
+
+export const pushSubscriptionsRelations = relations(pushSubscriptions, ({ one }) => ({
+  user: one(users, {
+    fields: [pushSubscriptions.userId],
+    references: [users.id],
+  }),
+}));
+
+

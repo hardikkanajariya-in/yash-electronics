@@ -4,8 +4,9 @@ import Container from '../components/ui/Container.astro';
 import { getSessionUser } from '../lib/auth';
 import { getLocalizedPath } from '../lib/translations';
 import { db } from '../db';
-import { serviceRequests } from '../db/schema';
+import { serviceRequests, notifications } from '../db/schema';
 import { generateId } from '../lib/auth';
+import { triggerPushNotification } from '../services/push';
 
 export const prerender = false;
 
@@ -37,8 +38,9 @@ if (Astro.request.method === 'POST') {
       const productName = `${brandName} ${modelNumber}`.trim();
       const complaintDetails = fault;
 
+      const srId = generateId();
       await db.insert(serviceRequests).values({
-        id: generateId(),
+        id: srId,
         userId: currentUser?.id || null,
         customerName,
         customerPhone,
@@ -55,6 +57,27 @@ if (Astro.request.method === 'POST') {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
+
+      // Track notification and dispatch web push
+      try {
+        await db.insert(notifications).values({
+          id: generateId(),
+          type: 'service',
+          title: 'New Service Request',
+          message: `Service request from ${customerName} for ${productName}`,
+          referenceId: srId,
+          isRead: false,
+          createdAt: new Date().toISOString(),
+        });
+        triggerPushNotification(
+          'New Service Request',
+          `Service request from ${customerName} for ${productName}`,
+          '/admin/service-requests'
+        );
+      } catch (notifErr) {
+        console.error('[Service Request Notification Error]:', notifErr);
+      }
+
       return Astro.redirect(Astro.url.pathname + '?success=true');
     }
   } catch (e) {

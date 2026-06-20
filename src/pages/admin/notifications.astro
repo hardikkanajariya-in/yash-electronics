@@ -1,0 +1,364 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { db } from '../../db';
+import { notifications } from '../../db/schema';
+import { eq, and, desc, asc, sql } from 'drizzle-orm';
+import { getSessionUser } from '../../lib/auth';
+
+export const prerender = false;
+
+// Authenticate Admin
+Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+const currentUser = await getSessionUser(Astro.cookies);
+if (!currentUser || currentUser.role !== 'admin') {
+  return Astro.redirect('/admin/login');
+}
+
+let error = '';
+let success = '';
+
+// Handle Actions
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const action = formData.get('formAction')?.toString() || '';
+    const notifId = formData.get('notificationId')?.toString() || '';
+
+    if (action === 'mark_read' && notifId) {
+      await db.update(notifications).set({ isRead: true }).where(eq(notifications.id, notifId));
+      success = 'Notification marked as read.';
+    } else if (action === 'mark_all_read') {
+      await db.update(notifications).set({ isRead: true }).where(eq(notifications.isRead, false));
+      success = 'All notifications marked as read.';
+    } else if (action === 'delete' && notifId) {
+      await db.delete(notifications).where(eq(notifications.id, notifId));
+      success = 'Notification deleted successfully.';
+    } else if (action === 'clear_all') {
+      await db.delete(notifications);
+      success = 'All notification logs cleared.';
+    }
+  } catch (e: any) {
+    error = e.message || 'Action failed.';
+  }
+}
+
+// Fetch Query Parameters
+const typeFilter = Astro.url.searchParams.get('type') || 'all'; // all, order, service, contact
+const statusFilter = Astro.url.searchParams.get('status') || 'all'; // all, read, unread
+const sort = Astro.url.searchParams.get('sort') || 'newest';
+const page = Number(Astro.url.searchParams.get('page') || '1');
+const limit = 15;
+const offset = (page - 1) * limit;
+
+const conditions = [];
+
+if (typeFilter !== 'all') {
+  conditions.push(eq(notifications.type, typeFilter as any));
+}
+
+if (statusFilter !== 'all') {
+  const isReadValue = statusFilter === 'read';
+  conditions.push(eq(notifications.isRead, isReadValue));
+}
+
+const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+const orderByClause = sort === 'oldest' ? [asc(notifications.createdAt)] : [desc(notifications.createdAt)];
+
+let notificationList: any[] = [];
+let totalCount = 0;
+
+try {
+  notificationList = await db
+    .select()
+    .from(notifications)
+    .where(whereClause)
+    .orderBy(...orderByClause)
+    .limit(limit)
+    .offset(offset);
+
+  const [countRes] = await db
+    .select({ count: sql`count(*)` })
+    .from(notifications)
+    .where(whereClause);
+  totalCount = Number(countRes?.count || 0);
+} catch (e) {
+  console.error('[Admin Notifications Page] Failed to fetch notifications:', e);
+}
+
+const totalPages = Math.ceil(totalCount / limit);
+
+// Counts
+let totalCountAll = 0;
+let unreadCountAll = 0;
+let ordersCountAll = 0;
+let servicesCountAll = 0;
+let contactsCountAll = 0;
+
+try {
+  const [allRes] = await db.select({ count: sql`count(*)` }).from(notifications);
+  totalCountAll = Number(allRes?.count || 0);
+
+  const [unreadRes] = await db.select({ count: sql`count(*)` }).from(notifications).where(eq(notifications.isRead, false));
+  unreadCountAll = Number(unreadRes?.count || 0);
+
+  const [ordersRes] = await db.select({ count: sql`count(*)` }).from(notifications).where(eq(notifications.type, 'order'));
+  ordersCountAll = Number(ordersRes?.count || 0);
+
+  const [servicesRes] = await db.select({ count: sql`count(*)` }).from(notifications).where(eq(notifications.type, 'service'));
+  servicesCountAll = Number(servicesRes?.count || 0);
+
+  const [contactsRes] = await db.select({ count: sql`count(*)` }).from(notifications).where(eq(notifications.type, 'contact'));
+  contactsCountAll = Number(contactsRes?.count || 0);
+} catch (e) {
+  console.error('[Admin Notifications Page] Failed to fetch count stats:', e);
+}
+---
+
+<AdminLayout title="System Notifications Log" activeTab="notifications" subtitle="Review and audit client orders, inquiry submissions, and service tickets">
+  
+  {error && (
+    <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md p-3 mb-4">
+      {error}
+    </div>
+  )}
+  {success && (
+    <div class="bg-green-50 border border-green-200 text-green-700 text-sm rounded-md p-3 mb-4">
+      {success}
+    </div>
+  )}
+
+  <!-- Quick Action & Stats Header Cards -->
+  <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
+    <div class="bg-white border border-neutral-200 rounded-lg p-3 text-center shadow-sm">
+      <span class="text-neutral-400 text-xs font-semibold uppercase block mb-1">Total Logs</span>
+      <span class="text-xl font-bold text-neutral-800">{totalCountAll}</span>
+    </div>
+    <div class="bg-white border border-neutral-200 rounded-lg p-3 text-center shadow-sm">
+      <span class="text-neutral-400 text-xs font-semibold uppercase block mb-1">Unread Alerts</span>
+      <span class="text-xl font-bold text-red-600">{unreadCountAll}</span>
+    </div>
+    <div class="bg-white border border-neutral-200 rounded-lg p-3 text-center shadow-sm">
+      <span class="text-neutral-400 text-xs font-semibold uppercase block mb-1">Orders</span>
+      <span class="text-xl font-bold text-emerald-600">{ordersCountAll}</span>
+    </div>
+    <div class="bg-white border border-neutral-200 rounded-lg p-3 text-center shadow-sm">
+      <span class="text-neutral-400 text-xs font-semibold uppercase block mb-1">Services</span>
+      <span class="text-xl font-bold text-amber-600">{servicesCountAll}</span>
+    </div>
+    <div class="bg-white border border-neutral-200 rounded-lg p-3 text-center shadow-sm">
+      <span class="text-neutral-400 text-xs font-semibold uppercase block mb-1">Queries</span>
+      <span class="text-xl font-bold text-blue-600">{contactsCountAll}</span>
+    </div>
+  </div>
+
+  <!-- Filters & Bulk Action Controls -->
+  <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6 bg-white border border-neutral-200 rounded-lg p-4 shadow-sm">
+    <form method="get" class="flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center flex-1">
+      <div>
+        <label class="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Filter Type</label>
+        <select name="type" class="w-full sm:w-auto rounded border border-neutral-300 px-3 py-1.5 text-xs focus:border-primary focus:outline-none cursor-pointer" onchange="this.form.submit()">
+          <option value="all" selected={typeFilter === 'all'}>All Types</option>
+          <option value="order" selected={typeFilter === 'order'}>Orders</option>
+          <option value="service" selected={typeFilter === 'service'}>Service Requests</option>
+          <option value="contact" selected={typeFilter === 'contact'}>Contact Inquiries</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Read Status</label>
+        <select name="status" class="w-full sm:w-auto rounded border border-neutral-300 px-3 py-1.5 text-xs focus:border-primary focus:outline-none cursor-pointer" onchange="this.form.submit()">
+          <option value="all" selected={statusFilter === 'all'}>All Status</option>
+          <option value="unread" selected={statusFilter === 'unread'}>Unread Only</option>
+          <option value="read" selected={statusFilter === 'read'}>Read Only</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-[10px] font-bold text-neutral-500 uppercase mb-1">Sort By</label>
+        <select name="sort" class="w-full sm:w-auto rounded border border-neutral-300 px-3 py-1.5 text-xs focus:border-primary focus:outline-none cursor-pointer" onchange="this.form.submit()">
+          <option value="newest" selected={sort === 'newest'}>Newest First</option>
+          <option value="oldest" selected={sort === 'oldest'}>Oldest First</option>
+        </select>
+      </div>
+      
+      {page > 1 && <input type="hidden" name="page" value={page} />}
+    </form>
+
+    <div class="flex items-center gap-2 border-t lg:border-t-0 pt-3 lg:pt-0 justify-end">
+      {unreadCountAll > 0 && (
+        <form method="post" class="m-0">
+          <input type="hidden" name="formAction" value="mark_all_read" />
+          <button type="submit" class="bg-primary/10 text-primary border border-primary/20 rounded-md px-3 py-1.5 text-xs font-semibold hover:bg-primary/20 transition-all cursor-pointer">
+            Mark All Read
+          </button>
+        </form>
+      )}
+
+      {totalCountAll > 0 && (
+        <form method="post" class="m-0">
+          <input type="hidden" name="formAction" value="clear_all" />
+          <button
+            type="submit"
+            onclick="return confirm('Are you sure you want to delete ALL notification logs permanently?')"
+            class="bg-red-50 text-red-600 border border-red-200 rounded-md px-3 py-1.5 text-xs font-semibold hover:bg-red-100 transition-all cursor-pointer"
+          >
+            Clear All Logs
+          </button>
+        </form>
+      )}
+    </div>
+  </div>
+
+  <!-- Notifications List -->
+  <div class="space-y-3">
+    {notificationList.map((notif) => {
+      const formattedDate = new Date(notif.createdAt).toLocaleString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+
+      let typeLabel = 'Inquiry';
+      let typeBg = 'bg-blue-50 text-blue-700 border-blue-200';
+      let typeIcon = '✉️';
+      let redirectUrl = '/admin/queries';
+
+      if (notif.type === 'order') {
+        typeLabel = 'Order';
+        typeBg = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+        typeIcon = '🛒';
+        redirectUrl = '/admin/orders';
+      } else if (notif.type === 'service') {
+        typeLabel = 'Service Request';
+        typeBg = 'bg-amber-50 text-amber-700 border-amber-200';
+        typeIcon = '🔧';
+        redirectUrl = '/admin/service-requests';
+      }
+
+      return (
+        <div class={`bg-white border border-neutral-200 rounded-lg p-4 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-start md:items-center transition-all ${!notif.isRead ? 'border-l-4 border-l-primary' : ''}`}>
+          <div class="flex gap-3 min-w-0 flex-1">
+            <span class="text-xl self-start mt-0.5">{typeIcon}</span>
+            <div class="min-w-0 pr-4">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class={`rounded px-1.5 py-0.5 text-[9px] font-bold uppercase border ${typeBg}`}>
+                  {typeLabel}
+                </span>
+                {!notif.isRead && (
+                  <span class="rounded bg-red-100 text-red-800 border border-red-200 px-1.5 py-0.5 text-[9px] font-bold uppercase">
+                    New
+                  </span>
+                )}
+                <span class="text-[10px] text-neutral-400 font-semibold">{formattedDate}</span>
+              </div>
+              <h4 class="text-sm font-bold text-neutral-900 mt-1">{notif.title}</h4>
+              <p class="text-xs text-neutral-600 mt-0.5 leading-relaxed">{notif.message}</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 self-end md:self-center shrink-0">
+            <a href={redirectUrl} class="bg-neutral-800 hover:bg-neutral-900 text-white rounded px-3 py-1.5 text-xs font-semibold transition-colors text-center block">
+              Open Details
+            </a>
+
+            {!notif.isRead && (
+              <form method="post" class="m-0">
+                <input type="hidden" name="formAction" value="mark_read" />
+                <input type="hidden" name="notificationId" value={notif.id} />
+                <button type="submit" class="border border-neutral-200 hover:bg-neutral-50 rounded px-3 py-1.5 text-xs font-semibold transition-colors">
+                  Mark Read
+                </button>
+              </form>
+            )}
+
+            <form method="post" class="m-0">
+              <input type="hidden" name="formAction" value="delete" />
+              <input type="hidden" name="notificationId" value={notif.id} />
+              <button
+                type="submit"
+                onclick="return confirm('Are you sure you want to delete this notification log?')"
+                class="text-neutral-400 hover:text-red-600 p-1.5 transition-colors focus:outline-none cursor-pointer"
+                title="Delete notification log"
+              >
+                🗑️
+              </button>
+            </form>
+          </div>
+        </div>
+      );
+    })}
+
+    {notificationList.length === 0 && (
+      <div class="bg-white border border-neutral-200 rounded-lg p-12 text-center shadow-sm">
+        <span class="text-3xl mb-3 block">🔕</span>
+        <p class="text-sm text-neutral-500 font-medium">No system notifications matching the filters.</p>
+      </div>
+    )}
+  </div>
+
+  <!-- Pagination Controls -->
+  {totalPages > 1 && (
+    <div class="flex items-center justify-between border-t border-neutral-200 bg-white px-4 py-3 sm:px-6 rounded-lg shadow-sm mt-6">
+      <div class="flex flex-1 justify-between sm:hidden">
+        <a
+          href={page > 1 ? `?page=${page - 1}&type=${typeFilter}&status=${statusFilter}&sort=${sort}` : '#'}
+          class={`relative inline-flex items-center rounded-md border border-neutral-300 bg-white px-4 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-50 ${page <= 1 ? 'pointer-events-none opacity-50' : ''}`}
+        >
+          Previous
+        </a>
+        <a
+          href={page < totalPages ? `?page=${page + 1}&type=${typeFilter}&status=${statusFilter}&sort=${sort}` : '#'}
+          class={`relative ml-3 inline-flex items-center rounded-md border border-neutral-300 bg-white px-4 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-50 ${page >= totalPages ? 'pointer-events-none opacity-50' : ''}`}
+        >
+          Next
+        </a>
+      </div>
+      <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+        <div>
+          <p class="text-xs text-neutral-700">
+            Showing
+            <span class="font-semibold">{Math.min(offset + 1, totalCount)}</span>
+            to
+            <span class="font-semibold">{Math.min(offset + limit, totalCount)}</span>
+            of
+            <span class="font-semibold">{totalCount}</span>
+            results
+          </p>
+        </div>
+        <div>
+          <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+            <a
+              href={page > 1 ? `?page=${page - 1}&type=${typeFilter}&status=${statusFilter}&sort=${sort}` : '#'}
+              class={`relative inline-flex items-center rounded-l-md px-2 py-2 text-neutral-400 ring-1 ring-inset ring-neutral-300 hover:bg-neutral-50 focus:z-20 focus:outline-offset-0 ${page <= 1 ? 'pointer-events-none opacity-50' : ''}`}
+            >
+              <span class="sr-only">Previous</span>
+              <span>◀</span>
+            </a>
+            {Array.from({ length: totalPages }).map((_, idx) => {
+              const pNum = idx + 1;
+              const isCurrent = pNum === page;
+              return (
+                <a
+                  href={`?page=${pNum}&type=${typeFilter}&status=${statusFilter}&sort=${sort}`}
+                  aria-current={isCurrent ? "page" : undefined}
+                  class={`relative inline-flex items-center px-3 py-2 text-xs font-semibold ${isCurrent ? 'z-10 bg-primary text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary' : 'text-neutral-900 ring-1 ring-inset ring-neutral-300 hover:bg-neutral-50 focus:z-20 focus:outline-offset-0'}`}
+                >
+                  {pNum}
+                </a>
+              );
+            })}
+            <a
+              href={page < totalPages ? `?page=${page + 1}&type=${typeFilter}&status=${statusFilter}&sort=${sort}` : '#'}
+              class={`relative inline-flex items-center rounded-r-md px-2 py-2 text-neutral-400 ring-1 ring-inset ring-neutral-300 hover:bg-neutral-50 focus:z-20 focus:outline-offset-0 ${page >= totalPages ? 'pointer-events-none opacity-50' : ''}`}
+            >
+              <span class="sr-only">Next</span>
+              <span>▶</span>
+            </a>
+          </nav>
+        </div>
+      </div>
+    </div>
+  )}
+</AdminLayout>

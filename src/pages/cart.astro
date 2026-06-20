@@ -2,13 +2,14 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Container from '../components/ui/Container.astro';
 import { db } from '../db';
-import { products, orders, orderItems, users, offers } from '../db/schema';
+import { products, orders, orderItems, users, offers, notifications } from '../db/schema';
 import { eq, inArray, and } from 'drizzle-orm';
 import { getSessionUser, generateId } from '../lib/auth';
 import { getLocalizedPath } from '../lib/translations';
 import { getSettings } from '../services/cms';
 import { translateObject } from '../lib/translations';
 import { cloudinaryConfig } from '../config/cloudinary';
+import { triggerPushNotification } from '../services/push';
 
 export const prerender = false;
 
@@ -164,6 +165,26 @@ if (Astro.request.method === 'POST') {
             .update(users)
             .set({ credits: currentUser.credits - creditsToUse })
             .where(eq(users.id, currentUser.id));
+        }
+
+        // 7. Track notification and dispatch web push
+        try {
+          await db.insert(notifications).values({
+            id: generateId(),
+            type: 'order',
+            title: 'New Order Placed',
+            message: `Order placed by ${customerName} (Total: ₹${totalAmount.toLocaleString('en-IN')})`,
+            referenceId: newOrderId,
+            isRead: false,
+            createdAt: new Date().toISOString(),
+          });
+          triggerPushNotification(
+            'New Order Placed',
+            `Order placed by ${customerName} (Total: ₹${totalAmount.toLocaleString('en-IN')})`,
+            '/admin/orders'
+          );
+        } catch (notifErr) {
+          console.error('[Order Notification Error]:', notifErr);
         }
 
         return Astro.redirect(Astro.url.pathname + '?successOrderId=' + encodeURIComponent(newOrderId));

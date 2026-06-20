@@ -60,3 +60,58 @@ self.addEventListener('fetch', (e) => {
       })
   );
 });
+
+// Push Event Listener (Wakes up service worker even when browser is closed)
+self.addEventListener('push', (e) => {
+  let data = { title: 'New Notification', body: 'Something happened on Yash Electronics.' };
+  
+  if (e.data) {
+    try {
+      data = e.data.json();
+    } catch (err) {
+      data = { title: 'New Notification', body: e.data.text() };
+    }
+  }
+
+  const options = {
+    body: data.body,
+    icon: '/icon-192.png',
+    badge: '/favicon.svg',
+    vibrate: [100, 50, 100],
+    data: {
+      url: data.url || '/admin'
+    },
+    tag: 'ye-push-notification',
+    renotify: true,
+    actions: [
+      { action: 'open', title: 'Open Admin' }
+    ]
+  };
+
+  e.waitUntil(
+    self.registration.showNotification(data.title, options)
+  );
+});
+
+// Notification Click Listener (Handles clicks on the push notifications)
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  
+  const targetUrl = new URL(e.notification.data?.url || '/admin', self.location.origin).toString();
+
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      // If a window is already open with the target URL, focus it
+      for (let client of windowClients) {
+        if (client.url === targetUrl && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      
+      // Otherwise, open a new window
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
+    })
+  );
+});

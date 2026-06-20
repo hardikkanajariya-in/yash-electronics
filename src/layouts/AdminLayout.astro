@@ -20,6 +20,8 @@ if (!currentUser || currentUser.role !== 'admin') {
   return Astro.redirect('/admin/login');
 }
 
+const vapidPublicKey = import.meta.env.PUBLIC_VAPID_PUBLIC_KEY || '';
+
 const dbSettingsList = await db.select().from(settings);
 const currentSettings: Record<string, string> = {};
 dbSettingsList.forEach(s => {
@@ -38,7 +40,7 @@ if (logoUrl) {
   }
 }
 
-// Side navigation links (15 items)
+// Side navigation links (16 items)
 const menuItems = [
   { path: '/admin', label: 'Overview', icon: 'home', key: 'overview' },
   { path: '/admin/products', label: 'Products', icon: 'box', key: 'products' },
@@ -49,6 +51,7 @@ const menuItems = [
   { path: '/admin/customers', label: 'Customers', icon: 'users', key: 'customers' },
   { path: '/admin/queries', label: 'Queries', icon: 'mail', key: 'queries' },
   { path: '/admin/service-requests', label: 'Service Requests', icon: 'tool', key: 'service-requests' },
+  { path: '/admin/notifications', label: 'Notifications', icon: 'bell', key: 'notifications' },
   { path: '/admin/team', label: 'Team', icon: 'shield', key: 'team' },
   { path: '/admin/services', label: 'Services', icon: 'briefcase', key: 'services' },
   { path: '/admin/about', label: 'About Info', icon: 'info', key: 'about' },
@@ -72,6 +75,7 @@ const drawerNavItems = [
   { path: '/admin/offers', label: 'Offers', icon: 'tag', key: 'offers' },
   { path: '/admin/queries', label: 'Queries', icon: 'mail', key: 'queries' },
   { path: '/admin/service-requests', label: 'Service Requests', icon: 'tool', key: 'service-requests' },
+  { path: '/admin/notifications', label: 'Notifications', icon: 'bell', key: 'notifications' },
   { path: '/admin/team', label: 'Team', icon: 'shield', key: 'team' },
   { path: '/admin/services', label: 'Services', icon: 'briefcase', key: 'services' },
   { path: '/admin/about', label: 'About Info', icon: 'info', key: 'about' },
@@ -177,6 +181,9 @@ const drawerNavItems = [
                 {item.icon === 'settings' && (
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                 )}
+                {item.icon === 'bell' && (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                )}
               </span>
               <span>{item.label}</span>
             </a>
@@ -217,6 +224,64 @@ const drawerNavItems = [
         </div>
 
         <div class="flex items-center gap-2">
+          <!-- Notification Bell Component -->
+          <div class="relative mr-1" id="admin-notification-container">
+            <button
+              id="admin-notification-bell"
+              class="relative p-2 rounded-full text-neutral-600 hover:text-primary hover:bg-neutral-100 transition-all cursor-pointer outline-none"
+              aria-label="View notifications"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+              <!-- Unread badge -->
+              <span
+                id="admin-notification-badge"
+                class="absolute top-1.5 right-1.5 h-4 w-4 bg-red-500 text-[10px] font-bold text-white rounded-full flex items-center justify-center border border-white scale-0 transition-transform duration-300"
+              >
+                0
+              </span>
+            </button>
+
+            <!-- Dropdown Menu -->
+            <div
+              id="admin-notification-dropdown"
+              class="absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-neutral-200 rounded-xl shadow-xl z-50 pointer-events-none opacity-0 scale-95 origin-top-right transition-all duration-200"
+            >
+              <!-- Header -->
+              <div class="flex items-center justify-between px-4 py-3 border-b border-neutral-100 bg-neutral-50/50 rounded-t-xl">
+                <h3 class="text-xs font-bold text-neutral-800">Recent Notifications</h3>
+                <button
+                  id="admin-notification-mark-all"
+                  class="text-[10px] font-bold text-primary hover:underline cursor-pointer focus:outline-none"
+                >
+                  Mark all as read
+                </button>
+              </div>
+
+              <!-- Notification List -->
+              <div
+                id="admin-notification-list"
+                class="max-h-72 overflow-y-auto divide-y divide-neutral-100 custom-scrollbar"
+              >
+                <div class="text-center py-8 text-neutral-400 text-xs">
+                  No new notifications
+                </div>
+              </div>
+
+              <!-- Footer -->
+              <div class="px-4 py-2 border-t border-neutral-100 text-center bg-neutral-50/30 rounded-b-xl">
+                <a
+                  href="/admin/notifications"
+                  class="text-[10px] font-bold text-neutral-600 hover:text-primary hover:underline block py-1"
+                >
+                  View All Notifications Log
+                </a>
+              </div>
+            </div>
+          </div>
+
           <!-- PWA Install Button (Admin top bar) -->
           <button
             id="pwa-install-header-btn"
@@ -246,6 +311,31 @@ const drawerNavItems = [
           </a>
         </div>
       </header>
+
+      <!-- PWA/Browser Push Permission Request Banner -->
+      <div
+        id="push-permission-banner"
+        class="hidden bg-primary/5 border-b border-primary/10 px-4 py-3 sm:px-6 flex items-center justify-between gap-3 text-xs"
+      >
+        <div class="flex items-center gap-2 text-primary font-medium">
+          <span>🔔</span>
+          <span>Enable real-time push alerts to receive orders and requests even when this browser tab is closed.</span>
+        </div>
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <button
+            id="push-permission-btn"
+            class="bg-primary hover:bg-primary-700 text-white font-bold px-3 py-1.5 rounded-md transition-all cursor-pointer text-[11px]"
+          >
+            Enable Push
+          </button>
+          <button
+            id="push-permission-dismiss"
+            class="text-neutral-400 hover:text-neutral-600 px-2 py-1 transition-all cursor-pointer font-bold"
+          >
+            ✕
+          </button>
+        </div>
+      </div>
 
       <!-- MAIN PAGE CONTENT CONTAINER -->
       <main class="flex-1 overflow-y-auto px-4 py-6 sm:px-6 md:py-8">
@@ -345,6 +435,9 @@ const drawerNavItems = [
                     {item.icon === 'tool' && (
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
                     )}
+                    {item.icon === 'bell' && (
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                    )}
                     {item.icon === 'shield' && (
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><path d="M20 13c0 5-3.5 7.5-7.66 9.7a1 1 0 0 1-.68 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 .76-.97l8-2a1 1 0 0 1 .48 0l8 2A1 1 0 0 1 20 6v7z"/></svg>
                     )}
@@ -382,7 +475,332 @@ const drawerNavItems = [
         </div>
       </div>
   </div>
+
+  <!-- On-Screen Animated Toast Overlay -->
+  <div id="admin-toast-container" class="fixed top-20 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
 </BaseLayout>
+
+<!-- Client script for VAPID push subscriptions, chime sound, on-screen toasts, and polling -->
+<script is:inline define:vars={{ vapidPublicKey }}>
+  (function() {
+    function urlBase64ToUint8Array(base64String) {
+      const padding = '='.repeat((4 - base64String.length % 4) % 4);
+      const base64 = (base64String + padding)
+        .replace(/\-/g, '+')
+        .replace(/_/g, '/');
+
+      const rawData = window.atob(base64);
+      const outputArray = new Uint8Array(rawData.length);
+
+      for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+      }
+      return outputArray;
+    }
+
+    function playChime() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Chime pitch 1
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.connect(gain1);
+        gain1.connect(ctx.destination);
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+        gain1.gain.setValueAtTime(0, ctx.currentTime);
+        gain1.gain.linearRampToValueAtTime(0.15, ctx.currentTime + 0.05);
+        gain1.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+        osc1.start(ctx.currentTime);
+        osc1.stop(ctx.currentTime + 0.3);
+
+        // Chime pitch 2
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1); // E5
+        gain2.gain.setValueAtTime(0, ctx.currentTime + 0.1);
+        gain2.gain.linearRampToValueAtTime(0.15, ctx.currentTime + 0.15);
+        gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+        osc2.start(ctx.currentTime + 0.1);
+        osc2.stop(ctx.currentTime + 0.4);
+      } catch (e) {
+        console.warn('AudioContext failed:', e);
+      }
+    }
+
+    function showToast(title, message, url) {
+      const container = document.getElementById('admin-toast-container');
+      if (!container) return;
+
+      const toast = document.createElement('div');
+      toast.className = "bg-neutral-900 border border-neutral-800 text-white rounded-xl p-4 shadow-2xl flex flex-col gap-1 w-full pointer-events-auto transform translate-y-2 opacity-0 transition-all duration-300 relative";
+      
+      toast.innerHTML = `
+        <div class="flex justify-between items-start gap-2">
+          <p class="text-xs font-bold text-emerald-400">🔔 ${title}</p>
+          <button class="text-neutral-400 hover:text-white font-bold text-xs focus:outline-none cursor-pointer">✕</button>
+        </div>
+        <p class="text-[11px] text-neutral-300 leading-tight pr-4">${message}</p>
+        <a href="${url}" class="text-[10px] text-primary hover:underline font-bold mt-1 inline-block self-start">Open Details →</a>
+      `;
+
+      const closeBtn = toast.querySelector('button');
+      closeBtn.addEventListener('click', () => {
+        toast.classList.add('opacity-0', 'scale-90');
+        setTimeout(() => toast.remove(), 300);
+      });
+
+      container.appendChild(toast);
+
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        if (toast.parentNode) {
+          toast.classList.add('opacity-0', 'translate-y-[-8px]');
+          setTimeout(() => toast.remove(), 300);
+        }
+      }, 6000);
+    }
+
+    async function subscribeToPush() {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        return;
+      }
+      if (!vapidPublicKey) {
+        return;
+      }
+
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        const subscription = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+        });
+
+        await fetch('/api/admin/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscription })
+        });
+
+        const banner = document.getElementById('push-permission-banner');
+        if (banner) banner.classList.add('hidden');
+        localStorage.setItem('ye_push_subscribed', 'true');
+      } catch (e) {
+        console.error('Push registration failed:', e);
+      }
+    }
+
+    function initPermissionBanner() {
+      const banner = document.getElementById('push-permission-banner');
+      const btn = document.getElementById('push-permission-btn');
+      const dismiss = document.getElementById('push-permission-dismiss');
+
+      if (!banner) return;
+
+      const dismissed = sessionStorage.getItem('push_banner_dismissed') === 'true';
+      const alreadySubscribed = localStorage.getItem('ye_push_subscribed') === 'true';
+
+      if (Notification.permission === 'default' && !dismissed && !alreadySubscribed) {
+        banner.classList.remove('hidden');
+      }
+
+      if (btn) {
+        btn.addEventListener('click', async () => {
+          const permission = await Notification.requestPermission();
+          if (permission === 'granted') {
+            await subscribeToPush();
+          } else {
+            banner.classList.add('hidden');
+          }
+        });
+      }
+
+      if (dismiss) {
+        dismiss.addEventListener('click', () => {
+          banner.classList.add('hidden');
+          sessionStorage.setItem('push_banner_dismissed', 'true');
+        });
+      }
+    }
+
+    let knownNotificationIds = new Set();
+    let isFirstLoad = true;
+
+    async function fetchNotifications() {
+      try {
+        const res = await fetch('/api/admin/notifications');
+        if (!res.ok) return;
+
+        const data = await res.json();
+        const unreadCount = data.unreadCount || 0;
+        const list = data.notifications || [];
+
+        // Update badge
+        const badge = document.getElementById('admin-notification-badge');
+        if (badge) {
+          badge.textContent = unreadCount;
+          if (unreadCount > 0) {
+            badge.classList.remove('scale-0');
+            badge.classList.add('scale-100');
+          } else {
+            badge.classList.remove('scale-100');
+            badge.classList.add('scale-0');
+          }
+        }
+
+        // Detect new items
+        let hasNew = false;
+        list.forEach(notif => {
+          if (!knownNotificationIds.has(notif.id)) {
+            knownNotificationIds.add(notif.id);
+            if (!isFirstLoad) {
+              hasNew = true;
+              showToast(notif.title, notif.message, getRedirectUrl(notif.type));
+              if (Notification.permission === 'granted') {
+                new Notification(notif.title, {
+                  body: notif.message,
+                  icon: '/icon-192.png'
+                });
+              }
+            }
+          }
+        });
+
+        if (hasNew && !isFirstLoad) {
+          playChime();
+        }
+
+        isFirstLoad = false;
+
+        // Render list
+        const listContainer = document.getElementById('admin-notification-list');
+        if (!listContainer) return;
+
+        if (list.length === 0) {
+          listContainer.innerHTML = `
+            <div class="text-center py-8 text-neutral-400 text-xs">
+              No new notifications
+            </div>
+          `;
+          return;
+        }
+
+        function getRedirectUrl(type) {
+          if (type === 'order') return '/admin/orders';
+          if (type === 'service') return '/admin/service-requests';
+          return '/admin/queries';
+        }
+
+        function getIconHtml(type) {
+          if (type === 'order') {
+            return `<span class="h-8 w-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm">🛒</span>`;
+          }
+          if (type === 'service') {
+            return `<span class="h-8 w-8 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center text-xs">🔧</span>`;
+          }
+          return `<span class="h-8 w-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-sm">✉️</span>`;
+        }
+
+        function formatTime(dateStr) {
+          const d = new Date(dateStr);
+          const now = new Date();
+          const diffMs = now - d;
+          const diffMins = Math.floor(diffMs / 60000);
+          if (diffMins < 1) return 'Just now';
+          if (diffMins < 60) return `${diffMins}m ago`;
+          const diffHrs = Math.floor(diffMins / 60);
+          if (diffHrs < 24) return `${diffHrs}h ago`;
+          return d.toLocaleDateString();
+        }
+
+        listContainer.innerHTML = list.map(notif => `
+          <a
+            href="${getRedirectUrl(notif.type)}"
+            class="flex items-start gap-3 p-3 text-xs hover:bg-neutral-50 border-b border-neutral-100 transition-colors ${!notif.isRead ? 'bg-neutral-50/50' : ''}"
+            onclick="markAsRead('${notif.id}')"
+          >
+            ${getIconHtml(notif.type)}
+            <div class="flex-1 min-w-0 pr-2">
+              <div class="flex items-center justify-between gap-2">
+                <p class="font-bold text-neutral-800 truncate">${notif.title}</p>
+                <span class="text-[9px] text-neutral-400 font-semibold whitespace-nowrap">${formatTime(notif.createdAt)}</span>
+              </div>
+              <p class="text-neutral-500 text-[11px] leading-snug mt-0.5">${notif.message}</p>
+            </div>
+            ${!notif.isRead ? `<span class="h-2 w-2 rounded-full bg-primary mt-1.5 shrink-0 animate-pulse"></span>` : ''}
+          </a>
+        `).join('');
+
+      } catch (e) {
+        console.error('Error fetching notifications:', e);
+      }
+    }
+
+    window.markAsRead = async function(id) {
+      try {
+        await fetch('/api/admin/notifications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id })
+        });
+      } catch (e) {
+        console.error('Error marking read:', e);
+      }
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const bell = document.getElementById('admin-notification-bell');
+      const dropdown = document.getElementById('admin-notification-dropdown');
+      const container = document.getElementById('admin-notification-container');
+      const markAll = document.getElementById('admin-notification-mark-all');
+
+      if (bell && dropdown) {
+        bell.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const isOpened = !dropdown.classList.contains('pointer-events-none');
+          if (isOpened) {
+            dropdown.classList.add('pointer-events-none', 'opacity-0', 'scale-95');
+          } else {
+            dropdown.classList.remove('pointer-events-none', 'opacity-0', 'scale-95');
+            fetchNotifications();
+          }
+        });
+
+        document.addEventListener('click', (e) => {
+          if (container && !container.contains(e.target)) {
+            dropdown.classList.add('pointer-events-none', 'opacity-0', 'scale-95');
+          }
+        });
+      }
+
+      if (markAll) {
+        markAll.addEventListener('click', async () => {
+          try {
+            await fetch('/api/admin/notifications', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ all: true })
+            });
+            fetchNotifications();
+          } catch (e) {
+            console.error('Error marking all read:', e);
+          }
+        });
+      }
+
+      initPermissionBanner();
+      fetchNotifications();
+      setInterval(fetchNotifications, 15000);
+    });
+  })();
+</script>
 
 <script is:inline>
   document.addEventListener('DOMContentLoaded', () => {

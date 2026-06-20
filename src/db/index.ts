@@ -20,7 +20,7 @@ export const pool = new pg.Pool({
   connectionTimeoutMillis: 10_000,
 });
 
-// Self-healing migration for service_requests, orders and reviews tables
+// Self-healing migration for service_requests, orders, reviews and notifications tables
 pool.query(`
   CREATE TABLE IF NOT EXISTS reviews (
     id VARCHAR(255) PRIMARY KEY,
@@ -30,6 +30,23 @@ pool.query(`
     rating INTEGER NOT NULL,
     comment TEXT NOT NULL,
     purchase_source TEXT NOT NULL DEFAULT 'online',
+    created_at TEXT NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS notifications (
+    id VARCHAR(255) PRIMARY KEY,
+    type TEXT NOT NULL,
+    title TEXT NOT NULL,
+    message TEXT NOT NULL,
+    reference_id TEXT NOT NULL,
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TEXT NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS push_subscriptions (
+    id VARCHAR(255) PRIMARY KEY,
+    user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE,
+    endpoint TEXT NOT NULL UNIQUE,
+    p256dh TEXT NOT NULL,
+    auth TEXT NOT NULL,
     created_at TEXT NOT NULL
   );
   ALTER TABLE service_requests ALTER COLUMN user_id DROP NOT NULL;

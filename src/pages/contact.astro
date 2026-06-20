@@ -4,8 +4,9 @@ import ContactSection from '../components/home/ContactSection.astro';
 import { getSettings } from '../services/cms';
 import { translateObject, t } from '../lib/translations';
 import { db } from '../db';
-import { contactQueries } from '../db/schema';
+import { contactQueries, notifications } from '../db/schema';
 import { generateId } from '../lib/auth';
+import { triggerPushNotification } from '../services/push';
 
 export const prerender = false;
 
@@ -27,8 +28,9 @@ if (Astro.request.method === 'POST') {
     if (!name || !phone || !message) {
       error = locale === 'en' ? 'Please fill in all required fields.' : 'કૃપા કરીને બધી જરૂરી વિગતો ભરો.';
     } else {
+      const queryId = generateId();
       await db.insert(contactQueries).values({
-        id: generateId(),
+        id: queryId,
         name,
         phone,
         email: email || null,
@@ -36,6 +38,27 @@ if (Astro.request.method === 'POST') {
         status: 'unread',
         createdAt: new Date().toISOString(),
       });
+
+      // Track notification and dispatch web push
+      try {
+        await db.insert(notifications).values({
+          id: generateId(),
+          type: 'contact',
+          title: 'New Contact Request',
+          message: `Inquiry from ${name} (${phone})`,
+          referenceId: queryId,
+          isRead: false,
+          createdAt: new Date().toISOString(),
+        });
+        triggerPushNotification(
+          'New Contact Request',
+          `Inquiry from ${name} (${phone})`,
+          '/admin/queries'
+        );
+      } catch (notifErr) {
+        console.error('[Contact Notification Error]:', notifErr);
+      }
+
       return Astro.redirect(Astro.url.pathname + '?success=true');
     }
   } catch (e) {
