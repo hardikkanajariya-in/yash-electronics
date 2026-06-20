@@ -285,14 +285,16 @@ const categories = translateObject(rawCategories, locale);
           e.preventDefault();
           deferredPrompt = e;
 
+          const isDesktop = window.matchMedia('(min-width: 768px)').matches;
+
           // 1. Show the header top bar button (desktop only)
-          if (pwaHeaderBtn) {
+          if (pwaHeaderBtn && isDesktop) {
             pwaHeaderBtn.classList.remove('hidden');
-            pwaHeaderBtn.classList.add('md:inline-flex');
+            pwaHeaderBtn.classList.add('flex');
           }
 
           // 2. Show the mobile drawer button (mobile only)
-          if (pwaMobileBtn) {
+          if (pwaMobileBtn && !isDesktop) {
             pwaMobileBtn.classList.remove('hidden');
             pwaMobileBtn.classList.add('flex');
           }
@@ -319,7 +321,7 @@ const categories = translateObject(rawCategories, locale);
           hidePwaBanner();
           if (pwaHeaderBtn) {
             pwaHeaderBtn.classList.add('hidden');
-            pwaHeaderBtn.classList.remove('md:inline-flex');
+            pwaHeaderBtn.classList.remove('flex');
           }
           if (pwaMobileBtn) {
             pwaMobileBtn.classList.add('hidden');
@@ -355,7 +357,7 @@ const categories = translateObject(rawCategories, locale);
           hidePwaBanner();
           if (pwaHeaderBtn) {
             pwaHeaderBtn.classList.add('hidden');
-            pwaHeaderBtn.classList.remove('md:inline-flex');
+            pwaHeaderBtn.classList.remove('flex');
           }
           if (pwaMobileBtn) {
             pwaMobileBtn.classList.add('hidden');
