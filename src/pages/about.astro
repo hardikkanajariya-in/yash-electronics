@@ -42,7 +42,7 @@ const serviceStaff = allMembers.filter(m => m.role === 'service_staff');
   canonicalUrl="/about"
 >
   <!-- Hero Section -->
-  <section class="relative bg-gradient-to-br from-neutral-950 via-slate-900 to-neutral-950 text-white overflow-hidden py-20 md:py-28 border-b border-primary-950">
+  <section class="relative bg-[#0E1012] bg-gradient-to-br from-[#0E1012] via-[#0f172a] to-[#0E1012] text-white overflow-hidden py-20 md:py-28 border-b border-[#060F1E]">
     <div class="absolute inset-0 overflow-hidden pointer-events-none opacity-40">
       <!-- Decorative radial gradient glow -->
       <div class="absolute top-1/2 left-1/4 -translate-y-1/2 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[140px] animate-pulse"></div>
@@ -164,274 +164,308 @@ const serviceStaff = allMembers.filter(m => m.role === 'service_staff');
   </section>
 
   <!-- Leadership Section -->
-  <section class="py-20 bg-neutral-50 relative">
-    <Container class="max-w-6xl">
+  <section class="py-24 bg-[#0E1012] bg-gradient-to-b from-[#0E1012] via-[#0f172a] to-[#0E1012] text-white relative overflow-hidden border-b border-white/[0.05]">
+    <!-- Decorative background elements -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none opacity-40">
+      <div class="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-primary/20 rounded-full blur-[140px] animate-pulse"></div>
+      <div class="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-secondary/10 rounded-full blur-[120px] animate-pulse" style="animation-delay: 2.5s;"></div>
+      <div class="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)]"></div>
+    </div>
+    <Container class="max-w-6xl relative z-10">
       <div class="text-center mb-16">
-        <span class="text-secondary text-xs font-bold uppercase tracking-[0.2em] block mb-2">{t('about.leadershipTitle', locale)}</span>
-        <h2 class="font-display text-3xl md:text-4xl font-extrabold text-neutral-900 tracking-tight">
+        <span class="text-secondary-400 text-xs font-bold uppercase tracking-[0.25em] block mb-3 drop-shadow-sm">{t('about.leadershipTitle', locale)}</span>
+        <h2 class="font-display text-3xl md:text-5xl font-black text-white tracking-tight drop-shadow-md">
           {locale === 'gu' ? 'અમારા નેતાઓ' : 'Meet Our Leadership'}
         </h2>
-        <div class="w-12 h-1 bg-secondary mx-auto mt-4 rounded-full"></div>
+        <div class="w-16 h-1 bg-gradient-to-r from-primary to-secondary mx-auto mt-5 rounded-full shadow-sm"></div>
       </div>
 
       <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 justify-center">
-        <!-- Founder -->
-        {founder && (
-          <div class="bg-white rounded-2xl border border-neutral-200/80 shadow-md hover:shadow-xl hover:border-primary/30 transition-all duration-300 flex flex-col overflow-hidden group">
-            <div class="relative aspect-[3/4] bg-neutral-50 overflow-hidden border-b border-neutral-100 flex items-center justify-center">
-              {founder.photo ? (
-                <CloudinaryImage
-                  src={founder.photo}
-                  alt={founder.name}
-                  width={400}
-                  height={533}
-                  crop="limit"
-                  class="h-full w-full object-contain p-2 group-hover:scale-102 transition-transform duration-500"
-                />
-              ) : (
-                <span class="text-7xl opacity-20">👤</span>
-              )}
-              <div class="absolute top-4 left-4 z-10">
-                <span class="bg-gradient-to-r from-primary to-primary-700 text-white text-[10px] font-bold uppercase tracking-wider px-3.5 py-1.5 rounded-full shadow-sm">
-                  {t('about.founder', locale)}
-                </span>
-              </div>
-            </div>
-            <div class="p-6 flex-1 flex flex-col">
-              <h3 class="font-display text-xl font-bold text-neutral-900 tracking-tight group-hover:text-primary transition-colors">{founder.name}</h3>
-              <div class="w-10 h-0.5 bg-primary/30 my-3 rounded-full"></div>
-              {founder.description && (
-                <p class="text-sm text-neutral-600 leading-relaxed font-normal flex-grow">{founder.description}</p>
-              )}
-            </div>
-          </div>
-        )}
+        {(() => {
+          // Sort aboutPeople by sortOrder
+          const sortedPeople = [...aboutPeople].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+          return sortedPeople.map((person) => {
+            let roleLabel = '';
+            let roleColorClass = '';
+            if (person.role === 'founder') {
+              roleLabel = t('about.founder', locale);
+              roleColorClass = 'from-primary-500 to-primary-700';
+            } else if (person.role === 'owner') {
+              roleLabel = t('about.owner', locale);
+              roleColorClass = 'from-secondary-500 to-secondary-700';
+            } else {
+              roleLabel = t('about.nextGen', locale);
+              roleColorClass = 'from-accent-500 to-accent-700';
+            }
 
-        <!-- Owner -->
-        {owner && (
-          <div class="bg-white rounded-2xl border border-neutral-200/80 shadow-md hover:shadow-xl hover:border-secondary/30 transition-all duration-300 flex flex-col overflow-hidden group">
-            <div class="relative aspect-[3/4] bg-neutral-50 overflow-hidden border-b border-neutral-100 flex items-center justify-center">
-              {owner.photo ? (
-                <CloudinaryImage
-                  src={owner.photo}
-                  alt={owner.name}
-                  width={400}
-                  height={533}
-                  crop="limit"
-                  class="h-full w-full object-contain p-2 group-hover:scale-102 transition-transform duration-500"
-                />
-              ) : (
-                <span class="text-7xl opacity-20">👤</span>
-              )}
-              <div class="absolute top-4 left-4 z-10">
-                <span class="bg-gradient-to-r from-secondary to-secondary-700 text-white text-[10px] font-bold uppercase tracking-wider px-3.5 py-1.5 rounded-full shadow-sm">
-                  {t('about.owner', locale)}
-                </span>
+            return (
+              <div class="bg-gradient-to-b from-white/[0.03] to-white/[0.01] backdrop-blur-lg rounded-3xl border border-white/[0.08] hover:border-white/[0.18] shadow-2xl hover:shadow-[0_30px_60px_rgba(0,0,0,0.4),0_0_40px_rgba(27,58,107,0.15)] hover:-translate-y-3 transition-all duration-500 flex flex-col overflow-hidden group">
+                <div class="relative aspect-[4/5] bg-neutral-950/20 overflow-hidden flex items-center justify-center p-3">
+                  <div class="w-full h-full rounded-2xl overflow-hidden relative group-hover:shadow-lg transition-all duration-500">
+                    {person.photo ? (
+                      <CloudinaryImage
+                        src={person.photo}
+                        alt={person.name}
+                        width={400}
+                        height={500}
+                        crop="fill"
+                        class="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                      />
+                    ) : (
+                      <div class="w-full h-full bg-neutral-900/60 flex items-center justify-center">
+                        <span class="text-7xl opacity-20">👤</span>
+                      </div>
+                    )}
+                    <!-- Ambient overlay on image -->
+                    <div class="absolute inset-0 bg-gradient-to-t from-neutral-950/80 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-500"></div>
+                    
+                    <div class="absolute top-3 left-3 z-10">
+                      <span class={`bg-gradient-to-r ${roleColorClass} text-white text-[9px] font-extrabold uppercase tracking-widest px-3.5 py-1.5 rounded-full shadow-lg backdrop-blur-md`}>
+                        {roleLabel}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div class="p-6 pt-2 flex-1 flex flex-col relative">
+                  <!-- Subtle glow separator -->
+                  <div class="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+                  
+                  <div class="space-y-1 mt-4">
+                    <h3 class="font-display text-xl font-extrabold text-white tracking-tight group-hover:text-primary-300 transition-colors duration-300">
+                      {person.name}
+                    </h3>
+                  </div>
+                  <div class="w-12 h-0.5 bg-gradient-to-r from-primary to-secondary my-4 rounded-full"></div>
+                  {person.description && (
+                    <p class="text-sm text-neutral-300 leading-relaxed font-light flex-grow">
+                      {person.description}
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
-            <div class="p-6 flex-1 flex flex-col">
-              <h3 class="font-display text-xl font-bold text-neutral-900 tracking-tight group-hover:text-secondary transition-colors">{owner.name}</h3>
-              <div class="w-10 h-0.5 bg-secondary/30 my-3 rounded-full"></div>
-              {owner.description && (
-                <p class="text-sm text-neutral-600 leading-relaxed font-normal flex-grow">{owner.description}</p>
-              )}
-            </div>
-          </div>
-        )}
-
-        <!-- Next Gen -->
-        {nextGen && (
-          <div class="bg-white rounded-2xl border border-neutral-200/80 shadow-md hover:shadow-xl hover:border-accent/30 transition-all duration-300 flex flex-col overflow-hidden group">
-            <div class="relative aspect-[3/4] bg-neutral-50 overflow-hidden border-b border-neutral-100 flex items-center justify-center">
-              {nextGen.photo ? (
-                <CloudinaryImage
-                  src={nextGen.photo}
-                  alt={nextGen.name}
-                  width={400}
-                  height={533}
-                  crop="limit"
-                  class="h-full w-full object-contain p-2 group-hover:scale-102 transition-transform duration-500"
-                />
-              ) : (
-                <span class="text-7xl opacity-20">👤</span>
-              )}
-              <div class="absolute top-4 left-4 z-10">
-                <span class="bg-gradient-to-r from-accent to-accent-700 text-white text-[10px] font-bold uppercase tracking-wider px-3.5 py-1.5 rounded-full shadow-sm">
-                  {t('about.nextGen', locale)}
-                </span>
-              </div>
-            </div>
-            <div class="p-6 flex-1 flex flex-col">
-              <h3 class="font-display text-xl font-bold text-neutral-900 tracking-tight group-hover:text-accent transition-colors">{nextGen.name}</h3>
-              <div class="w-10 h-0.5 bg-accent/30 my-3 rounded-full"></div>
-              {nextGen.description && (
-                <p class="text-sm text-neutral-600 leading-relaxed font-normal flex-grow">{nextGen.description}</p>
-              )}
-            </div>
-          </div>
-        )}
+            );
+          });
+        })()}
       </div>
 
       {aboutPeople.length === 0 && (
-        <div class="text-center py-12 text-neutral-500">
+        <div class="text-center py-12 text-neutral-400">
           <p class="text-sm">{locale === 'gu' ? 'નેતૃત્વ માહિતી ટૂંક સમયમાં ઉમેરવામાં આવશે.' : 'Leadership information will be added soon.'}</p>
         </div>
       )}
     </Container>
   </section>
 
-  <!-- Sales Team -->
+  <!-- Sales Team Section -->
   {(salesHead || salesStaff.length > 0) && (
-    <section class="py-16 bg-white border-t border-neutral-200">
-      <Container class="max-w-5xl">
-        <div class="text-center mb-12">
-          <div class="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-3">
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-            {t('team.salesTeam', locale)}
-          </div>
-          <h2 class="font-display text-2xl md:text-3xl font-extrabold text-neutral-900 tracking-tight">{t('team.salesTeam', locale)}</h2>
-          <div class="w-10 h-1 bg-primary mx-auto mt-3 rounded-full"></div>
+    <section class="py-20 bg-white border-t border-neutral-100 relative overflow-hidden">
+      <div class="absolute -top-40 -left-40 w-96 h-96 bg-primary-50 rounded-full blur-3xl opacity-50 -z-10"></div>
+      <Container class="max-w-6xl">
+        <div class="text-center mb-16">
+          <span class="text-primary text-xs font-bold uppercase tracking-[0.2em] block mb-2">Sales Department</span>
+          <h2 class="font-display text-3xl md:text-4xl font-extrabold text-neutral-900 tracking-tight">
+            {locale === 'gu' ? 'અમારી સેલ્સ ટીમ' : 'Our Sales Experts'}
+          </h2>
+          <div class="w-12 h-1 bg-primary mx-auto mt-4 rounded-full"></div>
         </div>
 
-        <div class="flex flex-col items-center gap-10">
-          {/* Sales Head — Highlighted */}
-          {salesHead && (
-            <div class="bg-gradient-to-br from-primary-50/55 to-white border border-primary-200/80 rounded-2xl p-6 text-center max-w-sm w-full shadow-md hover:shadow-lg transition-all duration-300 group hover:-translate-y-0.5">
-              <div class="h-28 w-28 rounded-full bg-primary-50 border-2 border-primary/20 mx-auto mb-4 overflow-hidden flex items-center justify-center p-0.5">
+        <div class="grid gap-10 lg:grid-cols-12 items-start">
+          <!-- Department Head (Left Column / Highlighted) -->
+          {salesHead ? (
+            <div class="lg:col-span-5 bg-gradient-to-br from-primary-50/60 via-white to-white border border-primary-100/80 rounded-3xl p-8 text-center shadow-lg hover:shadow-primary-500/5 hover:-translate-y-1.5 transition-all duration-500 relative group">
+              <div class="absolute top-4 right-4 bg-primary/10 text-primary text-[9px] font-extrabold uppercase tracking-widest px-3 py-1.5 rounded-full border border-primary-200/50">
+                {t('team.salesHead', locale)}
+              </div>
+              <div class="h-32 w-32 rounded-full bg-primary-50 border-2 border-primary-100 shadow-md mx-auto mb-6 overflow-hidden flex items-center justify-center p-1 group-hover:border-primary-300 transition-colors duration-300">
                 {salesHead.photo ? (
-                  <CloudinaryImage src={salesHead.photo} alt={salesHead.name} crop="limit" class="h-full w-full object-contain rounded-full bg-white" width={200} height={200} />
+                  <CloudinaryImage src={salesHead.photo} alt={salesHead.name} crop="fill" class="h-full w-full object-cover rounded-full bg-white group-hover:scale-105 transition-transform duration-500" width={240} height={240} />
                 ) : (
-                  <span class="text-4xl opacity-30">👤</span>
+                  <span class="text-5xl opacity-30">👤</span>
                 )}
               </div>
-              <span class="inline-block bg-primary text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full mb-3 shadow-sm">{t('team.salesHead', locale)}</span>
-              <h3 class="font-display text-xl font-bold text-neutral-900">{salesHead.name}</h3>
+              <h3 class="font-display text-2xl font-black text-neutral-900 group-hover:text-primary transition-colors duration-300">{salesHead.name}</h3>
+              <p class="text-neutral-500 text-xs mt-1 uppercase tracking-wider font-semibold">{locale === 'gu' ? 'સેલ્સ હેડ' : 'Department Lead'}</p>
+              
+              <p class="text-neutral-600 text-sm mt-4 leading-relaxed font-light">
+                {locale === 'gu'
+                  ? 'સેલ્સ અને બલ્ક ઓર્ડર પૂછપરછ માટે અમારા હેડ સાથે સીધો સંપર્ક કરો.'
+                  : 'Contact our lead directly for bulk sales queries, commercial orders, and corporate partnerships.'}
+              </p>
+
               {salesHead.phone && (
-                <div class="mt-4 flex justify-center">
-                  <a href={`tel:${salesHead.phone}`} class="inline-flex items-center gap-1.5 bg-primary text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-primary-600 transition-colors shadow-sm">
-                    📞 {salesHead.phone}
+                <div class="mt-6 flex flex-col sm:flex-row gap-2 justify-center">
+                  <a href={`tel:${salesHead.phone}`} class="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary-700 text-white text-xs font-bold px-5 py-3 rounded-xl transition-colors shadow-md">
+                    📞 Call: {salesHead.phone}
+                  </a>
+                  <a href={`https://wa.me/${salesHead.phone}`} target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-5 py-3 rounded-xl transition-colors shadow-md">
+                    💬 WhatsApp
                   </a>
                 </div>
               )}
             </div>
-          )}
+          ) : null}
 
-          {/* Sales Staff Grid */}
-          {salesStaff.length > 0 && (
-            <div class="grid gap-6 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 w-full">
-              {salesStaff.map(member => (
-                <div class="bg-white border border-neutral-200 rounded-xl p-5 text-center shadow-sm hover:shadow-md hover:border-primary/20 transition-all duration-300 flex flex-col justify-between">
-                  <div>
-                    <div class="h-16 w-16 rounded-full bg-neutral-50 border border-neutral-200/80 mx-auto mb-3 overflow-hidden flex items-center justify-center p-0.5">
-                      {member.photo ? (
-                        <CloudinaryImage src={member.photo} alt={member.name} crop="limit" class="h-full w-full object-contain rounded-full bg-white" width={120} height={120} />
-                      ) : (
-                        <span class="text-2xl opacity-30">👤</span>
-                      )}
+          <!-- Staff Members (Right Column Grid) -->
+          <div class={`${salesHead ? 'lg:col-span-7' : 'lg:col-span-12'} space-y-6`}>
+            {salesStaff.length > 0 ? (
+              <div>
+                <h4 class="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-4">Sales Executives</h4>
+                <div class="grid gap-4 sm:grid-cols-2">
+                  {salesStaff.map(member => (
+                    <div class="bg-white border border-neutral-200/80 hover:border-primary-200 rounded-2xl p-5 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-500 flex items-center gap-4 group">
+                      <div class="h-16 w-16 rounded-full bg-neutral-50 border border-neutral-200/80 overflow-hidden flex items-center justify-center p-0.5 shrink-0 group-hover:border-primary-200 transition-colors duration-300">
+                        {member.photo ? (
+                          <CloudinaryImage src={member.photo} alt={member.name} crop="fill" class="h-full w-full object-cover rounded-full bg-white group-hover:scale-105 transition-transform duration-500" width={120} height={120} />
+                        ) : (
+                          <span class="text-2xl opacity-30">👤</span>
+                        )}
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <h4 class="font-bold text-sm text-neutral-900 truncate leading-snug group-hover:text-primary transition-colors">{member.name}</h4>
+                        <span class="text-[10px] text-neutral-400 uppercase font-semibold block mt-0.5">{locale === 'gu' ? 'સેલ્સ એક્ઝિક્યુટિવ' : 'Sales Executive'}</span>
+                        
+                        {member.phone && (
+                          <div class="mt-2 flex gap-2">
+                            <a href={`tel:${member.phone}`} class="text-xs text-primary font-bold hover:underline inline-flex items-center gap-1">
+                              📞 Call
+                            </a>
+                            <a href={`https://wa.me/${member.phone}`} target="_blank" rel="noopener noreferrer" class="text-xs text-emerald-600 font-bold hover:underline inline-flex items-center gap-1">
+                              💬 Chat
+                            </a>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <h4 class="font-bold text-sm text-neutral-900 leading-snug">{member.name}</h4>
-                  </div>
-                  {member.phone && (
-                    <div class="mt-3 pt-2 border-t border-neutral-100">
-                      <a href={`tel:${member.phone}`} class="text-xs text-primary font-medium hover:underline inline-flex items-center gap-1">
-                        📞 {member.phone}
-                      </a>
-                    </div>
-                  )}
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
+              </div>
+            ) : (
+              <div class="bg-neutral-50 rounded-2xl p-8 border border-neutral-100 text-center text-neutral-400 text-xs">
+                No other sales staff registered.
+              </div>
+            )}
+          </div>
         </div>
       </Container>
     </section>
   )}
 
-  <!-- Service Team -->
+  <!-- Service Team Section -->
   {(serviceHead || serviceStaff.length > 0) && (
-    <section class="py-16 bg-neutral-50 border-t border-neutral-200">
-      <Container class="max-w-5xl">
-        <div class="text-center mb-12">
-          <div class="inline-flex items-center gap-2 bg-accent/10 border border-accent/20 text-accent px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-3">
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-            {t('team.serviceTeam', locale)}
-          </div>
-          <h2 class="font-display text-2xl md:text-3xl font-extrabold text-neutral-900 tracking-tight">{t('team.serviceTeam', locale)}</h2>
-          <div class="w-10 h-1 bg-accent mx-auto mt-3 rounded-full"></div>
+    <section class="py-20 bg-neutral-50 border-t border-neutral-200 relative overflow-hidden">
+      <div class="absolute -bottom-40 -right-40 w-96 h-96 bg-accent-50 rounded-full blur-3xl opacity-40 -z-10"></div>
+      <Container class="max-w-6xl">
+        <div class="text-center mb-16">
+          <span class="text-accent text-xs font-bold uppercase tracking-[0.2em] block mb-2">Service Department</span>
+          <h2 class="font-display text-3xl md:text-4xl font-extrabold text-neutral-900 tracking-tight">
+            {locale === 'gu' ? 'અમારી સર્વિસ ટીમ' : 'Our Service Engineers'}
+          </h2>
+          <div class="w-12 h-1 bg-accent mx-auto mt-4 rounded-full"></div>
         </div>
 
-        <div class="flex flex-col items-center gap-10">
-          {/* Service Head — Highlighted */}
-          {serviceHead && (
-            <div class="bg-gradient-to-br from-accent-50/55 to-white border border-accent-200/80 rounded-2xl p-6 text-center max-w-sm w-full shadow-md hover:shadow-lg transition-all duration-300 group hover:-translate-y-0.5">
-              <div class="h-28 w-28 rounded-full bg-accent-50 border-2 border-accent/20 mx-auto mb-4 overflow-hidden flex items-center justify-center p-0.5">
+        <div class="grid gap-10 lg:grid-cols-12 items-start">
+          <!-- Department Head (Left Column / Highlighted) -->
+          {serviceHead ? (
+            <div class="lg:col-span-5 bg-gradient-to-br from-accent-50/60 via-white to-white border border-accent-100/80 rounded-3xl p-8 text-center shadow-lg hover:shadow-accent-500/5 hover:-translate-y-1.5 transition-all duration-500 relative group">
+              <div class="absolute top-4 right-4 bg-accent/10 text-accent text-[9px] font-extrabold uppercase tracking-widest px-3 py-1.5 rounded-full border border-accent-200/50">
+                {t('team.serviceHead', locale)}
+              </div>
+              <div class="h-32 w-32 rounded-full bg-accent-50 border-2 border-accent-100 shadow-md mx-auto mb-6 overflow-hidden flex items-center justify-center p-1 group-hover:border-accent-300 transition-colors duration-300">
                 {serviceHead.photo ? (
-                  <CloudinaryImage src={serviceHead.photo} alt={serviceHead.name} crop="limit" class="h-full w-full object-contain rounded-full bg-white" width={200} height={200} />
+                  <CloudinaryImage src={serviceHead.photo} alt={serviceHead.name} crop="fill" class="h-full w-full object-cover rounded-full bg-white group-hover:scale-105 transition-transform duration-500" width={240} height={240} />
                 ) : (
-                  <span class="text-4xl opacity-30">👤</span>
+                  <span class="text-5xl opacity-30">👤</span>
                 )}
               </div>
-              <span class="inline-block bg-accent text-white text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full mb-3 shadow-sm">{t('team.serviceHead', locale)}</span>
-              <h3 class="font-display text-xl font-bold text-neutral-900">{serviceHead.name}</h3>
+              <h3 class="font-display text-2xl font-black text-neutral-900 group-hover:text-accent transition-colors duration-300">{serviceHead.name}</h3>
+              <p class="text-neutral-500 text-xs mt-1 uppercase tracking-wider font-semibold">{locale === 'gu' ? 'સર્વિસ હેડ' : 'Service Lead'}</p>
+              
+              <p class="text-neutral-600 text-sm mt-4 leading-relaxed font-light">
+                {locale === 'gu'
+                  ? 'સેવા અને વોરંટી ફરિયાદો માટે અમારા હેડ સાથે સંપર્ક કરો.'
+                  : 'Contact our service lead directly for warranty escalations, technical support, and site inspection requests.'}
+              </p>
+
               {serviceHead.phone && (
-                <div class="mt-4 flex justify-center">
-                  <a href={`tel:${serviceHead.phone}`} class="inline-flex items-center gap-1.5 bg-accent text-white text-xs font-semibold px-4 py-2 rounded-lg hover:bg-accent-600 transition-colors shadow-sm">
-                    📞 {serviceHead.phone}
+                <div class="mt-6 flex flex-col sm:flex-row gap-2 justify-center">
+                  <a href={`tel:${serviceHead.phone}`} class="inline-flex items-center justify-center gap-2 bg-accent hover:bg-accent-700 text-white text-sm font-bold px-5 py-3 rounded-xl transition-colors shadow-md">
+                    📞 Call: {serviceHead.phone}
+                  </a>
+                  <a href={`https://wa.me/${serviceHead.phone}`} target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold px-5 py-3 rounded-xl transition-colors shadow-md">
+                    💬 WhatsApp
                   </a>
                 </div>
               )}
             </div>
-          )}
+          ) : null}
 
-          {/* Service Staff Grid */}
-          {serviceStaff.length > 0 && (
-            <div class="grid gap-6 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 w-full">
-              {serviceStaff.map(member => (
-                <div class="bg-white border border-neutral-200 rounded-xl p-5 text-center shadow-sm hover:shadow-md hover:border-accent/20 transition-all duration-300 flex flex-col justify-between">
-                  <div>
-                    <div class="h-16 w-16 rounded-full bg-neutral-50 border border-neutral-200/80 mx-auto mb-3 overflow-hidden flex items-center justify-center p-0.5">
-                      {member.photo ? (
-                        <CloudinaryImage src={member.photo} alt={member.name} crop="limit" class="h-full w-full object-contain rounded-full bg-white" width={120} height={120} />
-                      ) : (
-                        <span class="text-2xl opacity-30">👤</span>
-                      )}
+          <!-- Staff Members (Right Column Grid) -->
+          <div class={`${serviceHead ? 'lg:col-span-7' : 'lg:col-span-12'} space-y-6`}>
+            {serviceStaff.length > 0 ? (
+              <div>
+                <h4 class="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-4">Technical Staff</h4>
+                <div class="grid gap-4 sm:grid-cols-2">
+                  {serviceStaff.map(member => (
+                    <div class="bg-white border border-neutral-200 hover:border-accent-200 rounded-2xl p-5 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-500 flex items-center gap-4 group">
+                      <div class="h-16 w-16 rounded-full bg-neutral-50 border border-neutral-200/80 overflow-hidden flex items-center justify-center p-0.5 shrink-0 group-hover:border-accent-200 transition-colors duration-300">
+                        {member.photo ? (
+                          <CloudinaryImage src={member.photo} alt={member.name} crop="fill" class="h-full w-full object-cover rounded-full bg-white group-hover:scale-105 transition-transform duration-500" width={120} height={120} />
+                        ) : (
+                          <span class="text-2xl opacity-30">👤</span>
+                        )}
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <h4 class="font-bold text-sm text-neutral-900 truncate leading-snug group-hover:text-accent transition-colors">{member.name}</h4>
+                        <span class="text-[10px] text-neutral-400 uppercase font-semibold block mt-0.5">{locale === 'gu' ? 'ટેકનિશિયન' : 'Service Engineer'}</span>
+                        
+                        {member.phone && (
+                          <div class="mt-2 flex gap-2">
+                            <a href={`tel:${member.phone}`} class="text-xs text-accent font-bold hover:underline inline-flex items-center gap-1">
+                              📞 Call
+                            </a>
+                            <a href={`https://wa.me/${member.phone}`} target="_blank" rel="noopener noreferrer" class="text-xs text-emerald-600 font-bold hover:underline inline-flex items-center gap-1">
+                              💬 Chat
+                            </a>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <h4 class="font-bold text-sm text-neutral-900 leading-snug">{member.name}</h4>
-                  </div>
-                  {member.phone && (
-                    <div class="mt-3 pt-2 border-t border-neutral-100">
-                      <a href={`tel:${member.phone}`} class="text-xs text-accent font-medium hover:underline inline-flex items-center gap-1">
-                        📞 {member.phone}
-                      </a>
-                    </div>
-                  )}
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
+              </div>
+            ) : (
+              <div class="bg-white border border-neutral-200/80 rounded-2xl p-8 text-center text-neutral-400 text-xs shadow-sm">
+                No service technical staff registered.
+              </div>
+            )}
+          </div>
         </div>
       </Container>
     </section>
   )}
 
   <!-- CTA Section -->
-  <section class="relative bg-gradient-to-br from-primary-950 via-primary-900 to-primary-950 text-white py-20 overflow-hidden">
-    <div class="absolute inset-0 overflow-hidden pointer-events-none opacity-20">
-      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-secondary rounded-full blur-[160px] animate-pulse"></div>
+  <section class="relative bg-[#060F1E] bg-gradient-to-br from-[#060F1E] via-[#0C1A30] to-[#060F1E] text-white py-24 overflow-hidden border-t border-white/[0.05]">
+    <div class="absolute inset-0 overflow-hidden pointer-events-none opacity-30">
+      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-secondary/20 rounded-full blur-[140px] animate-pulse"></div>
+      <div class="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-35"></div>
     </div>
     <Container class="text-center max-w-3xl relative z-10 space-y-6">
-      <h2 class="font-display text-3xl md:text-4xl font-extrabold tracking-tight">
+      <div class="inline-flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-widest text-primary-200 mb-2 backdrop-blur-sm">
+        📍 {locale === 'gu' ? 'મુલાકાત લો' : 'Visit Us'}
+      </div>
+      <h2 class="font-display text-3xl md:text-5xl font-black tracking-tight text-white drop-shadow-sm">
         {locale === 'gu' ? 'અમારી દુકાનની મુલાકાત લો' : 'Visit Our Store'}
       </h2>
       <p class="text-slate-200 max-w-xl mx-auto leading-relaxed text-sm md:text-base font-light">
         {locale === 'gu' ? 'ઇન્વર્ટર, બેટરી, સાઉન્ડ સિસ્ટમ અને DJ સ્પીકર સિસ્ટમ માટે અમારો સંપર્ક કરો.' : 'Contact us for Home Inverters, Batteries, Sound Systems and DJ Speaker Systems.'}
       </p>
       <div class="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-        <a href={`tel:${settings.phone.replace(/\s/g, '')}`} class="inline-flex items-center justify-center gap-2 bg-white text-primary hover:bg-neutral-100 font-bold px-6 py-3.5 rounded-xl shadow-md hover:shadow-lg transition-all text-sm md:text-base">
-          📞 {t('contact.callNow', locale)}
+        <a href={`tel:${settings.phone.replace(/\s/g, '')}`} class="inline-flex items-center justify-center gap-2.5 bg-white text-primary hover:bg-neutral-100 font-bold px-7 py-4 rounded-xl shadow-lg hover:shadow-white/10 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 text-sm md:text-base group">
+          <span class="group-hover:scale-110 transition-transform">📞</span> {t('contact.callNow', locale)}
         </a>
-        <a href={`https://wa.me/${settings.whatsapp}`} target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-2 bg-emerald-600 text-white hover:bg-emerald-500 font-bold px-6 py-3.5 rounded-xl shadow-md hover:shadow-lg transition-all text-sm md:text-base">
-          💬 {t('contact.chatWhatsApp', locale)}
+        <a href={`https://wa.me/${settings.whatsapp}`} target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-2.5 bg-emerald-600 text-white hover:bg-emerald-500 font-bold px-7 py-4 rounded-xl shadow-lg hover:shadow-emerald-500/20 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 text-sm md:text-base group">
+          <span class="group-hover:scale-110 transition-transform">💬</span> {t('contact.chatWhatsApp', locale)}
         </a>
       </div>
     </Container>

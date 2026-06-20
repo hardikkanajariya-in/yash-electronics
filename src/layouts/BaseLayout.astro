@@ -37,6 +37,15 @@ const categories = translateObject(rawCategories, locale);
     <OrganizationSchema settings={settings} />
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#171717" />
+    <!-- Google tag (gtag.js) -->
+    <script is:inline async src="https://www.googletagmanager.com/gtag/js?id=G-BPBPF7FDVF"></script>
+    <script is:inline>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-BPBPF7FDVF');
+    </script>
     <link rel="apple-touch-icon" href="/icon-192.png" />
     <script is:inline>
       if ('serviceWorker' in navigator) {

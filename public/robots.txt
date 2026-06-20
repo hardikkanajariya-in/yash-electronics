@@ -1,0 +1,30 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Private admin dashboard, account settings, and API routes
+Disallow: /admin/
+Disallow: /admin
+Disallow: /api/
+Disallow: /api
+Disallow: /account/
+Disallow: /account
+Disallow: /cart/
+Disallow: /cart
+Disallow: /checkout/
+Disallow: /checkout
+
+# Language prefixed private routes (English)
+Disallow: /en/admin/
+Disallow: /en/admin
+Disallow: /en/api/
+Disallow: /en/api
+Disallow: /en/account/
+Disallow: /en/account
+Disallow: /en/cart/
+Disallow: /en/cart
+Disallow: /en/checkout/
+Disallow: /en/checkout
+
+# Sitemap location
+Sitemap: https://yashelectronics.in/sitemap-index.xml
