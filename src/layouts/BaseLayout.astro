@@ -273,6 +273,7 @@ const categories = translateObject(rawCategories, locale);
         const pwaDismissBtn = document.getElementById('pwa-dismiss-btn');
         const pwaDismissNeverBtn = document.getElementById('pwa-dismiss-never-btn');
         const pwaHeaderBtn = document.getElementById('pwa-install-header-btn');
+        const pwaMobileBtn = document.getElementById('pwa-install-mobile-btn');
 
         // Check standalone mode
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
@@ -284,13 +285,19 @@ const categories = translateObject(rawCategories, locale);
           e.preventDefault();
           deferredPrompt = e;
 
-          // 1. Show the header top bar button
+          // 1. Show the header top bar button (desktop only)
           if (pwaHeaderBtn) {
             pwaHeaderBtn.classList.remove('hidden');
-            pwaHeaderBtn.classList.add('flex');
+            pwaHeaderBtn.classList.add('md:inline-flex');
           }
 
-          // 2. Show the pop-up banner unless dismissed permanently
+          // 2. Show the mobile drawer button (mobile only)
+          if (pwaMobileBtn) {
+            pwaMobileBtn.classList.remove('hidden');
+            pwaMobileBtn.classList.add('flex');
+          }
+
+          // 3. Show the pop-up banner unless dismissed permanently
           const dismissedNever = localStorage.getItem('pwa-install-dismissed-never') === 'true';
           const dismissedSession = sessionStorage.getItem('pwa-install-dismissed-session') === 'true';
 
@@ -312,12 +319,17 @@ const categories = translateObject(rawCategories, locale);
           hidePwaBanner();
           if (pwaHeaderBtn) {
             pwaHeaderBtn.classList.add('hidden');
-            pwaHeaderBtn.classList.remove('flex');
+            pwaHeaderBtn.classList.remove('md:inline-flex');
+          }
+          if (pwaMobileBtn) {
+            pwaMobileBtn.classList.add('hidden');
+            pwaMobileBtn.classList.remove('flex');
           }
         };
 
         pwaInstallBtn?.addEventListener('click', triggerInstall);
         pwaHeaderBtn?.addEventListener('click', triggerInstall);
+        pwaMobileBtn?.addEventListener('click', triggerInstall);
 
         pwaDismissBtn?.addEventListener('click', () => {
           sessionStorage.setItem('pwa-install-dismissed-session', 'true');
@@ -343,7 +355,11 @@ const categories = translateObject(rawCategories, locale);
           hidePwaBanner();
           if (pwaHeaderBtn) {
             pwaHeaderBtn.classList.add('hidden');
-            pwaHeaderBtn.classList.remove('flex');
+            pwaHeaderBtn.classList.remove('md:inline-flex');
+          }
+          if (pwaMobileBtn) {
+            pwaMobileBtn.classList.add('hidden');
+            pwaMobileBtn.classList.remove('flex');
           }
         });
       });
