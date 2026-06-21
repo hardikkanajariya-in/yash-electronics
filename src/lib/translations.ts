@@ -395,6 +395,9 @@ export function translateBrand(brand: any, locale: string = 'gu') {
 export function translateProduct(product: any, locale: string = 'gu') {
   if (!product) return product;
   const isGu = locale !== 'en';
+  const hasGuSpecs = product.specificationsGu && 
+                     product.specificationsGu !== '{}' && 
+                     product.specificationsGu !== '';
 
   return {
     ...product,
@@ -402,7 +405,7 @@ export function translateProduct(product: any, locale: string = 'gu') {
     brand: (isGu && product.brandGu) ? product.brandGu : product.brand,
     category: (isGu && product.categoryGu) ? product.categoryGu : product.category,
     description: (isGu && product.descriptionGu) ? product.descriptionGu : product.description,
-    specifications: (isGu && product.specificationsGu) ? product.specificationsGu : product.specifications,
+    specifications: (isGu && hasGuSpecs) ? product.specificationsGu : product.specifications,
   };
 }
 
