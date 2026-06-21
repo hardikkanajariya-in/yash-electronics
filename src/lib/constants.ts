@@ -47,6 +47,9 @@ export const TEAM_ROLE_LABELS: Record<string, string> = {
   sales_staff: 'Sales Executive',
   service_head: 'Service Head',
   service_staff: 'Service Technician',
+  account_head: 'Account Head',
+  chief_accountant: 'Chief Accountant',
+  accountant: 'Accountant',
 };
 
 export const ABOUT_ROLE_LABELS: Record<string, string> = {

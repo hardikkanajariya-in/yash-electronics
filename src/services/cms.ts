@@ -153,7 +153,7 @@ export async function getTeamMembers() {
   }
 }
 
-export async function getTeamByDepartment(department: 'sales' | 'service' | 'chief_account' | 'account_staff') {
+export async function getTeamByDepartment(department: 'sales' | 'service' | 'chief_account' | 'account_staff' | 'account') {
   const members = await getTeamMembers();
   return members.filter((m) => m.department === department);
 }

@@ -123,6 +123,10 @@ export const UI_TRANSLATIONS = {
     'team.serviceTeam': 'સર્વિસ ટીમ',
     'team.salesHead': 'સેલ્સ હેડ',
     'team.serviceHead': 'સર્વિસ હેડ',
+    'team.accountTeam': 'એકાઉન્ટ ટીમ',
+    'team.accountHead': 'એકાઉન્ટ હેડ',
+    'team.chiefAccountant': 'મુખ્ય એકાઉન્ટન્ટ',
+    'team.accountant': 'એકાઉન્ટન્ટ',
 
     // Bank Details
     'bank.title': 'ચૂકવણી માહિતી',
@@ -274,6 +278,10 @@ export const UI_TRANSLATIONS = {
     'team.serviceTeam': 'Service Team',
     'team.salesHead': 'Sales Head',
     'team.serviceHead': 'Service Head',
+    'team.accountTeam': 'Account Team',
+    'team.accountHead': 'Account Head',
+    'team.chiefAccountant': 'Chief Accountant',
+    'team.accountant': 'Accountant',
 
     // Bank Details
     'bank.title': 'Payment Information',

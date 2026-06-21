@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ye-admin-cache-v1';
+const CACHE_NAME = 'ye-cache-v1';
 const ASSETS = [
   '/manifest.json',
   '/icon-192.png',

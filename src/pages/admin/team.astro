@@ -111,8 +111,9 @@ const showForm = isAdding || editMember;
             <select name="department" class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none">
               <option value="sales" selected={editMember?.department === 'sales'}>Sales</option>
               <option value="service" selected={editMember?.department === 'service'}>Service</option>
-              <option value="chief_account" selected={editMember?.department === 'chief_account'}>Chief Account</option>
-              <option value="account_staff" selected={editMember?.department === 'account_staff'}>Account Staff</option>
+              <option value="chief_account" selected={editMember?.department === 'chief_account'}>Chief Account (Legacy)</option>
+              <option value="account_staff" selected={editMember?.department === 'account_staff'}>Account Staff (Legacy)</option>
+              <option value="account" selected={editMember?.department === 'account'}>Account Department</option>
             </select>
           </div>
           <div>
@@ -122,6 +123,9 @@ const showForm = isAdding || editMember;
               <option value="sales_staff" selected={editMember?.role === 'sales_staff'}>Sales Staff</option>
               <option value="service_head" selected={editMember?.role === 'service_head'}>Service Head</option>
               <option value="service_staff" selected={editMember?.role === 'service_staff'}>Service Staff</option>
+              <option value="account_head" selected={editMember?.role === 'account_head'}>Account Head</option>
+              <option value="chief_accountant" selected={editMember?.role === 'chief_accountant'}>Chief Accountant</option>
+              <option value="accountant" selected={editMember?.role === 'accountant'}>Accountant</option>
             </select>
           </div>
           <div>

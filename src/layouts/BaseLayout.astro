@@ -277,6 +277,8 @@ const categories = translateObject(rawCategories, locale);
     <script is:inline>
       document.addEventListener('DOMContentLoaded', () => {
         let deferredPrompt = null;
+        let isPwaInstalled = localStorage.getItem('pwa-is-installed') === 'true';
+
         const pwaBanner = document.getElementById('pwa-install-banner');
         const pwaInstallBtn = document.getElementById('pwa-install-btn');
         const pwaDismissBtn = document.getElementById('pwa-dismiss-btn');
@@ -284,13 +286,50 @@ const categories = translateObject(rawCategories, locale);
         const pwaHeaderBtn = document.getElementById('pwa-install-header-btn');
         const pwaMobileBtn = document.getElementById('pwa-install-mobile-btn');
 
+        function hideAllPrompts() {
+          hidePwaBanner();
+          if (pwaHeaderBtn) {
+            pwaHeaderBtn.classList.add('hidden');
+            pwaHeaderBtn.classList.remove('flex');
+          }
+          if (pwaMobileBtn) {
+            pwaMobileBtn.classList.add('hidden');
+            pwaMobileBtn.classList.remove('flex');
+          }
+        }
+
         // Check standalone mode
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
         if (isStandalone) {
+          localStorage.setItem('pwa-is-installed', 'true');
+          isPwaInstalled = true;
+        }
+
+        if (isPwaInstalled) {
+          hideAllPrompts();
           return;
         }
 
+        // Asynchronously check getInstalledRelatedApps
+        if ('getInstalledRelatedApps' in navigator) {
+          navigator.getInstalledRelatedApps().then(relatedApps => {
+            const isInstalled = relatedApps.some(app => app.platform === 'webapp');
+            if (isInstalled) {
+              localStorage.setItem('pwa-is-installed', 'true');
+              isPwaInstalled = true;
+              hideAllPrompts();
+            }
+          }).catch(err => {
+            console.warn('Error checking PWA installation status:', err);
+          });
+        }
+
         window.addEventListener('beforeinstallprompt', (e) => {
+          // If already checked and confirmed installed, do not show prompts
+          if (isPwaInstalled) {
+            return;
+          }
+
           e.preventDefault();
           deferredPrompt = e;
 
@@ -302,13 +341,13 @@ const categories = translateObject(rawCategories, locale);
             pwaHeaderBtn.classList.add('flex');
           }
 
-          // 2. Show the mobile drawer button (mobile only)
+          // 2. Show the mobile drawer/navigation button (mobile only)
           if (pwaMobileBtn && !isDesktop) {
             pwaMobileBtn.classList.remove('hidden');
             pwaMobileBtn.classList.add('flex');
           }
 
-          // 3. Show the pop-up banner unless dismissed permanently
+          // 3. Show the pop-up banner unless dismissed permanently or in session
           const dismissedNever = localStorage.getItem('pwa-install-dismissed-never') === 'true';
           const dismissedSession = sessionStorage.getItem('pwa-install-dismissed-session') === 'true';
 
@@ -325,16 +364,14 @@ const categories = translateObject(rawCategories, locale);
             deferredPrompt.prompt();
             const { outcome } = await deferredPrompt.userChoice;
             console.log('PWA installation outcome:', outcome);
+            if (outcome === 'accepted') {
+              localStorage.setItem('pwa-is-installed', 'true');
+              isPwaInstalled = true;
+              hideAllPrompts();
+            }
             deferredPrompt = null;
-          }
-          hidePwaBanner();
-          if (pwaHeaderBtn) {
-            pwaHeaderBtn.classList.add('hidden');
-            pwaHeaderBtn.classList.remove('flex');
-          }
-          if (pwaMobileBtn) {
-            pwaMobileBtn.classList.add('hidden');
-            pwaMobileBtn.classList.remove('flex');
+          } else {
+            hideAllPrompts();
           }
         };
 
@@ -363,15 +400,9 @@ const categories = translateObject(rawCategories, locale);
 
         window.addEventListener('appinstalled', () => {
           deferredPrompt = null;
-          hidePwaBanner();
-          if (pwaHeaderBtn) {
-            pwaHeaderBtn.classList.add('hidden');
-            pwaHeaderBtn.classList.remove('flex');
-          }
-          if (pwaMobileBtn) {
-            pwaMobileBtn.classList.add('hidden');
-            pwaMobileBtn.classList.remove('flex');
-          }
+          localStorage.setItem('pwa-is-installed', 'true');
+          isPwaInstalled = true;
+          hideAllPrompts();
         });
       });
     </script>

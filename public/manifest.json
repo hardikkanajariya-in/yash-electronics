@@ -1,8 +1,8 @@
 {
-  "name": "Yash Electronics Admin",
-  "short_name": "YE Admin",
-  "description": "Admin Control Panel for Yash Electronics",
-  "start_url": "/admin",
+  "name": "Yash Electronics",
+  "short_name": "Yash Electronics",
+  "description": "Trusted electronics & power solutions — Home Inverters, Batteries, Sound Systems & DJ Speaker Systems.",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#171717",
   "theme_color": "#171717",
@@ -19,6 +19,12 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    }
+  ],
+  "related_applications": [
+    {
+      "platform": "webapp",
+      "url": "/manifest.json"
     }
   ]
 }

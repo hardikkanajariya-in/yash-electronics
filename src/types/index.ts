@@ -109,8 +109,8 @@ export interface TeamMember {
   name: string;
   photo: string | null;
   phone: string | null;
-  role: 'sales_head' | 'sales_staff' | 'service_head' | 'service_staff';
-  department: 'sales' | 'service' | 'chief_account' | 'account_staff';
+  role: 'sales_head' | 'sales_staff' | 'service_head' | 'service_staff' | 'account_head' | 'chief_accountant' | 'accountant';
+  department: 'sales' | 'service' | 'chief_account' | 'account_staff' | 'account';
   sortOrder: number;
   isActive: boolean;
 }

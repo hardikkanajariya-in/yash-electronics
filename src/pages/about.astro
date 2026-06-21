@@ -34,6 +34,8 @@ const salesHead = allMembers.find(m => m.role === 'sales_head');
 const salesStaff = allMembers.filter(m => m.role === 'sales_staff');
 const serviceHead = allMembers.find(m => m.role === 'service_head');
 const serviceStaff = allMembers.filter(m => m.role === 'service_staff');
+const accountHead = allMembers.find(m => m.role === 'account_head');
+const accountStaff = allMembers.filter(m => m.role === 'chief_accountant' || m.role === 'accountant');
 ---
 
 <BaseLayout
@@ -436,6 +438,104 @@ const serviceStaff = allMembers.filter(m => m.role === 'service_staff');
             ) : (
               <div class="bg-white border border-neutral-200/80 rounded-2xl p-8 text-center text-neutral-400 text-xs shadow-sm">
                 No service technical staff registered.
+              </div>
+            )}
+          </div>
+        </div>
+      </Container>
+    </section>
+  )}
+
+  <!-- Account Team Section -->
+  {(accountHead || accountStaff.length > 0) && (
+    <section class="py-20 bg-white border-t border-neutral-100 relative overflow-hidden">
+      <div class="absolute -top-40 -left-40 w-96 h-96 bg-emerald-50 rounded-full blur-3xl opacity-50 -z-10"></div>
+      <Container class="max-w-6xl">
+        <div class="text-center mb-16">
+          <span class="text-emerald-600 text-xs font-bold uppercase tracking-[0.2em] block mb-2">{locale === 'gu' ? 'એકાઉન્ટ વિભાગ' : 'Account Department'}</span>
+          <h2 class="font-display text-3xl md:text-4xl font-extrabold text-neutral-900 tracking-tight">
+            {locale === 'gu' ? 'અમારી એકાઉન્ટ ટીમ' : 'Our Accounts Team'}
+          </h2>
+          <div class="w-12 h-1 bg-emerald-600 mx-auto mt-4 rounded-full"></div>
+        </div>
+
+        <div class="grid gap-10 lg:grid-cols-12 items-start">
+          <!-- Department Head (Left Column / Highlighted) -->
+          {accountHead ? (
+            <div class="lg:col-span-5 bg-gradient-to-br from-emerald-50/60 via-white to-white border border-emerald-100/80 rounded-3xl p-8 text-center shadow-lg hover:shadow-emerald-500/5 hover:-translate-y-1.5 transition-all duration-500 relative group">
+              <div class="absolute top-4 right-4 bg-emerald-50 text-emerald-700 text-[9px] font-extrabold uppercase tracking-widest px-3 py-1.5 rounded-full border border-emerald-200/50">
+                {t('team.accountHead', locale)}
+              </div>
+              <div class="h-32 w-32 rounded-full bg-emerald-50 border-2 border-emerald-100 shadow-md mx-auto mb-6 overflow-hidden flex items-center justify-center p-1 group-hover:border-emerald-300 transition-colors duration-300">
+                {accountHead.photo ? (
+                  <CloudinaryImage src={accountHead.photo} alt={accountHead.name} crop="fill" class="h-full w-full object-cover rounded-full bg-white group-hover:scale-105 transition-transform duration-500" width={240} height={240} />
+                ) : (
+                  <span class="text-5xl opacity-30">👤</span>
+                )}
+              </div>
+              <h3 class="font-display text-2xl font-black text-neutral-900 group-hover:text-emerald-600 transition-colors duration-300">{accountHead.name}</h3>
+              <p class="text-neutral-500 text-xs mt-1 uppercase tracking-wider font-semibold">{locale === 'gu' ? 'એકાઉન્ટ હેડ' : 'Department Lead'}</p>
+              
+              <p class="text-neutral-600 text-sm mt-4 leading-relaxed font-light">
+                {locale === 'gu'
+                  ? 'ચૂકવણીઓ અને નાણાકીય બાબતો માટે અમારા એકાઉન્ટ હેડ સાથે સંપર્ક કરો.'
+                  : 'Contact our department lead for invoice queries, billing details, and payment inquiries.'}
+              </p>
+
+              {accountHead.phone && (
+                <div class="mt-6 flex flex-col sm:flex-row gap-2 justify-center">
+                  <a href={`tel:${accountHead.phone}`} class="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold px-5 py-3 rounded-xl transition-colors shadow-md">
+                    📞 Call: {accountHead.phone}
+                  </a>
+                  <a href={`https://wa.me/${accountHead.phone}`} target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold px-5 py-3 rounded-xl transition-colors shadow-md">
+                    💬 WhatsApp
+                  </a>
+                </div>
+              )}
+            </div>
+          ) : null}
+
+          <!-- Staff Members (Right Column Grid) -->
+          <div class={`${accountHead ? 'lg:col-span-7' : 'lg:col-span-12'} space-y-6`}>
+            {accountStaff.length > 0 ? (
+              <div>
+                <h4 class="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-4">{locale === 'gu' ? 'એકાઉન્ટ સ્ટાફ' : 'Accounting Staff'}</h4>
+                <div class="grid gap-4 sm:grid-cols-2">
+                  {accountStaff.map(member => (
+                    <div class="bg-white border border-neutral-200/80 hover:border-emerald-250 rounded-2xl p-5 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-500 flex items-center gap-4 group">
+                      <div class="h-16 w-16 rounded-full bg-neutral-50 border border-neutral-200/80 overflow-hidden flex items-center justify-center p-0.5 shrink-0 group-hover:border-emerald-250 transition-colors duration-300">
+                        {member.photo ? (
+                          <CloudinaryImage src={member.photo} alt={member.name} crop="fill" class="h-full w-full object-cover rounded-full bg-white group-hover:scale-105 transition-transform duration-500" width={120} height={120} />
+                        ) : (
+                          <span class="text-2xl opacity-30">👤</span>
+                        )}
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <h4 class="font-bold text-sm text-neutral-900 truncate leading-snug group-hover:text-emerald-600 transition-colors">{member.name}</h4>
+                        <span class="text-[10px] text-neutral-400 uppercase font-semibold block mt-0.5">
+                          {member.role === 'chief_accountant'
+                            ? (locale === 'gu' ? 'મુખ્ય એકાઉન્ટન્ટ' : 'Chief Accountant')
+                            : (locale === 'gu' ? 'એકાઉન્ટન્ટ' : 'Accountant')}
+                        </span>
+                        
+                        {member.phone && (
+                          <div class="mt-2 flex gap-2">
+                            <a href={`tel:${member.phone}`} class="text-xs text-emerald-600 font-bold hover:underline inline-flex items-center gap-1">
+                              📞 Call
+                            </a>
+                            <a href={`https://wa.me/${member.phone}`} target="_blank" rel="noopener noreferrer" class="text-xs text-emerald-600 font-bold hover:underline inline-flex items-center gap-1">
+                              💬 Chat
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div class="bg-white border border-neutral-200/80 rounded-2xl p-8 text-center text-neutral-400 text-xs shadow-sm">
+                {locale === 'gu' ? 'કોઈ એકાઉન્ટન્ટ નોંધાયેલ નથી.' : 'No accounting staff registered.'}
               </div>
             )}
           </div>
