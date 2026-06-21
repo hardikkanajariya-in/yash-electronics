@@ -965,14 +965,18 @@ if (action === 'bulk-images') {
                 mediaHtml = `<img src="${displayUrl}" class="w-full h-full object-cover" />`;
               }
               
+              const fullMediaUrl = (img.startsWith('http') || img.startsWith('/')) ? img : `https://res.cloudinary.com/${CLOUD_NAME}/${isVideo ? 'video' : 'image'}/upload/${img}`;
               const div = document.createElement('div');
               div.className = 'relative group w-20 h-20 border border-neutral-200 rounded-md overflow-hidden bg-neutral-50 shadow-sm';
               div.innerHTML = `
                 ${mediaHtml}
-                <button type="button" class="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold font-mono z-10">Remove</button>
+                <div class="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 z-10">
+                  <button type="button" class="preview-trigger-btn w-7 h-7 rounded-full bg-white/90 hover:bg-white text-neutral-800 flex items-center justify-center text-xs shadow-sm transition-transform hover:scale-110" data-preview-src="${fullMediaUrl}" data-preview-type="${isVideo ? 'video' : 'image'}" title="Preview">👁️</button>
+                  <button type="button" class="remove-btn-direct w-7 h-7 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center text-xs shadow-sm transition-transform hover:scale-110" title="Remove">🗑️</button>
+                </div>
               `;
               
-              div.querySelector('button')?.addEventListener('click', () => {
+              div.querySelector('.remove-btn-direct')?.addEventListener('click', () => {
                 const remaining = getImages().filter(x => x !== img);
                 saveImages(remaining);
                 renderPreviews();
@@ -986,15 +990,23 @@ if (action === 'bulk-images') {
           async function uploadFiles(files: FileList | null, pickerElement: HTMLInputElement) {
             if (!files || files.length === 0) return;
 
+            const filesArray = Array.from(files);
+            let uploadedCount = 0;
+            const totalCount = filesArray.length;
+
             progressContainer?.classList.remove('hidden');
+            progressStatus!.textContent = `Preparing files...`;
+            progressBar!.style.width = `0%`;
+            progressPercent!.textContent = `0%`;
+
             const imagesList = getImages();
 
-            for (let i = 0; i < files.length; i++) {
-              const file = files[i];
-              progressStatus!.textContent = `Uploading file ${i + 1} of ${files.length}...`;
+            (window as any).processAndUploadFiles(filesArray, async (fileToUpload: File) => {
+              uploadedCount++;
+              progressStatus!.textContent = `Uploading file ${uploadedCount} of ${totalCount}...`;
               
               try {
-                const publicId = await uploadFileWithProgress(file, (percent) => {
+                const publicId = await uploadFileWithProgress(fileToUpload, (percent) => {
                   progressBar!.style.width = `${percent}%`;
                   progressPercent!.textContent = `${percent}%`;
                 });
@@ -1005,12 +1017,14 @@ if (action === 'bulk-images') {
                   renderPreviews();
                 }
               } catch (err) {
-                alert('Upload failed: ' + err);
+                alert('Upload failed for ' + fileToUpload.name + ': ' + err);
               }
-            }
 
-            progressContainer?.classList.add('hidden');
-            pickerElement.value = '';
+              if (uploadedCount === totalCount) {
+                progressContainer?.classList.add('hidden');
+                pickerElement.value = '';
+              }
+            });
           }
 
           filePicker?.addEventListener('change', () => {
@@ -1192,6 +1206,7 @@ if (action === 'bulk-images') {
                           const mediaUrl = (img.startsWith('http') || img.startsWith('/')) 
                             ? img 
                             : `https://res.cloudinary.com/${import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa'}/${isVideo ? 'video' : 'image'}/upload/w_100,h_100,c_fill${isVideo ? '' : ',f_auto,q_auto'}/${img}`;
+                          const fullPreviewUrl = (img.startsWith('http') || img.startsWith('/')) ? img : `https://res.cloudinary.com/${import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa'}/${isVideo ? 'video' : 'image'}/upload/${img}`;
                           return (
                             <div class="relative group w-16 h-16 rounded overflow-hidden shadow-sm border border-neutral-200 bg-neutral-50 shrink-0">
                               {isVideo ? (
@@ -1202,14 +1217,26 @@ if (action === 'bulk-images') {
                               ) : (
                                 <img src={mediaUrl} class="w-full h-full object-cover" />
                               )}
-                              <button 
-                                type="button" 
-                                class="remove-btn absolute inset-0 bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-[10px] font-bold z-10"
-                                data-product-id={prod.id}
-                                data-image-url={img}
-                              >
-                                Remove
-                              </button>
+                              <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 z-10">
+                                <button
+                                  type="button"
+                                  class="preview-trigger-btn w-6 h-6 rounded-full bg-white/90 hover:bg-white text-neutral-800 flex items-center justify-center text-[10px] shadow-sm transition-all hover:scale-110"
+                                  data-preview-src={fullPreviewUrl}
+                                  data-preview-type={isVideo ? 'video' : 'image'}
+                                  title="Preview"
+                                >
+                                  👁️
+                                </button>
+                                <button 
+                                  type="button" 
+                                  class="remove-btn w-6 h-6 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center text-[10px] shadow-sm transition-all hover:scale-110"
+                                  data-product-id={prod.id}
+                                  data-image-url={img}
+                                  title="Remove"
+                                >
+                                  🗑️
+                                </button>
+                              </div>
                             </div>
                           );
                         })
@@ -1311,6 +1338,7 @@ if (action === 'bulk-images') {
                       const mediaUrl = (img.startsWith('http') || img.startsWith('/')) 
                         ? img 
                         : `https://res.cloudinary.com/${import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa'}/${isVideo ? 'video' : 'image'}/upload/w_100,h_100,c_fill${isVideo ? '' : ',f_auto,q_auto'}/${img}`;
+                      const fullPreviewUrl = (img.startsWith('http') || img.startsWith('/')) ? img : `https://res.cloudinary.com/${import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa'}/${isVideo ? 'video' : 'image'}/upload/${img}`;
                       return (
                         <div class="relative group w-14 h-14 rounded overflow-hidden shadow-sm border border-neutral-200 bg-neutral-50 shrink-0">
                           {isVideo ? (
@@ -1321,14 +1349,26 @@ if (action === 'bulk-images') {
                           ) : (
                             <img src={mediaUrl} class="w-full h-full object-cover" />
                           )}
-                          <button 
-                            type="button" 
-                            class="remove-btn absolute inset-0 bg-black/70 text-white opacity-100 flex items-center justify-center text-[9px] font-bold z-10"
-                            data-product-id={prod.id}
-                            data-image-url={img}
-                          >
-                            Remove
-                          </button>
+                          <div class="absolute inset-0 bg-black/40 opacity-100 flex items-center justify-center gap-1.5 z-10">
+                            <button
+                              type="button"
+                              class="preview-trigger-btn w-6 h-6 rounded-full bg-white/90 hover:bg-white text-neutral-800 flex items-center justify-center text-[9px] shadow-sm transition-all hover:scale-110"
+                              data-preview-src={fullPreviewUrl}
+                              data-preview-type={isVideo ? 'video' : 'image'}
+                              title="Preview"
+                            >
+                              👁️
+                            </button>
+                            <button 
+                              type="button" 
+                              class="remove-btn w-6 h-6 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center text-[9px] shadow-sm transition-all hover:scale-110"
+                              data-product-id={prod.id}
+                              data-image-url={img}
+                              title="Remove"
+                            >
+                              🗑️
+                            </button>
+                          </div>
                         </div>
                       );
                     })
@@ -1430,14 +1470,27 @@ if (action === 'bulk-images') {
                   mediaHtml = `<img src="${mediaUrl}" class="w-full h-full object-cover" />`;
                 }
                 
+                const fullUrl = (img.startsWith('http') || img.startsWith('/')) ? img : `https://res.cloudinary.com/${CLOUD_NAME}/${isVideo ? 'video' : 'image'}/upload/${img}`;
                 div.innerHTML = `
                   ${mediaHtml}
-                  <button 
-                    type="button" 
-                    class="remove-btn absolute inset-0 bg-black/70 text-white opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex items-center justify-center text-[9px] md:text-[10px] font-bold z-10"
-                  >
-                    Remove
-                  </button>
+                  <div class="absolute inset-0 bg-black/40 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 z-10">
+                    <button
+                      type="button"
+                      class="preview-trigger-btn w-6 h-6 rounded-full bg-white/90 hover:bg-white text-neutral-800 flex items-center justify-center text-xs shadow-sm transition-transform hover:scale-115"
+                      data-preview-src="${fullUrl}"
+                      data-preview-type="${isVideo ? 'video' : 'image'}"
+                      title="Preview"
+                    >
+                      👁️
+                    </button>
+                    <button 
+                      type="button" 
+                      class="remove-btn w-6 h-6 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center text-xs shadow-sm transition-transform hover:scale-115"
+                      title="Remove"
+                    >
+                      🗑️
+                    </button>
+                  </div>
                 `;
                 
                 div.querySelector('.remove-btn')?.addEventListener('click', () => {
@@ -1514,15 +1567,19 @@ if (action === 'bulk-images') {
               statusEls.forEach(statusEl => {
                 statusEl.classList.remove('hidden');
               });
+
+              const filesArray = Array.from(files);
+              let uploadedCount = 0;
+              const totalCount = filesArray.length;
               
-              for (let i = 0; i < files.length; i++) {
-                const file = files[i];
+              (window as any).processAndUploadFiles(filesArray, async (fileToUpload: File) => {
+                uploadedCount++;
                 statusEls.forEach(statusEl => {
-                  statusEl.childNodes[0].textContent = `Uploading ${i + 1}/${files.length}... `;
+                  statusEl.childNodes[0].textContent = `Uploading ${uploadedCount}/${totalCount}... `;
                 });
                 
                 try {
-                  const publicId = await uploadFileWithProgress(file, (pct) => {
+                  const publicId = await uploadFileWithProgress(fileToUpload, (pct) => {
                     statusEls.forEach(statusEl => {
                       const percentEl = statusEl.querySelector('.upload-percent') as HTMLElement;
                       if (percentEl) percentEl.textContent = `${pct}%`;
@@ -1551,17 +1608,431 @@ if (action === 'bulk-images') {
                     }
                   }
                 } catch (err) {
-                  alert(`Upload failed for "${file.name}": ` + err);
+                  alert(`Upload failed for "${fileToUpload.name}": ` + err);
                 }
-              }
-              
-              statusEls.forEach(statusEl => {
-                statusEl.classList.add('hidden');
+
+                if (uploadedCount === totalCount) {
+                  statusEls.forEach(statusEl => {
+                    statusEl.classList.add('hidden');
+                  });
+                  input.value = '';
+                }
               });
-              input.value = '';
             });
           });
         </script>
       </div>
     )}  
+
+  <!-- IMAGE CROP MODAL -->
+  <div id="crop-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/60 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300">
+    <div class="bg-white rounded-xl shadow-2xl border border-neutral-200 w-full max-w-lg overflow-hidden flex flex-col transform scale-95 transition-transform duration-300">
+      <!-- Modal Header -->
+      <div class="px-5 py-4 border-b border-neutral-200 flex items-center justify-between bg-neutral-50/80">
+        <div class="flex flex-col">
+          <h3 class="text-sm font-bold text-neutral-900">Crop Product Image</h3>
+          <span id="crop-modal-index" class="text-[10px] text-neutral-500 font-semibold mt-0.5">Image 1 of 1</span>
+        </div>
+        <button id="crop-modal-close-btn" type="button" class="text-neutral-400 hover:text-neutral-600 p-1 hover:bg-neutral-100 rounded-full transition-all">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <!-- Crop Area -->
+      <div class="p-4 bg-neutral-100/50 flex items-center justify-center h-80 overflow-hidden relative">
+        <img id="crop-image" src="" alt="Crop image" class="max-h-full max-w-full" style="display: block;" />
+      </div>
+
+      <!-- Controls & Ratio Selectors -->
+      <div class="p-5 border-t border-neutral-200 bg-white space-y-4">
+        <!-- Aspect Ratios -->
+        <div>
+          <span class="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-2">Select Crop Aspect Ratio</span>
+          <div class="grid grid-cols-4 gap-2">
+            <button type="button" class="crop-ratio-btn border-2 border-neutral-200 hover:border-primary/30 hover:bg-neutral-50 text-xs font-semibold py-2 px-3 rounded-lg text-neutral-700 transition-all select-none focus:outline-none" data-ratio-val="1">
+              1:1 (Square)
+            </button>
+            <button type="button" class="crop-ratio-btn border-2 border-neutral-200 hover:border-primary/30 hover:bg-neutral-50 text-xs font-semibold py-2 px-3 rounded-lg text-neutral-700 transition-all select-none focus:outline-none" data-ratio-val="0.6666666667">
+              1:1.5 (2:3)
+            </button>
+            <button type="button" class="crop-ratio-btn border-2 border-neutral-200 hover:border-primary/30 hover:bg-neutral-50 text-xs font-semibold py-2 px-3 rounded-lg text-neutral-700 transition-all select-none focus:outline-none" data-ratio-val="0.75">
+              3:4 (Portrait)
+            </button>
+            <button type="button" class="crop-ratio-btn border-2 border-neutral-200 hover:border-primary/30 hover:bg-neutral-50 text-xs font-semibold py-2 px-3 rounded-lg text-neutral-700 transition-all select-none focus:outline-none" data-ratio-val="NaN">
+              Free (Other)
+            </button>
+          </div>
+        </div>
+
+        <!-- Image adjustment controls -->
+        <div class="flex items-center justify-between border-t border-neutral-100 pt-3">
+          <span class="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Adjustment Tools</span>
+          <div class="flex gap-2">
+            <button type="button" id="crop-zoom-in" class="p-1.5 border border-neutral-200 hover:border-neutral-300 text-xs font-semibold rounded hover:bg-neutral-50 focus:outline-none" title="Zoom In">
+              🔍+
+            </button>
+            <button type="button" id="crop-zoom-out" class="p-1.5 border border-neutral-200 hover:border-neutral-300 text-xs font-semibold rounded hover:bg-neutral-50 focus:outline-none" title="Zoom Out">
+              🔍-
+            </button>
+            <button type="button" id="crop-rotate-left" class="p-1.5 border border-neutral-200 hover:border-neutral-300 text-xs font-semibold rounded hover:bg-neutral-50 focus:outline-none" title="Rotate Left">
+              ↺
+            </button>
+            <button type="button" id="crop-rotate-right" class="p-1.5 border border-neutral-200 hover:border-neutral-300 text-xs font-semibold rounded hover:bg-neutral-50 focus:outline-none" title="Rotate Right">
+              ↻
+            </button>
+            <button type="button" id="crop-reset" class="p-1.5 border border-neutral-200 hover:border-neutral-300 text-xs font-semibold rounded hover:bg-neutral-50 focus:outline-none text-red-500 hover:text-red-600" title="Reset Crop">
+              Reset
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="px-5 py-4 border-t border-neutral-200 bg-neutral-50 flex flex-wrap gap-2 justify-between items-center">
+        <button id="crop-modal-skip-all-btn" type="button" class="text-xs font-semibold text-red-600 hover:text-red-700 px-3 py-2 rounded hover:bg-red-50 transition-colors focus:outline-none">
+          Skip Crop Remaining
+        </button>
+        <div class="flex gap-2">
+          <button id="crop-modal-skip-btn" type="button" class="text-xs font-semibold text-neutral-600 hover:text-neutral-800 px-3 py-2 rounded hover:bg-neutral-100 transition-colors focus:outline-none">
+            Upload Original
+          </button>
+          <button id="crop-modal-save-btn" type="button" class="btn-primary text-xs font-bold px-4 py-2 rounded shadow-sm focus:outline-none">
+            Crop & Upload
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      let cropperLoaderPromise: Promise<void> | null = null;
+      function loadCropper(): Promise<void> {
+        if (cropperLoaderPromise) return cropperLoaderPromise;
+        cropperLoaderPromise = new Promise<void>((resolve, reject) => {
+          if ((window as any).Cropper) {
+            resolve();
+            return;
+          }
+          const link = document.createElement('link');
+          link.rel = 'stylesheet';
+          link.href = 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css';
+          link.crossOrigin = 'anonymous';
+          document.head.appendChild(link);
+
+          const script = document.createElement('script');
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js';
+          script.crossOrigin = 'anonymous';
+          script.onload = () => resolve();
+          script.onerror = () => reject(new Error('Failed to load Cropper.js'));
+          document.head.appendChild(script);
+        });
+        return cropperLoaderPromise;
+      }
+
+      // State
+      let fileQueue: File[] = [];
+      let currentQueueIndex = 0;
+      let activeCropper: any = null;
+      let currentOnDone: any = null;
+      let skipRemaining = false;
+
+      const modal = document.getElementById('crop-modal') as HTMLElement;
+      const cropImage = document.getElementById('crop-image') as HTMLImageElement;
+      const modalIndexLabel = document.getElementById('crop-modal-index') as HTMLElement;
+      
+      const saveBtn = document.getElementById('crop-modal-save-btn') as HTMLButtonElement;
+      const skipBtn = document.getElementById('crop-modal-skip-btn') as HTMLButtonElement;
+      const skipAllBtn = document.getElementById('crop-modal-skip-all-btn') as HTMLButtonElement;
+      const closeBtn = document.getElementById('crop-modal-close-btn') as HTMLButtonElement;
+
+      const zoomInBtn = document.getElementById('crop-zoom-in') as HTMLButtonElement;
+      const zoomOutBtn = document.getElementById('crop-zoom-out') as HTMLButtonElement;
+      const rotateLeftBtn = document.getElementById('crop-rotate-left') as HTMLButtonElement;
+      const rotateRightBtn = document.getElementById('crop-rotate-right') as HTMLButtonElement;
+      const resetBtn = document.getElementById('crop-reset') as HTMLButtonElement;
+
+      const ratioButtons = document.querySelectorAll('.crop-ratio-btn');
+
+      let activeAspectRatio = 1; // Default is 1 (1:1)
+
+      function openCropModal(file: File, onDone: any) {
+        currentOnDone = onDone;
+        skipRemaining = false;
+        
+        // Load Cropper and file
+        loadCropper().then(() => {
+          const reader = new FileReader();
+          reader.onload = (e: any) => {
+            cropImage.src = e.target.result;
+            
+            // Show modal with animation
+            modal.classList.remove('hidden');
+            // Force reflow
+            modal.offsetHeight;
+            modal.classList.remove('opacity-0');
+            const innerBox = modal.querySelector('.transform') as HTMLElement;
+            innerBox.classList.remove('scale-95');
+            innerBox.classList.add('scale-100');
+
+            // Update progress/index label
+            modalIndexLabel.textContent = `Image ${currentQueueIndex + 1} of ${fileQueue.length} (${file.name})`;
+
+            // Destroy previous cropper if any
+            if (activeCropper) {
+              activeCropper.destroy();
+            }
+
+            // Initialize Cropper
+            activeCropper = new (window as any).Cropper(cropImage, {
+              aspectRatio: activeAspectRatio,
+              viewMode: 1,
+              autoCropArea: 0.9,
+              responsive: true,
+              restore: false,
+              guides: true,
+              center: true,
+              highlight: false,
+              cropBoxMovable: true,
+              cropBoxResizable: true,
+              toggleDragModeOnDblclick: false,
+            });
+
+            // Set active state on ratio button
+            updateRatioButtonsUI();
+          };
+          reader.readAsDataURL(file);
+        }).catch((err: any) => {
+          console.error(err);
+          // fallback
+          onDone(file);
+        });
+      }
+
+      function updateRatioButtonsUI() {
+        ratioButtons.forEach(btn => {
+          const valStr = btn.getAttribute('data-ratio-val');
+          const val = valStr === 'NaN' ? NaN : parseFloat(valStr || '1');
+          const isActive = (isNaN(activeAspectRatio) && isNaN(val)) || (activeAspectRatio === val);
+          if (isActive) {
+            btn.classList.remove('border-neutral-200', 'text-neutral-700', 'hover:bg-neutral-50');
+            btn.classList.add('bg-primary', 'text-white', 'border-primary');
+          } else {
+            btn.classList.remove('bg-primary', 'text-white', 'border-primary');
+            btn.classList.add('border-neutral-200', 'text-neutral-700', 'hover:bg-neutral-50');
+          }
+        });
+      }
+
+      function closeModal() {
+        modal.classList.add('opacity-0');
+        const innerBox = modal.querySelector('.transform') as HTMLElement;
+        innerBox.classList.add('scale-95');
+        innerBox.classList.remove('scale-100');
+        setTimeout(() => {
+          modal.classList.add('hidden');
+          if (activeCropper) {
+            activeCropper.destroy();
+            activeCropper = null;
+          }
+          cropImage.src = '';
+        }, 300);
+      }
+
+      // Handle ratio button clicks
+      ratioButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const valStr = btn.getAttribute('data-ratio-val');
+          const val = valStr === 'NaN' ? NaN : parseFloat(valStr || '1');
+          activeAspectRatio = val;
+          if (activeCropper) {
+            activeCropper.setAspectRatio(val);
+          }
+          updateRatioButtonsUI();
+        });
+      });
+
+      // Zoom / Rotate / Reset events
+      zoomInBtn.addEventListener('click', () => activeCropper?.zoom(0.1));
+      zoomOutBtn.addEventListener('click', () => activeCropper?.zoom(-0.1));
+      rotateLeftBtn.addEventListener('click', () => activeCropper?.rotate(-90));
+      rotateRightBtn.addEventListener('click', () => activeCropper?.rotate(90));
+      resetBtn.addEventListener('click', () => activeCropper?.reset());
+
+      // Close/Skip events
+      closeBtn.addEventListener('click', () => {
+        handleNext(null);
+      });
+
+      skipBtn.addEventListener('click', () => {
+        const currentItem = fileQueue[currentQueueIndex];
+        handleNext(currentItem);
+      });
+
+      skipAllBtn.addEventListener('click', () => {
+        skipRemaining = true;
+        const currentItem = fileQueue[currentQueueIndex];
+        handleNext(currentItem);
+      });
+
+      saveBtn.addEventListener('click', () => {
+        if (!activeCropper) return;
+        
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Cropping...';
+
+        const currentItem = fileQueue[currentQueueIndex];
+        
+        const canvas = activeCropper.getCroppedCanvas({
+          maxWidth: 2048,
+          maxHeight: 2048,
+          imageSmoothingEnabled: true,
+          imageSmoothingQuality: 'high',
+        });
+
+        if (!canvas) {
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Crop & Upload';
+          handleNext(currentItem);
+          return;
+        }
+
+        canvas.toBlob((blob: any) => {
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Crop & Upload';
+          
+          if (blob) {
+            const croppedFile = new File([blob], currentItem.name, {
+              type: currentItem.type || 'image/jpeg',
+              lastModified: Date.now()
+            });
+            handleNext(croppedFile);
+          } else {
+            handleNext(currentItem);
+          }
+        }, currentItem.type || 'image/jpeg', 0.9);
+      });
+
+      function handleNext(fileToUpload: File | null) {
+        if (fileToUpload && currentOnDone) {
+          currentOnDone(fileToUpload);
+        }
+        
+        currentQueueIndex++;
+        
+        if (currentQueueIndex < fileQueue.length) {
+          if (skipRemaining) {
+            for (let i = currentQueueIndex; i < fileQueue.length; i++) {
+              currentOnDone(fileQueue[i]);
+            }
+            closeModal();
+            fileQueue = [];
+            currentQueueIndex = 0;
+          } else {
+            openCropModal(fileQueue[currentQueueIndex], currentOnDone);
+          }
+        } else {
+          closeModal();
+          fileQueue = [];
+          currentQueueIndex = 0;
+        }
+      }
+
+      (window as any).processAndUploadFiles = function(files: File[], onFileDone: any) {
+        fileQueue = [];
+        currentQueueIndex = 0;
+        skipRemaining = false;
+
+        const imagesToCrop: File[] = [];
+        const directUploads: File[] = [];
+
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|mov|ogg|avi)$/i.test(file.name);
+          const isGif = file.type === 'image/gif' || /\.gif$/i.test(file.name);
+          
+          if (file.type.startsWith('image/') && !isGif) {
+            imagesToCrop.push(file);
+          } else {
+            directUploads.push(file);
+          }
+        }
+
+        directUploads.forEach(file => onFileDone(file));
+
+        if (imagesToCrop.length > 0) {
+          fileQueue = imagesToCrop;
+          openCropModal(fileQueue[0], onFileDone);
+        }
+      };
+    })();
+  </script>
+
+  <!-- IMAGE PREVIEW MODAL (LIGHTBOX) -->
+  <div id="preview-modal" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300 cursor-zoom-out">
+    <button id="preview-modal-close" type="button" class="absolute top-4 right-4 text-white/70 hover:text-white p-2 hover:bg-white/10 rounded-full transition-all z-[70] cursor-pointer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="relative max-w-4xl max-h-[85vh] flex items-center justify-center cursor-default">
+      <img id="preview-modal-img" src="" alt="Preview" class="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl hidden" />
+      <video id="preview-modal-video" src="" controls class="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl hidden" autoplay muted loop></video>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      const previewModal = document.getElementById('preview-modal') as HTMLElement;
+      const previewModalImg = document.getElementById('preview-modal-img') as HTMLImageElement;
+      const previewModalVideo = document.getElementById('preview-modal-video') as HTMLVideoElement;
+      const previewModalClose = document.getElementById('preview-modal-close') as HTMLButtonElement;
+
+      function showPreview(src: string, isVideo: boolean) {
+        if (isVideo) {
+          previewModalImg.classList.add('hidden');
+          previewModalVideo.src = src;
+          previewModalVideo.classList.remove('hidden');
+        } else {
+          previewModalVideo.classList.add('hidden');
+          previewModalVideo.src = '';
+          previewModalImg.src = src;
+          previewModalImg.classList.remove('hidden');
+        }
+        
+        previewModal.classList.remove('hidden');
+        // Force reflow
+        previewModal.offsetHeight;
+        previewModal.classList.remove('opacity-0');
+      }
+
+      function hidePreview() {
+        previewModal.classList.add('opacity-0');
+        setTimeout(() => {
+          previewModal.classList.add('hidden');
+          previewModalImg.src = '';
+          previewModalVideo.src = '';
+          previewModalImg.classList.add('hidden');
+          previewModalVideo.classList.add('hidden');
+        }, 300);
+      }
+
+      // Close when clicking backdrop or close button
+      previewModal?.addEventListener('click', (e) => {
+        if (e.target === previewModal || previewModalClose.contains(e.target as Node)) {
+          hidePreview();
+        }
+      });
+
+      // Event delegation for preview triggers
+      document.addEventListener('click', (e) => {
+        const btn = (e.target as HTMLElement).closest('.preview-trigger-btn');
+        if (btn) {
+          const src = btn.getAttribute('data-preview-src') || '';
+          const isVideo = btn.getAttribute('data-preview-type') === 'video';
+          if (src) {
+            showPreview(src, isVideo);
+          }
+        }
+      });
+    })();
+  </script>
 </AdminLayout>
