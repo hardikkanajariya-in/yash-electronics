@@ -14,6 +14,11 @@ const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa';
 function getProductImageUrl(img: string | undefined | null) {
   if (!img) return '/images/placeholder-product.svg';
   if (img.startsWith('http') || img.startsWith('/')) return img;
+  const isVideo = img.endsWith('.mp4') || img.endsWith('.webm') || img.endsWith('.ogg') || img.endsWith('.mov');
+  if (isVideo) {
+    const publicIdWithJpg = img.substring(0, img.lastIndexOf('.')) + '.jpg';
+    return `https://res.cloudinary.com/${CLOUD_NAME}/video/upload/w_100,h_100,c_fill,q_auto/${publicIdWithJpg}`;
+  }
   return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_100,h_100,c_fill,f_auto,q_auto/${img}`;
 }
 
@@ -421,7 +426,14 @@ if (action === 'bulk-images') {
               {allProducts.map((prod) => (
                 <tr class="border-b border-neutral-100 hover:bg-neutral-50/50">
                   <td class="p-3">
-                    <img src={getProductImageUrl(prod.images?.[0])} class="w-10 h-10 object-cover rounded border border-neutral-200 shadow-sm bg-neutral-50" alt={prod.name} />
+                    <div class="relative w-10 h-10">
+                      <img src={getProductImageUrl(prod.images?.[0])} class="w-10 h-10 object-cover rounded border border-neutral-200 shadow-sm bg-neutral-50" alt={prod.name} />
+                      {prod.images?.[0] && (prod.images[0].endsWith('.mp4') || prod.images[0].endsWith('.webm') || prod.images[0].endsWith('.ogg') || prod.images[0].endsWith('.mov')) && (
+                        <div class="absolute inset-0 flex items-center justify-center bg-black/35 rounded">
+                          <span class="text-white text-[9px]">▶</span>
+                        </div>
+                      )}
+                    </div>
                   </td>
                   <td class="p-3 font-medium text-neutral-900">{prod.name}</td>
                   <td class="p-3 text-xs text-neutral-500">{prod.modelNumber || '-'}</td>
@@ -470,11 +482,18 @@ if (action === 'bulk-images') {
           {allProducts.map((prod) => (
             <div class="p-4 flex gap-3 items-center relative pr-20 min-h-[5.5rem]">
               <!-- Thumbnail -->
-              <img 
-                src={getProductImageUrl(prod.images?.[0])} 
-                class="w-16 h-16 object-cover rounded border border-neutral-200 shadow-sm bg-neutral-50 shrink-0" 
-                alt={prod.name} 
-              />
+              <div class="relative w-16 h-16 shrink-0">
+                <img 
+                  src={getProductImageUrl(prod.images?.[0])} 
+                  class="w-16 h-16 object-cover rounded border border-neutral-200 shadow-sm bg-neutral-50" 
+                  alt={prod.name} 
+                />
+                {prod.images?.[0] && (prod.images[0].endsWith('.mp4') || prod.images[0].endsWith('.webm') || prod.images[0].endsWith('.ogg') || prod.images[0].endsWith('.mov')) && (
+                  <div class="absolute inset-0 flex items-center justify-center bg-black/35 rounded">
+                    <span class="text-white text-xs">▶</span>
+                  </div>
+                )}
+              </div>
               
               <div class="flex-1 min-w-0">
                 <div class="font-bold text-sm text-neutral-900 truncate pr-2">{prod.name}</div>
@@ -728,19 +747,12 @@ if (action === 'bulk-images') {
             <div id="image-previews" class="flex flex-wrap gap-3 mb-3"></div>
 
             <div class="relative border-2 border-dashed border-neutral-300 rounded-lg p-6 hover:border-primary hover:bg-neutral-50/50 transition-colors cursor-pointer group text-center" id="upload-dropzone">
-              <input type="file" id="file-picker" multiple accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer" />
+              <input type="file" id="file-picker" multiple accept="image/*,video/*" class="absolute inset-0 opacity-0 cursor-pointer" />
               <div class="space-y-1">
-                <span class="text-2xl text-neutral-400 group-hover:text-primary transition-colors">📷</span>
+                <span class="text-2xl text-neutral-400 group-hover:text-primary transition-colors">🎥</span>
                 <p class="text-xs font-semibold text-neutral-600">Click to upload or drag & drop</p>
-                <p class="text-[10px] text-neutral-400">Supports JPG, PNG, WEBP</p>
+                <p class="text-[10px] text-neutral-400">Supports JPG, PNG, WEBP, MP4, WEBM</p>
               </div>
-            </div>
-
-            <input type="file" id="camera-picker" accept="image/*" capture="environment" class="hidden" />
-            <div class="mt-2">
-              <button type="button" id="open-camera-btn" class="w-full py-2 px-3 border border-neutral-300 hover:border-primary hover:text-primary rounded-md text-xs font-semibold flex items-center justify-center gap-1.5 bg-white transition-colors cursor-pointer shadow-sm">
-                📷 Open Camera & Take Photo
-              </button>
             </div>
 
             <div id="upload-progress-container" class="hidden mt-3 space-y-1.5">
@@ -931,16 +943,33 @@ if (action === 'bulk-images') {
             previewsContainer.innerHTML = '';
             const images = getImages();
             images.forEach(img => {
-              let displayUrl = img;
-              if (!img.startsWith('http') && !img.startsWith('/')) {
-                displayUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_200,h_200,c_fill,f_auto,q_auto/${img}`;
+              const isVideo = img.endsWith('.mp4') || img.endsWith('.webm') || img.endsWith('.ogg') || img.endsWith('.mov');
+              let mediaHtml = '';
+              
+              if (isVideo) {
+                let videoUrl = img;
+                if (!img.startsWith('http') && !img.startsWith('/')) {
+                  videoUrl = `https://res.cloudinary.com/${CLOUD_NAME}/video/upload/w_200,h_200,c_fill/${img}`;
+                }
+                mediaHtml = `
+                  <video src="${videoUrl}" class="w-full h-full object-cover" muted playsinline></video>
+                  <div class="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/20">
+                    <span class="text-white text-xs">▶</span>
+                  </div>
+                `;
+              } else {
+                let displayUrl = img;
+                if (!img.startsWith('http') && !img.startsWith('/')) {
+                  displayUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_200,h_200,c_fill,f_auto,q_auto/${img}`;
+                }
+                mediaHtml = `<img src="${displayUrl}" class="w-full h-full object-cover" />`;
               }
               
               const div = document.createElement('div');
               div.className = 'relative group w-20 h-20 border border-neutral-200 rounded-md overflow-hidden bg-neutral-50 shadow-sm';
               div.innerHTML = `
-                <img src="${displayUrl}" class="w-full h-full object-cover" />
-                <button type="button" class="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold font-mono">Remove</button>
+                ${mediaHtml}
+                <button type="button" class="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold font-mono z-10">Remove</button>
               `;
               
               div.querySelector('button')?.addEventListener('click', () => {
@@ -953,12 +982,6 @@ if (action === 'bulk-images') {
             });
           }
 
-          const cameraPicker = document.getElementById('camera-picker') as HTMLInputElement;
-          const openCameraBtn = document.getElementById('open-camera-btn');
-
-          openCameraBtn?.addEventListener('click', () => {
-            cameraPicker?.click();
-          });
 
           async function uploadFiles(files: FileList | null, pickerElement: HTMLInputElement) {
             if (!files || files.length === 0) return;
@@ -994,9 +1017,6 @@ if (action === 'bulk-images') {
             uploadFiles(filePicker.files, filePicker);
           });
 
-          cameraPicker?.addEventListener('change', () => {
-            uploadFiles(cameraPicker.files, cameraPicker);
-          });
 
           function uploadFileWithProgress(file: File, onProgress: (pct: number) => void): Promise<string> {
             return new Promise((resolve, reject) => {
@@ -1168,15 +1188,23 @@ if (action === 'bulk-images') {
                     >
                       {prod.images && prod.images.length > 0 ? (
                         prod.images.map((img: string) => {
-                          const displayUrl = (img.startsWith('http') || img.startsWith('/')) 
+                          const isVideo = img.endsWith('.mp4') || img.endsWith('.webm') || img.endsWith('.ogg') || img.endsWith('.mov');
+                          const mediaUrl = (img.startsWith('http') || img.startsWith('/')) 
                             ? img 
-                            : `https://res.cloudinary.com/${import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa'}/image/upload/w_100,h_100,c_fill,f_auto,q_auto/${img}`;
+                            : `https://res.cloudinary.com/${import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa'}/${isVideo ? 'video' : 'image'}/upload/w_100,h_100,c_fill${isVideo ? '' : ',f_auto,q_auto'}/${img}`;
                           return (
                             <div class="relative group w-16 h-16 rounded overflow-hidden shadow-sm border border-neutral-200 bg-neutral-50 shrink-0">
-                              <img src={displayUrl} class="w-full h-full object-cover" />
+                              {isVideo ? (
+                                <video src={mediaUrl} class="w-full h-full object-cover" muted playsinline />
+                                <div class="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/20">
+                                  <span class="text-white text-xs">▶</span>
+                                </div>
+                              ) : (
+                                <img src={mediaUrl} class="w-full h-full object-cover" />
+                              )}
                               <button 
                                 type="button" 
-                                class="remove-btn absolute inset-0 bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-[10px] font-bold"
+                                class="remove-btn absolute inset-0 bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-[10px] font-bold z-10"
                                 data-product-id={prod.id}
                                 data-image-url={img}
                               >
@@ -1197,7 +1225,7 @@ if (action === 'bulk-images') {
                         <input 
                           type="file" 
                           class="bulk-file-picker hidden" 
-                          accept="image/*" 
+                          accept="image/*,video/*" 
                           multiple 
                           data-product-id={prod.id} 
                         />
@@ -1258,7 +1286,7 @@ if (action === 'bulk-images') {
                       <input 
                         type="file" 
                         class="bulk-file-picker hidden" 
-                        accept="image/*" 
+                        accept="image/*,video/*" 
                         multiple 
                         data-product-id={prod.id} 
                       />
@@ -1279,15 +1307,23 @@ if (action === 'bulk-images') {
                 >
                   {prod.images && prod.images.length > 0 ? (
                     prod.images.map((img: string) => {
-                      const displayUrl = (img.startsWith('http') || img.startsWith('/')) 
+                      const isVideo = img.endsWith('.mp4') || img.endsWith('.webm') || img.endsWith('.ogg') || img.endsWith('.mov');
+                      const mediaUrl = (img.startsWith('http') || img.startsWith('/')) 
                         ? img 
-                        : `https://res.cloudinary.com/${import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa'}/image/upload/w_100,h_100,c_fill,f_auto,q_auto/${img}`;
+                        : `https://res.cloudinary.com/${import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa'}/${isVideo ? 'video' : 'image'}/upload/w_100,h_100,c_fill${isVideo ? '' : ',f_auto,q_auto'}/${img}`;
                       return (
                         <div class="relative group w-14 h-14 rounded overflow-hidden shadow-sm border border-neutral-200 bg-neutral-50 shrink-0">
-                          <img src={displayUrl} class="w-full h-full object-cover" />
+                          {isVideo ? (
+                            <video src={mediaUrl} class="w-full h-full object-cover" muted playsinline />
+                            <div class="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/20">
+                              <span class="text-white text-xs">▶</span>
+                            </div>
+                          ) : (
+                            <img src={mediaUrl} class="w-full h-full object-cover" />
+                          )}
                           <button 
                             type="button" 
-                            class="remove-btn absolute inset-0 bg-black/70 text-white opacity-100 flex items-center justify-center text-[9px] font-bold"
+                            class="remove-btn absolute inset-0 bg-black/70 text-white opacity-100 flex items-center justify-center text-[9px] font-bold z-10"
                             data-product-id={prod.id}
                             data-image-url={img}
                           >
@@ -1374,17 +1410,31 @@ if (action === 'bulk-images') {
               }
               
               images.forEach(img => {
-                const displayUrl = (img.startsWith('http') || img.startsWith('/')) 
+                const isVideo = img.endsWith('.mp4') || img.endsWith('.webm') || img.endsWith('.ogg') || img.endsWith('.mov');
+                const mediaUrl = (img.startsWith('http') || img.startsWith('/')) 
                   ? img 
-                  : `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_100,h_100,c_fill,f_auto,q_auto/${img}`;
+                  : `https://res.cloudinary.com/${CLOUD_NAME}/${isVideo ? 'video' : 'image'}/upload/w_100,h_100,c_fill${isVideo ? '' : ',f_auto,q_auto'}/${img}`;
                   
                 const div = document.createElement('div');
                 div.className = 'relative group w-14 h-14 md:w-16 md:h-16 rounded overflow-hidden shadow-sm border border-neutral-200 bg-neutral-50 shrink-0';
+                
+                let mediaHtml = '';
+                if (isVideo) {
+                  mediaHtml = `
+                    <video src="${mediaUrl}" class="w-full h-full object-cover" muted playsinline></video>
+                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/20">
+                      <span class="text-white text-xs">▶</span>
+                    </div>
+                  `;
+                } else {
+                  mediaHtml = `<img src="${mediaUrl}" class="w-full h-full object-cover" />`;
+                }
+                
                 div.innerHTML = `
-                  <img src="${displayUrl}" class="w-full h-full object-cover" />
+                  ${mediaHtml}
                   <button 
                     type="button" 
-                    class="remove-btn absolute inset-0 bg-black/70 text-white opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex items-center justify-center text-[9px] md:text-[10px] font-bold"
+                    class="remove-btn absolute inset-0 bg-black/70 text-white opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex items-center justify-center text-[9px] md:text-[10px] font-bold z-10"
                   >
                     Remove
                   </button>

@@ -1,5 +1,6 @@
 ---
 import CloudinaryImage from '../common/CloudinaryImage.astro';
+import { buildCloudinaryUrl } from '../../lib/cloudinary';
 
 interface Props {
   images: string[];
@@ -8,60 +9,120 @@ interface Props {
 
 const { images, productName } = Astro.props;
 const displayImages = images.length > 0 ? images : [''];
+
+function isVideo(path: string) {
+  if (!path) return false;
+  return path.endsWith('.mp4') || path.endsWith('.webm') || path.endsWith('.ogg') || path.endsWith('.mov') || path.includes('/video/upload/');
+}
 ---
 
 <div class="product-gallery">
-  <div class="overflow-hidden rounded-lg border border-neutral-200 bg-white">
-    <CloudinaryImage
-      publicId={displayImages[0]}
-      alt={productName}
-      width={600}
-      height={600}
-      crop="limit"
-      class="aspect-square w-full object-contain p-4"
-      priority
-      sizes="(max-width: 768px) 100vw, 50vw"
-    />
+  <div class="overflow-hidden rounded-lg border border-neutral-200 bg-white relative aspect-square flex items-center justify-center p-4">
+    <!-- Main Media Display -->
+    <div id="main-media-container" class="w-full h-full flex items-center justify-center">
+      {isVideo(displayImages[0]) ? (
+        <video
+          id="main-video"
+          src={buildCloudinaryUrl(displayImages[0])}
+          controls
+          autoplay
+          muted
+          loop
+          playsinline
+          class="w-full h-full object-contain"
+        />
+      ) : (
+        <img
+          id="main-image"
+          src={buildCloudinaryUrl(displayImages[0], { width: 600 })}
+          alt={productName}
+          class="w-full h-full object-contain"
+        />
+      )}
+    </div>
   </div>
   {displayImages.length > 1 && (
     <div class="mt-2 grid grid-cols-4 gap-2">
-      {displayImages.slice(0, 4).map((img, i) => (
-        <button
-          type="button"
-          class="gallery-thumb overflow-hidden rounded border-2 border-transparent bg-white transition-colors hover:border-primary focus:border-primary"
-          data-index={i}
-          aria-label={`View image ${i + 1}`}
-        >
-          <CloudinaryImage
-            publicId={img}
-            alt={`${productName} - view ${i + 1}`}
-            width={120}
-            height={120}
-            crop="limit"
-            class="aspect-square w-full object-contain p-1"
-          />
-        </button>
-      ))}
+      {displayImages.slice(0, 8).map((img, i) => {
+        const isVid = isVideo(img);
+        return (
+          <button
+            type="button"
+            class={`gallery-thumb overflow-hidden rounded border-2 bg-white transition-all hover:border-primary focus:border-primary relative aspect-square ${i === 0 ? 'border-primary' : 'border-transparent'}`}
+            data-index={i}
+            data-src={buildCloudinaryUrl(img)}
+            data-type={isVid ? 'video' : 'image'}
+            aria-label={`View item ${i + 1}`}
+          >
+            {isVid ? (
+              <div class="w-full h-full bg-neutral-100 flex flex-col items-center justify-center relative p-1">
+                <video src={buildCloudinaryUrl(img)} class="w-full h-full object-contain pointer-events-none" muted />
+                <div class="absolute inset-0 bg-black/30 flex items-center justify-center text-white text-base">
+                  ▶️
+                </div>
+              </div>
+            ) : (
+              <CloudinaryImage
+                publicId={img}
+                alt={`${productName} - view ${i + 1}`}
+                width={120}
+                height={120}
+                crop="limit"
+                class="aspect-square w-full object-contain p-1"
+              />
+            )}
+          </button>
+        );
+      })}
     </div>
   )}
 </div>
 
 <script>
-  const gallery = document.querySelector('.product-gallery');
-  if (gallery) {
-    const mainImg = gallery.querySelector('img');
-    const thumbs = gallery.querySelectorAll('.gallery-thumb');
+  function initGallery() {
+    const gallery = document.querySelector('.product-gallery');
+    if (gallery) {
+      const mediaContainer = gallery.querySelector('#main-media-container');
+      const thumbs = gallery.querySelectorAll('.gallery-thumb');
 
-    thumbs.forEach((thumb) => {
-      thumb.addEventListener('click', () => {
-        const thumbImg = thumb.querySelector('img');
-        if (mainImg && thumbImg) {
-          mainImg.src = thumbImg.src;
-          mainImg.srcset = thumbImg.srcset;
-        }
-        thumbs.forEach((t) => t.classList.remove('border-primary'));
-        thumb.classList.add('border-primary');
+      thumbs.forEach((thumb) => {
+        thumb.addEventListener('click', () => {
+          const src = thumb.getAttribute('data-src') || '';
+          const type = thumb.getAttribute('data-type') || 'image';
+
+          if (mediaContainer) {
+            if (type === 'video') {
+              mediaContainer.innerHTML = `
+                <video
+                  id="main-video"
+                  src="${src}"
+                  controls
+                  autoplay
+                  muted
+                  loop
+                  playsinline
+                  class="w-full h-full object-contain"
+                />
+              `;
+            } else {
+              mediaContainer.innerHTML = `
+                <img
+                  id="main-image"
+                  src="${src}"
+                  alt=""
+                  class="w-full h-full object-contain"
+                />
+              `;
+            }
+          }
+          thumbs.forEach((t) => t.classList.remove('border-primary'));
+          thumb.classList.add('border-primary');
+        });
       });
-    });
+    }
   }
+
+  // Setup gallery listener for initial load and page transitions (Astro View Transitions)
+  document.addEventListener('DOMContentLoaded', initGallery);
+  document.addEventListener('astro:page-load', initGallery);
 </script>

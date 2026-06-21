@@ -23,6 +23,9 @@ export const POST = async ({ request }: { request: Request }) => {
     const paramString = `folder=${folder}&timestamp=${timestamp}${apiSecret}`;
     const signature = createHash('sha1').update(paramString).digest('hex');
 
+    const isVideoFile = file.type.startsWith('video/') || /\.(mp4|webm|mov|ogg|avi)$/i.test(file.name);
+    const endpoint = isVideoFile ? 'video' : 'image';
+
     const arrayBuffer = await file.arrayBuffer();
     const blob = new Blob([arrayBuffer], { type: file.type });
 
@@ -32,17 +35,27 @@ export const POST = async ({ request }: { request: Request }) => {
     uploadForm.append('timestamp', String(timestamp));
     uploadForm.append('api_key', apiKey);
     uploadForm.append('signature', signature);
+    if (isVideoFile) {
+      uploadForm.append('resource_type', 'video');
+    }
 
-    const cloudinaryRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+    const cloudinaryRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/${endpoint}/upload`, {
       method: 'POST',
       body: uploadForm,
     });
 
     const cloudinaryData = await cloudinaryRes.json();
     if (cloudinaryData.secure_url) {
+      let publicId = cloudinaryData.public_id;
+      if (cloudinaryData.resource_type === 'video' || isVideoFile) {
+        const ext = file.name.split('.').pop() || 'mp4';
+        if (!publicId.endsWith('.' + ext)) {
+          publicId = `${publicId}.${ext}`;
+        }
+      }
       return new Response(JSON.stringify({
         url: cloudinaryData.secure_url,
-        public_id: cloudinaryData.public_id,
+        public_id: publicId,
       }), { status: 200 });
     } else {
       return new Response(JSON.stringify({ error: cloudinaryData.error?.message || 'Cloudinary upload failed' }), { status: 500 });

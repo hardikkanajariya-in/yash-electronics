@@ -16,6 +16,9 @@ export function buildCloudinaryUrl(
   if (publicId.startsWith('http')) return publicId;
   if (publicId.startsWith('/')) return publicId;
 
+  const isVideo = publicId.endsWith('.mp4') || publicId.endsWith('.webm') || publicId.endsWith('.ogg') || publicId.endsWith('.mov') || publicId.includes('/video/upload/');
+  const resourceType = isVideo ? 'video' : 'image';
+
   const { width, height, crop = 'fill', quality = 'auto', format = 'auto' } = options;
   const transforms: string[] = [`f_${format}`, `q_${quality}`];
 
@@ -23,7 +26,7 @@ export function buildCloudinaryUrl(
   if (height) transforms.push(`h_${height}`);
   if (width || height) transforms.push(`c_${crop}`);
 
-  return `https://res.cloudinary.com/${cloudinaryConfig.cloudName}/image/upload/${transforms.join(',')}/${publicId}`;
+  return `https://res.cloudinary.com/${cloudinaryConfig.cloudName}/${resourceType}/upload/${transforms.join(',')}/${publicId}`;
 }
 
 export function buildSrcSet(publicId: string, widths: number[]): string {
