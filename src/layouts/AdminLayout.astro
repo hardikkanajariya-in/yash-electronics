@@ -611,6 +611,10 @@ const drawerNavItems = [
         banner.classList.remove('hidden');
       }
 
+      if (Notification.permission === 'granted' && !alreadySubscribed) {
+        subscribeToPush();
+      }
+
       if (btn) {
         btn.addEventListener('click', async () => {
           const permission = await Notification.requestPermission();
@@ -664,10 +668,24 @@ const drawerNavItems = [
               hasNew = true;
               showToast(notif.title, notif.message, getRedirectUrl(notif.type));
               if (Notification.permission === 'granted') {
-                new Notification(notif.title, {
-                  body: notif.message,
-                  icon: '/icon-192.png'
-                });
+                if ('serviceWorker' in navigator) {
+                  navigator.serviceWorker.ready.then((reg) => {
+                    reg.showNotification(notif.title, {
+                      body: notif.message,
+                      icon: '/icon-192.png'
+                    });
+                  }).catch(() => {
+                    new Notification(notif.title, {
+                      body: notif.message,
+                      icon: '/icon-192.png'
+                    });
+                  });
+                } else {
+                  new Notification(notif.title, {
+                    body: notif.message,
+                    icon: '/icon-192.png'
+                  });
+                }
               }
             }
           }
