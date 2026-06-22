@@ -11,7 +11,7 @@ export const prerender = false;
 Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
 const currentUser = await getSessionUser(Astro.cookies);
 if (!currentUser || currentUser.role !== 'admin') {
-  return Astro.redirect('/admin/login');
+  return Astro.redirect('/account/login?redirect=' + encodeURIComponent(Astro.url.pathname));
 }
 
 let error = '';

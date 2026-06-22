@@ -104,14 +104,15 @@ if (Astro.request.method === 'POST') {
         .where(
           and(
             eq(users.phone, phone),
-            eq(users.password, hashedPassword),
-            eq(users.role, 'customer')
+            eq(users.password, hashedPassword)
           )
         );
 
       if (user) {
         Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-        const destination = redirectParam ? redirectParam : (locale === 'en' ? '/en/account' : '/account');
+        const destination = redirectParam 
+          ? redirectParam 
+          : (user.role === 'admin' ? '/admin' : (locale === 'en' ? '/en/account' : '/account'));
         setSessionUser(Astro.cookies, user.id, Astro.url);
         return new Response(null, {
           status: 303,

@@ -101,6 +101,14 @@ const year = new Date().getFullYear();
             </a>
           )}
         </div>
+        <div class="mt-5">
+          <button
+            id="footer-pwa-install-btn"
+            class="inline-flex items-center gap-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white px-3 py-1.5 text-xs font-semibold border border-neutral-700 transition-colors cursor-pointer focus:outline-none"
+          >
+            📱 {locale === 'gu' ? 'એપ ઇન્સ્ટોલ કરો' : 'Install App'}
+          </button>
+        </div>
       </div>
     </div>
 
@@ -115,3 +123,31 @@ const year = new Date().getFullYear();
     </div>
   </Container>
 </footer>
+
+<script is:inline>
+  (function() {
+    let footerDeferredPrompt = null;
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      footerDeferredPrompt = e;
+    });
+
+    const footerInstallBtn = document.getElementById('footer-pwa-install-btn');
+    footerInstallBtn?.addEventListener('click', async () => {
+      if (footerDeferredPrompt) {
+        footerDeferredPrompt.prompt();
+        const { outcome } = await footerDeferredPrompt.userChoice;
+        console.log('Footer PWA installation outcome:', outcome);
+        footerDeferredPrompt = null;
+      } else {
+        const isGu = document.documentElement.lang === 'gu';
+        alert(
+          isGu
+            ? 'એપ ઇન્સ્ટોલ કરવા માટે:\n૧. તમારા બ્રાઉઝરના મેનૂ (⋮ અથવા શેર બટન) પર ક્લિક કરો.\n૨. "હોમ સ્ક્રીન પર ઉમેરો" અથવા "એપ ઇન્સ્ટોલ કરો" પસંદ કરો.'
+            : 'To install the app:\n1. Click your browser\'s menu (⋮ or share button).\n2. Select "Add to Home Screen" or "Install App".'
+        );
+      }
+    });
+  })();
+</script>

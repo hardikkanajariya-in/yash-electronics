@@ -17,7 +17,7 @@ const { title, activeTab, subtitle = 'Admin Panel' } = Astro.props;
 const currentUser = await getSessionUser(Astro.cookies);
 if (!currentUser || currentUser.role !== 'admin') {
   // Page level redirects will handle this, but as fallback:
-  return Astro.redirect('/admin/login');
+  return Astro.redirect('/account/login?redirect=' + encodeURIComponent(Astro.url.pathname));
 }
 
 const vapidPublicKey = import.meta.env.PUBLIC_VAPID_PUBLIC_KEY || '';

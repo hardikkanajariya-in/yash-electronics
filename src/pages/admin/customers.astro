@@ -14,7 +14,7 @@ Astro.response.headers.set(
 );
 const currentUser = await getSessionUser(Astro.cookies);
 if (!currentUser || currentUser.role !== "admin") {
-  return Astro.redirect("/admin/login");
+  return Astro.redirect('/account/login?redirect=' + encodeURIComponent(Astro.url.pathname));
 }
 
 let error = Astro.url.searchParams.get("error") || "";

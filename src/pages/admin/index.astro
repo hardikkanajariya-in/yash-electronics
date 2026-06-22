@@ -11,13 +11,13 @@ export const prerender = false;
 Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
 const currentUser = await getSessionUser(Astro.cookies);
 if (!currentUser || currentUser.role !== 'admin') {
-  return Astro.redirect('/admin/login');
+  return Astro.redirect('/account/login?redirect=' + encodeURIComponent(Astro.url.pathname));
 }
 
 // Handle Logout
 if (Astro.url.searchParams.get('action') === 'logout') {
   clearSessionUser(Astro.cookies, Astro.url);
-  return Astro.redirect('/admin/login');
+  return Astro.redirect('/account/login?redirect=' + encodeURIComponent(Astro.url.pathname));
 }
 
 // Fetch stats
