@@ -36,7 +36,12 @@ if (Astro.request.method === 'POST') {
     } else if (formAction === 'save') {
       const title = formData.get('title')?.toString() || '';
       const titleGu = formData.get('titleGu')?.toString().trim() || null;
-      const slug = formData.get('slug')?.toString() || '';
+      const slug = (formData.get('slug')?.toString() || '').trim().toLowerCase();
+
+      const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+      if (!slugRegex.test(slug)) {
+        throw new Error('Slug must only contain lowercase alphanumeric characters and hyphens, and cannot start or end with a hyphen.');
+      }
       const type = formData.get('type')?.toString() as any || 'combo';
       const description = formData.get('description')?.toString() || '';
       const descriptionGu = formData.get('descriptionGu')?.toString().trim() || null;
@@ -502,6 +507,8 @@ function getOfferImageUrl(img: string | undefined | null) {
                 id="slug"
                 name="slug"
                 required
+                pattern="^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                title="Slug must only contain lowercase letters, numbers, and hyphens, and cannot start or end with a hyphen."
                 value={editOffer?.slug || ''}
                 placeholder="e.g. tv-soundbar-combo"
                 class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none"
@@ -706,6 +713,17 @@ function getOfferImageUrl(img: string | undefined | null) {
         </form>
 
         <script>
+          const slugInput = document.getElementById('slug') as HTMLInputElement;
+          if (slugInput) {
+            slugInput.addEventListener('input', () => {
+              let val = slugInput.value;
+              val = val.replace(/[\s_]+/g, '-');
+              val = val.toLowerCase().replace(/[^a-z0-9-]/g, '');
+              val = val.replace(/-+/g, '-');
+              slugInput.value = val;
+            });
+          }
+
           const imageInput = document.getElementById('image') as HTMLInputElement;
           const previewContainer = document.getElementById('image-preview');
           const filePicker = document.getElementById('file-picker') as HTMLInputElement;

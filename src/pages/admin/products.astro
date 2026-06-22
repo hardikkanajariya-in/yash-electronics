@@ -136,7 +136,12 @@ if (Astro.request.method === 'POST') {
     } else if (formAction === 'save') {
       const name = formData.get('name')?.toString() || '';
       const nameGu = formData.get('nameGu')?.toString() || '';
-      const slug = formData.get('slug')?.toString() || '';
+      const slug = (formData.get('slug')?.toString() || '').trim();
+
+      const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+      if (!slugRegex.test(slug)) {
+        throw new Error('Slug must only contain lowercase alphanumeric characters and hyphens, and cannot start or end with a hyphen.');
+      }
       const brandId = formData.get('brandId')?.toString() || null;
       const categoryId = formData.get('categoryId')?.toString() || null;
       const modelNumber = formData.get('modelNumber')?.toString() || '';
@@ -226,7 +231,7 @@ const search = Astro.url.searchParams.get('search')?.trim() || '';
 const brandFilter = Astro.url.searchParams.get('brand') || '';
 const categoryFilter = Astro.url.searchParams.get('category') || '';
 const statusFilter = Astro.url.searchParams.get('status') || 'all'; // all, active, inactive
-const sort = Astro.url.searchParams.get('sort') || 'name-asc';
+const sort = Astro.url.searchParams.get('sort') || 'latest';
 const page = Number(Astro.url.searchParams.get('page') || '1');
 const limit = 10;
 const offset = (page - 1) * limit;
@@ -307,7 +312,8 @@ if (action === 'bulk-images') {
     with: {
       brand: true,
       category: true,
-    }
+    },
+    orderBy: (products: any, { desc }: any) => [desc(products.createdAt)],
   });
 }
 ---
@@ -654,6 +660,8 @@ if (action === 'bulk-images') {
                 id="slug"
                 name="slug"
                 required
+                pattern="^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                title="Slug must only contain lowercase letters, numbers, and hyphens, and cannot start or end with a hyphen."
                 value={editProduct?.slug || ''}
                 placeholder="e.g. sony-bravia-55"
                 class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
@@ -827,6 +835,18 @@ if (action === 'bulk-images') {
          </form>
 
         <script>
+          // Slug Input Restrictor
+          const slugInput = document.getElementById('slug') as HTMLInputElement;
+          if (slugInput) {
+            slugInput.addEventListener('input', () => {
+              let val = slugInput.value;
+              val = val.replace(/[\s_]+/g, '-');
+              val = val.toLowerCase().replace(/[^a-z0-9-]/g, '');
+              val = val.replace(/-+/g, '-');
+              slugInput.value = val;
+            });
+          }
+
           // Specifications Editor
           const specsInput = document.getElementById('specifications') as HTMLInputElement;
           const specsGuInput = document.getElementById('specificationsGu') as HTMLInputElement;

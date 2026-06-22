@@ -36,7 +36,12 @@ if (Astro.request.method === 'POST') {
     } else if (formAction === 'save') {
       const name = formData.get('name')?.toString().trim() || '';
       const nameGu = formData.get('nameGu')?.toString().trim() || null;
-      const slug = formData.get('slug')?.toString().trim().toLowerCase() || '';
+      const slug = (formData.get('slug')?.toString() || '').trim().toLowerCase();
+
+      const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+      if (!slugRegex.test(slug)) {
+        throw new Error('Slug must only contain lowercase alphanumeric characters and hyphens, and cannot start or end with a hyphen.');
+      }
       const logo = formData.get('logo')?.toString().trim() || null;
       const sortOrder = Number(formData.get('sortOrder') || 0);
       const isActive = formData.get('isActive') === 'on';
@@ -434,6 +439,8 @@ const totalPages = Math.ceil(totalCount / limit);
               id="slug"
               name="slug"
               required
+              pattern="^[a-z0-9]+(?:-[a-z0-9]+)*$"
+              title="Slug must only contain lowercase letters, numbers, and hyphens, and cannot start or end with a hyphen."
               value={editBrand?.slug || ''}
               placeholder="e.g. luminous"
               class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none"
@@ -505,6 +512,16 @@ const totalPages = Math.ceil(totalCount / limit);
             slugInput.value = slugify(nameInput.value);
           }
         });
+
+        if (slugInput) {
+          slugInput.addEventListener('input', () => {
+            let val = slugInput.value;
+            val = val.replace(/[\s_]+/g, '-');
+            val = val.toLowerCase().replace(/[^a-z0-9-]/g, '');
+            val = val.replace(/-+/g, '-');
+            slugInput.value = val;
+          });
+        }
 
         function slugify(text: string): string {
           return text

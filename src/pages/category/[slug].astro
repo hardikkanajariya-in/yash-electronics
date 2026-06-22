@@ -48,7 +48,7 @@ const filters = {
   brand: params.get('brand') || undefined,
   minPrice: params.get('minPrice') ? Number(params.get('minPrice')) : undefined,
   maxPrice: params.get('maxPrice') ? Number(params.get('maxPrice')) : undefined,
-  sort: (params.get('sort') as SortOption) || 'featured',
+  sort: (params.get('sort') as SortOption) || 'latest',
 };
 
 const categoryProducts = getProductsByCategory(allProducts, category.slug);

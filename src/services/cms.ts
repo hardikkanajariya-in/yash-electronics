@@ -22,7 +22,8 @@ export async function getCmsData(): Promise<CmsData> {
       with: {
         brand: true,
         category: true,
-      }
+      },
+      orderBy: (products: any, { desc }: any) => [desc(products.createdAt)],
     });
 
     const dbProducts = dbProductsRaw.map((p: any) => ({
