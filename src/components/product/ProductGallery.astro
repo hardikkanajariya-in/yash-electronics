@@ -17,38 +17,78 @@ function isVideo(path: string) {
 ---
 
 <div class="product-gallery">
-  <div class="product-gallery-main overflow-hidden rounded-lg border border-neutral-200 bg-white relative flex items-center justify-center p-4 w-full" style="aspect-ratio: 1 / 1;">
-    <!-- Main Media Display -->
-    <div id="main-media-container" class="w-full h-full flex items-center justify-center">
-      {isVideo(displayImages[0]) ? (
-        <video
-          id="main-video"
-          src={buildCloudinaryUrl(displayImages[0])}
-          controls
-          autoplay
-          muted
-          loop
-          playsinline
-          class="w-full h-full object-contain"
-        />
-      ) : (
-        <img
-          id="main-image"
-          src={buildCloudinaryUrl(displayImages[0], { width: 600 })}
-          alt={productName}
-          class="w-full h-full object-contain"
-        />
-      )}
+  <div class="product-gallery-main group overflow-hidden rounded-lg border border-neutral-200 bg-white relative w-full" style="aspect-ratio: 1 / 1;">
+    <!-- Main Media Slider -->
+    <div id="main-media-slider" class="w-full h-full flex overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar select-none">
+      {displayImages.map((img, i) => {
+        const isVid = isVideo(img);
+        return (
+          <div
+            class="w-full h-full flex-shrink-0 flex items-center justify-center snap-center p-4 relative"
+            data-index={i}
+          >
+            {isVid ? (
+              <video
+                src={buildCloudinaryUrl(img)}
+                controls
+                autoplay={i === 0}
+                muted
+                loop
+                playsinline
+                class="w-full h-full object-contain"
+              />
+            ) : (
+              <img
+                src={buildCloudinaryUrl(img, { width: 600 })}
+                alt={`${productName} - view ${i + 1}`}
+                class="w-full h-full object-contain"
+                loading={i === 0 ? "eager" : "lazy"}
+              />
+            )}
+          </div>
+        );
+      })}
     </div>
+
+    <!-- Desktop Navigation Buttons -->
+    {displayImages.length > 1 && (
+      <>
+        <button
+          type="button"
+          id="prev-slide"
+          class="absolute left-3 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-neutral-800 rounded-full p-2.5 shadow-lg transition-all duration-200 hover:scale-110 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary z-10 opacity-0 group-hover:opacity-100 focus:opacity-100 hidden md:flex items-center justify-center cursor-pointer border border-neutral-100"
+          aria-label="Previous image"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          id="next-slide"
+          class="absolute right-3 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-neutral-800 rounded-full p-2.5 shadow-lg transition-all duration-200 hover:scale-110 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary z-10 opacity-0 group-hover:opacity-100 focus:opacity-100 hidden md:flex items-center justify-center cursor-pointer border border-neutral-100"
+          aria-label="Next image"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+          </svg>
+        </button>
+        
+        <!-- Mobile Slide Badge/Pagination -->
+        <div class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 text-white text-xs px-3 py-1 rounded-full font-medium tracking-wider z-10 md:hidden shadow-sm backdrop-blur-sm">
+          <span id="current-slide-badge">1</span> / {displayImages.length}
+        </div>
+      </>
+    )}
   </div>
   {displayImages.length > 1 && (
-    <div class="mt-2 grid grid-cols-4 gap-2">
+    <div class="mt-3 grid grid-cols-4 gap-2.5">
       {displayImages.slice(0, 8).map((img, i) => {
         const isVid = isVideo(img);
         return (
           <button
             type="button"
-            class={`gallery-thumb overflow-hidden rounded border-2 bg-white transition-all hover:border-primary focus:border-primary relative aspect-square ${i === 0 ? 'border-primary' : 'border-transparent'}`}
+            class={`gallery-thumb overflow-hidden rounded-lg border-2 bg-white transition-all duration-200 hover:border-primary focus:border-primary focus:outline-none relative aspect-square shadow-sm ${i === 0 ? 'border-primary' : 'border-transparent hover:bg-neutral-50'}`}
             data-index={i}
             data-src={buildCloudinaryUrl(img)}
             data-type={isVid ? 'video' : 'image'}
@@ -82,6 +122,13 @@ function isVideo(path: string) {
   .product-gallery-main {
     transition: aspect-ratio 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     will-change: aspect-ratio;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 </style>
 
@@ -119,57 +166,125 @@ function isVideo(path: string) {
 
   function initGallery() {
     const gallery = document.querySelector('.product-gallery');
-    if (gallery) {
-      const mediaContainer = gallery.querySelector('#main-media-container') as HTMLElement;
-      const thumbs = gallery.querySelectorAll('.gallery-thumb');
+    if (!gallery) return;
 
-      // Adjust initially loaded media
-      const initialMedia = mediaContainer?.querySelector('img, video') as HTMLElement;
-      if (initialMedia) {
-        adjustAspectRatio(initialMedia);
+    const slider = gallery.querySelector('#main-media-slider') as HTMLElement;
+    const thumbs = gallery.querySelectorAll('.gallery-thumb');
+    const prevBtn = gallery.querySelector('#prev-slide') as HTMLButtonElement;
+    const nextBtn = gallery.querySelector('#next-slide') as HTMLButtonElement;
+    const badge = gallery.querySelector('#current-slide-badge') as HTMLElement;
+
+    if (!slider) return;
+
+    let activeIndex = 0;
+    const totalSlides = slider.children.length;
+
+    const adjustActiveMedia = () => {
+      const activeSlide = slider.children[activeIndex] as HTMLElement;
+      const activeMedia = activeSlide?.querySelector('img, video') as HTMLElement;
+      if (activeMedia) {
+        adjustAspectRatio(activeMedia);
       }
+    };
 
-      thumbs.forEach((thumb) => {
-        thumb.addEventListener('click', () => {
-          const src = thumb.getAttribute('data-src') || '';
-          const type = thumb.getAttribute('data-type') || 'image';
+    const manageVideoPlayback = () => {
+      const videos = slider.querySelectorAll('video');
+      videos.forEach((video) => {
+        video.pause();
+      });
 
-          if (mediaContainer) {
-            if (type === 'video') {
-              mediaContainer.innerHTML = `
-                <video
-                  id="main-video"
-                  src="${src}"
-                  controls
-                  autoplay
-                  muted
-                  loop
-                  playsinline
-                  class="w-full h-full object-contain"
-                />
-              `;
-            } else {
-              mediaContainer.innerHTML = `
-                <img
-                  id="main-image"
-                  src="${src}"
-                  alt=""
-                  class="w-full h-full object-contain"
-                />
-              `;
-            }
-            
-            // Adjust aspect ratio for newly loaded media
-            const newMedia = mediaContainer.querySelector('img, video') as HTMLElement;
-            if (newMedia) {
-              adjustAspectRatio(newMedia);
-            }
-          }
-          thumbs.forEach((t) => t.classList.remove('border-primary'));
-          thumb.classList.add('border-primary');
+      const activeSlide = slider.children[activeIndex] as HTMLElement;
+      const activeVideo = activeSlide?.querySelector('video') as HTMLVideoElement;
+      if (activeVideo) {
+        activeVideo.play().catch(() => {
+          // Playback blocked or user interaction needed
         });
+      }
+    };
+
+    // Initialize display state
+    adjustActiveMedia();
+    manageVideoPlayback();
+
+    // Helper to scroll to specific index
+    const scrollToSlide = (index: number) => {
+      if (index < 0 || index >= totalSlides) return;
+      const slide = slider.children[index] as HTMLElement;
+      if (slide) {
+        slider.scrollTo({
+          left: slide.offsetLeft,
+          behavior: 'smooth'
+        });
+      }
+    };
+
+    // Click handler for thumbnails
+    thumbs.forEach((thumb) => {
+      thumb.addEventListener('click', () => {
+        const index = parseInt(thumb.getAttribute('data-index') || '0', 10);
+        scrollToSlide(index);
+      });
+    });
+
+    // Navigation buttons
+    if (prevBtn) {
+      prevBtn.addEventListener('click', () => {
+        scrollToSlide(activeIndex - 1);
       });
     }
+
+    if (nextBtn) {
+      nextBtn.addEventListener('click', () => {
+        scrollToSlide(activeIndex + 1);
+      });
+    }
+
+    // Scroll listener to sync thumbnails and indicators
+    slider.addEventListener('scroll', () => {
+      const scrollPosition = slider.scrollLeft;
+      const slideWidth = slider.clientWidth || 1;
+      const newIndex = Math.round(scrollPosition / slideWidth);
+
+      if (newIndex !== activeIndex && newIndex >= 0 && newIndex < totalSlides) {
+        activeIndex = newIndex;
+
+        // Highlight active thumbnail
+        thumbs.forEach((t) => {
+          const thumbIndex = parseInt(t.getAttribute('data-index') || '0', 10);
+          if (thumbIndex === activeIndex) {
+            t.classList.add('border-primary');
+            t.classList.remove('border-transparent');
+          } else {
+            t.classList.remove('border-primary');
+            t.classList.add('border-transparent');
+          }
+        });
+
+        // Update mobile badge
+        if (badge) {
+          badge.textContent = String(activeIndex + 1);
+        }
+
+        adjustActiveMedia();
+        manageVideoPlayback();
+      }
+    });
+
+    // Handle window resize cleanly with event handler reuse/cleanup
+    const resizeHandler = () => {
+      adjustActiveMedia();
+      const slide = slider.children[activeIndex] as HTMLElement;
+      if (slide) {
+        slider.scrollLeft = slide.offsetLeft;
+      }
+    };
+
+    const oldResizeHandler = (window as any).__galleryResizeHandler;
+    if (oldResizeHandler) {
+      window.removeEventListener('resize', oldResizeHandler);
+    }
+    (window as any).__galleryResizeHandler = resizeHandler;
+    window.addEventListener('resize', resizeHandler);
   }
 
   // Setup gallery listener for initial load and page transitions (Astro View Transitions)
