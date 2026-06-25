@@ -137,7 +137,7 @@ export const ordersRelations = relations(orders, ({ one, many }) => ({
 export const orderItems = pgTable('order_items', {
   id: varchar('id', { length: 255 }).primaryKey(),
   orderId: varchar('order_id', { length: 255 }).references(() => orders.id, { onDelete: 'cascade' }),
-  productId: varchar('product_id', { length: 255 }).references(() => products.id),
+  productId: varchar('product_id', { length: 255 }).references(() => products.id, { onDelete: 'set null' }),
   quantity: integer('quantity').notNull().default(1),
   price: integer('price').notNull().default(0),
 });
