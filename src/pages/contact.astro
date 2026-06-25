@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ContactSection from '../components/home/ContactSection.astro';
+import Container from '../components/ui/Container.astro';
 import { getSettings } from '../services/cms';
 import { translateObject, t } from '../lib/translations';
 import { db } from '../db';
@@ -74,4 +75,21 @@ if (Astro.request.method === 'POST') {
   canonicalUrl="/contact"
 >
   <ContactSection settings={settings} success={success} error={error} />
+  
+  <div class="pb-16 bg-neutral-50">
+    <Container>
+      <div class="overflow-hidden rounded-2xl border border-neutral-200 shadow-sm relative h-[400px] w-full bg-white p-2">
+        <iframe 
+          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2909.917727789059!2d69.6535241!3d22.2054469!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3956fd744aa61b5f%3A0x43393887f7fc9b14!2sYash%20Electronics%20-%20Samsung%2520Exclusive!5e1!3m2!1sen!2sin!4v1782389161261!5m2!1sen!2sin" 
+          width="100%" 
+          height="100%" 
+          style="border:0;" 
+          allowfullscreen="" 
+          loading="lazy" 
+          referrerpolicy="strict-origin-when-cross-origin" 
+          class="rounded-xl w-full h-full shadow-inner"
+        ></iframe>
+      </div>
+    </Container>
+  </div>
 </BaseLayout>
