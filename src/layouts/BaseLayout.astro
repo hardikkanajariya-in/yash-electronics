@@ -187,12 +187,16 @@ const categories = translateObject(rawCategories, locale);
             const existing = cart.find(item => item.id === product.id);
             if (existing) {
               existing.quantity += 1;
+              if (product.eligibleForBundle !== undefined) {
+                existing.eligibleForBundle = product.eligibleForBundle;
+              }
             } else {
               cart.push({
                 id: product.id,
                 name: product.name,
                 price: product.price,
                 image: product.image,
+                eligibleForBundle: product.eligibleForBundle !== false,
                 quantity: 1
               });
             }
@@ -223,6 +227,7 @@ const categories = translateObject(rawCategories, locale);
             name: btn.getAttribute('data-product-name') || '',
             price: Number(btn.getAttribute('data-product-price') || '0'),
             image: btn.getAttribute('data-product-image') || '',
+            eligibleForBundle: btn.getAttribute('data-product-eligible-bundle') !== 'false',
           };
 
           const redirect = btn.getAttribute('data-action') === 'buy-now';

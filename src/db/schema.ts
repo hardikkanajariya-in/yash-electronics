@@ -53,6 +53,7 @@ export const products = pgTable('products', {
   offerPrice: integer('offer_price').notNull().default(0),
   images: text('images').array().notNull().default([]), // Postgres array of texts
   isFeatured: boolean('is_featured').notNull().default(false),
+  eligibleForBundle: boolean('eligible_for_bundle').notNull().default(true),
   isActive: boolean('is_active').notNull().default(true),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
@@ -124,12 +125,19 @@ export const orders = pgTable('orders', {
   createdAt: text('created_at').notNull(),
   couponCode: text('coupon_code'),
   discountApplied: integer('discount_applied').default(0),
+  bundleRuleId: varchar('bundle_rule_id', { length: 255 }).references(() => bundleRules.id, { onDelete: 'set null' }),
+  bundleDiscountApplied: integer('bundle_discount_applied').notNull().default(0),
+  bundleRewardGiven: text('bundle_reward_given'),
 });
 
 export const ordersRelations = relations(orders, ({ one, many }) => ({
   user: one(users, {
     fields: [orders.userId],
     references: [users.id],
+  }),
+  bundleRule: one(bundleRules, {
+    fields: [orders.bundleRuleId],
+    references: [bundleRules.id],
   }),
   items: many(orderItems),
 }));
@@ -164,6 +172,20 @@ export const contactQueries = pgTable('contact_queries', {
 });
 
 // ─── NEW TABLES ──────────────────────────────────────────────
+
+export const bundleRules = pgTable('bundle_rules', {
+  id: varchar('id', { length: 255 }).primaryKey(),
+  name: text('name').notNull(),
+  nameGu: text('name_gu'),
+  minQuantity: integer('min_quantity').notNull().default(3),
+  rewardType: text('reward_type').$type<'free_gift' | 'percentage_discount' | 'flat_discount' | 'store_voucher'>().notNull(),
+  rewardValue: integer('reward_value').notNull().default(0),
+  rewardDescription: text('reward_description').notNull(),
+  rewardDescriptionGu: text('reward_description_gu'),
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
 
 /**
  * Team Members — Sales & Service staff

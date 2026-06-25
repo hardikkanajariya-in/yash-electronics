@@ -47,6 +47,7 @@ const menuItems = [
   { path: '/admin/categories', label: 'Categories', icon: 'grid', key: 'categories' },
   { path: '/admin/brands', label: 'Brands', icon: 'award', key: 'brands' },
   { path: '/admin/offers', label: 'Offers', icon: 'tag', key: 'offers' },
+  { path: '/admin/bundle-rules', label: 'Bundle Rules', icon: 'layers', key: 'bundle-rules' },
   { path: '/admin/orders', label: 'Orders', icon: 'shopping-cart', key: 'orders' },
   { path: '/admin/customers', label: 'Customers', icon: 'users', key: 'customers' },
   { path: '/admin/queries', label: 'Queries', icon: 'mail', key: 'queries' },
@@ -73,6 +74,7 @@ const drawerNavItems = [
   { path: '/admin/categories', label: 'Categories', icon: 'grid', key: 'categories' },
   { path: '/admin/brands', label: 'Brands', icon: 'award', key: 'brands' },
   { path: '/admin/offers', label: 'Offers', icon: 'tag', key: 'offers' },
+  { path: '/admin/bundle-rules', label: 'Bundle Rules', icon: 'layers', key: 'bundle-rules' },
   { path: '/admin/queries', label: 'Queries', icon: 'mail', key: 'queries' },
   { path: '/admin/service-requests', label: 'Service Requests', icon: 'tool', key: 'service-requests' },
   { path: '/admin/notifications', label: 'Notifications', icon: 'bell', key: 'notifications' },
@@ -183,6 +185,9 @@ const drawerNavItems = [
                 )}
                 {item.icon === 'bell' && (
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                )}
+                {item.icon === 'layers' && (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polygon points="2 17 12 22 22 17"/><polygon points="2 12 12 17 22 12"/></svg>
                 )}
               </span>
               <span>{item.label}</span>

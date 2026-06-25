@@ -33,6 +33,7 @@ export interface Product {
   offerPrice: number;
   images: string[];
   isFeatured: boolean;
+  eligibleForBundle: boolean;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -166,4 +167,18 @@ export interface ReferralHistoryItem {
   createdAt: string;
   referrer?: { name: string; phone: string } | null;
   referredUser?: { name: string; phone: string } | null;
+}
+
+export interface BundleRule {
+  id: string;
+  name: string;
+  nameGu?: string | null;
+  minQuantity: number;
+  rewardType: 'free_gift' | 'percentage_discount' | 'flat_discount' | 'store_voucher';
+  rewardValue: number;
+  rewardDescription: string;
+  rewardDescriptionGu?: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }

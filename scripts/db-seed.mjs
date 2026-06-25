@@ -1062,6 +1062,7 @@ async function seed() {
     await client.query('DELETE FROM about_info');
     await client.query('DELETE FROM bank_details');
     await client.query('DELETE FROM business_hours');
+    await client.query('DELETE FROM bundle_rules');
 
     // 1. Resolve Settings Images
     settings.heroImage = await uploadImageIfNeeded(settings.heroImage, 'yash-electronics/general/hero');
@@ -1294,6 +1295,74 @@ async function seed() {
         `INSERT INTO business_hours (id, day_of_week, label, open_time, close_time, is_open, note)
          VALUES ($1, $2, $3, $4, $5, $6, $7)`,
         [bh.id, bh.dayOfWeek, bh.label, bh.openTime, bh.closeTime, bh.isOpen, bh.note]
+      );
+    }
+
+    console.log('[Seed] Inserting bundle rules...');
+    const bundleRulesData = [
+      {
+        id: 'rule-b3',
+        name: '3 Products Special Gift',
+        nameGu: '૩ પ્રોડક્ટ્સ સ્પેશિયલ ગિફ્ટ',
+        minQuantity: 3,
+        rewardType: 'free_gift',
+        rewardValue: 0,
+        rewardDescription: 'Free Noise Bluetooth Soundbar',
+        rewardDescriptionGu: 'મફત નોઈઝ બ્લૂટૂથ સાઉન્ડબાર',
+        isActive: true,
+      },
+      {
+        id: 'rule-b4',
+        name: '4 Products Checkout Discount',
+        nameGu: '૪ પ્રોડક્ટ્સ ચેકઆઉટ ડિસ્કાઉન્ટ',
+        minQuantity: 4,
+        rewardType: 'percentage_discount',
+        rewardValue: 10,
+        rewardDescription: '10% off your order total!',
+        rewardDescriptionGu: 'તમારા ઓર્ડર પર ૧૦% વધારાનું ડિસ્કાઉન્ટ!',
+        isActive: true,
+      },
+      {
+        id: 'rule-b5',
+        name: '5 Products Flat Discount',
+        nameGu: '૫ પ્રોડક્ટ્સ ફ્લેટ ડિસ્કાઉન્ટ',
+        minQuantity: 5,
+        rewardType: 'flat_discount',
+        rewardValue: 1000,
+        rewardDescription: '₹1,000 flat discount applied at checkout!',
+        rewardDescriptionGu: 'ઓર્ડર ચેકઆઉટ પર ₹૧,૦૦૦ ફ્લેટ ડિસ્કાઉન્ટ!',
+        isActive: true,
+      },
+      {
+        id: 'rule-b6',
+        name: '6 Products Store Cash Voucher',
+        nameGu: '૬ પ્રોડક્ટ્સ સ્ટોર કેશ વાઉચર',
+        minQuantity: 6,
+        rewardType: 'store_voucher',
+        rewardValue: 0,
+        rewardDescription: '₹1,500 Store Cash Voucher',
+        rewardDescriptionGu: '₹૧,૫૦૦ સ્ટોર કેશ વાઉચર',
+        isActive: true,
+      }
+    ];
+
+    for (const rule of bundleRulesData) {
+      await client.query(
+        `INSERT INTO bundle_rules (id, name, name_gu, min_quantity, reward_type, reward_value, reward_description, reward_description_gu, is_active, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+        [
+          rule.id,
+          rule.name,
+          rule.nameGu,
+          rule.minQuantity,
+          rule.rewardType,
+          rule.rewardValue,
+          rule.rewardDescription,
+          rule.rewardDescriptionGu,
+          rule.isActive,
+          new Date().toISOString(),
+          new Date().toISOString(),
+        ]
       );
     }
 

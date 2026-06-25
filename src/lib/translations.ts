@@ -100,6 +100,16 @@ export const UI_TRANSLATIONS = {
     'offers.validUntil': 'સુધી માન્ય: {date}',
     'offers.enquire': 'ઓફર વિશે પૂછો',
     'offers.specialOffers': 'સ્પેશિયલ ઓફર્સ',
+    'offers.bundlePageTitle': 'પોતાનું બંડલ બનાવો',
+    'offers.bundlePageDesc': 'તમારા મનપસંદ ઉત્પાદનો પસંદ કરો અને પ્રીમિયમ ભેટ, ડિસ્કાઉન્ટ અથવા વાઉચર મેળવો!',
+    'offers.activeRules': 'સક્રિય બંડલ ઓફર્સ અને નિયમો',
+    'offers.selectItems': 'બંડલ માટે પ્રોડક્ટ્સ પસંદ કરો',
+    'offers.bundleSummary': 'તમારા બંડલનો સારાંશ',
+    'offers.addBundleToCart': 'બંડલ કાર્ટમાં ઉમેરો',
+    'offers.ruleRequires': 'અનલોક કરવા માટે {qty} પ્રોડક્ટ્સ પસંદ કરો',
+    'offers.ruleUnlocked': 'અનલોક થયું! 🎉',
+    'offers.itemsSelected': '{qty} આઇટમ્સ પસંદ કરેલ',
+    'offers.eligibleProductsOnly': 'ફક્ત બંડલ માટે લાયક પ્રોડક્ટ્સ દર્શાવવામાં આવી છે.',
 
     // About Us
     'about.title': 'અમારા વિશે',
@@ -255,6 +265,16 @@ export const UI_TRANSLATIONS = {
     'offers.validUntil': 'Valid until: {date}',
     'offers.enquire': 'Enquire about Offer',
     'offers.specialOffers': 'Special Offers',
+    'offers.bundlePageTitle': 'Build Your Bundle',
+    'offers.bundlePageDesc': 'Select your favorite products and unlock premium gifts, checkout discounts, or store vouchers!',
+    'offers.activeRules': 'Active Bundle Offers & Rules',
+    'offers.selectItems': 'Select Products for Your Bundle',
+    'offers.bundleSummary': 'Your Bundle Summary',
+    'offers.addBundleToCart': 'Add Bundle to Cart',
+    'offers.ruleRequires': 'Select {qty} products to unlock',
+    'offers.ruleUnlocked': 'Unlocked! 🎉',
+    'offers.itemsSelected': '{qty} items selected',
+    'offers.eligibleProductsOnly': 'Showing only products eligible for bundles.',
 
     // About Us
     'about.title': 'About Us',

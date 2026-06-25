@@ -1,6 +1,6 @@
 import type { CmsData } from '../types';
 import { db } from '../db';
-import { settings, categories, brands, offers, teamMembers, services, aboutInfo, bankDetails, businessHours, referralHistory } from '../db/schema';
+import { settings, categories, brands, offers, teamMembers, services, aboutInfo, bankDetails, businessHours, referralHistory, bundleRules } from '../db/schema';
 import { eq, asc } from 'drizzle-orm';
 
 let cachedData: CmsData | null = null;
@@ -46,6 +46,7 @@ export async function getCmsData(): Promise<CmsData> {
       offerPrice: p.offerPrice,
       images: p.images || [],
       isFeatured: p.isFeatured,
+      eligibleForBundle: p.eligibleForBundle,
       isActive: p.isActive,
       createdAt: p.createdAt,
       updatedAt: p.updatedAt,
@@ -232,5 +233,15 @@ export async function getReferralHistory(userId: string) {
 
 export function clearCmsCache() {
   cachedData = null;
+}
+
+export async function getBundleRules() {
+  try {
+    const rules = await db.select().from(bundleRules).orderBy(asc(bundleRules.minQuantity));
+    return rules;
+  } catch (e) {
+    console.error('[CMS] Failed to fetch bundle rules:', e);
+    return [];
+  }
 }
 

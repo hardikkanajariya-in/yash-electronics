@@ -53,6 +53,24 @@ pool.query(`
   ALTER TABLE service_requests ADD COLUMN IF NOT EXISTS customer_name TEXT;
   ALTER TABLE service_requests ADD COLUMN IF NOT EXISTS customer_phone TEXT;
   ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_status TEXT DEFAULT 'pending';
+  
+  ALTER TABLE products ADD COLUMN IF NOT EXISTS eligible_for_bundle BOOLEAN NOT NULL DEFAULT TRUE;
+  CREATE TABLE IF NOT EXISTS bundle_rules (
+    id VARCHAR(255) PRIMARY KEY,
+    name TEXT NOT NULL,
+    name_gu TEXT,
+    min_quantity INTEGER NOT NULL DEFAULT 3,
+    reward_type TEXT NOT NULL,
+    reward_value INTEGER NOT NULL DEFAULT 0,
+    reward_description TEXT NOT NULL,
+    reward_description_gu TEXT,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+  ALTER TABLE orders ADD COLUMN IF NOT EXISTS bundle_rule_id VARCHAR(255) REFERENCES bundle_rules(id) ON DELETE SET NULL;
+  ALTER TABLE orders ADD COLUMN IF NOT EXISTS bundle_discount_applied INTEGER NOT NULL DEFAULT 0;
+  ALTER TABLE orders ADD COLUMN IF NOT EXISTS bundle_reward_given TEXT;
 `).then(async () => {
   await autoSeedEmptyProductReviews(pool);
 }).catch(err => {

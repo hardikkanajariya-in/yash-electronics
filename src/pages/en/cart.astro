@@ -2,8 +2,8 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Container from '../../components/ui/Container.astro';
 import { db } from '../../db';
-import { products, orders, orderItems, users, offers } from '../../db/schema';
-import { eq, inArray, and } from 'drizzle-orm';
+import { products, orders, orderItems, users, offers, bundleRules } from '../../db/schema';
+import { eq, inArray, and, asc, desc } from 'drizzle-orm';
 import { getSessionUser, generateId } from '../../lib/auth';
 import { getLocalizedPath } from '../../lib/translations';
 import { getSettings } from '../../services/cms';
@@ -15,6 +15,13 @@ export const prerender = false;
 const locale = 'en';
 const rawSettings = await getSettings();
 const settings = translateObject(rawSettings, locale);
+
+const rawBundleRules = await db
+  .select()
+  .from(bundleRules)
+  .where(eq(bundleRules.isActive, true))
+  .orderBy(asc(bundleRules.minQuantity));
+const bundleRulesList = translateObject(rawBundleRules, locale);
 
 // Authenticate user. Redirect to login if not logged in.
 Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -50,10 +57,11 @@ if (Astro.request.method === 'POST') {
       const dbProducts = await db.select().from(products).where(inArray(products.id, productIds));
       
       let subtotal = 0;
+      let eligibleQty = 0;
       const orderLines: { productId: string; quantity: number; price: number }[] = [];
-
+ 
       cart.forEach((cartItem: any) => {
-        const dbProduct = dbProducts.find((p) => p.id === cartItem.id);
+        const dbProduct = dbProducts.find((p: any) => p.id === cartItem.id);
         if (dbProduct) {
           const price = dbProduct.offerPrice > 0 ? dbProduct.offerPrice : dbProduct.mrp;
           subtotal += price * cartItem.quantity;
@@ -62,9 +70,12 @@ if (Astro.request.method === 'POST') {
             quantity: cartItem.quantity,
             price,
           });
+          if (dbProduct.eligibleForBundle) {
+            eligibleQty += cartItem.quantity;
+          }
         }
       });
-
+ 
       if (orderLines.length === 0) {
         error = 'Cart contains invalid products.';
       } else {
@@ -114,18 +125,45 @@ if (Astro.request.method === 'POST') {
           }
         }
 
+        // 2.5 Resolve Bundle rule discount/rewards on the server
+        let bundleDiscount = 0;
+        let appliedBundleRuleId: string | null = null;
+        let appliedBundleRewardGiven: string | null = null;
+
+        if (eligibleQty > 0) {
+          const activeRules = await db
+            .select()
+            .from(bundleRules)
+            .where(eq(bundleRules.isActive, true))
+            .orderBy(desc(bundleRules.minQuantity));
+          
+          const matchedRule = activeRules.find((r: any) => eligibleQty >= r.minQuantity);
+          if (matchedRule) {
+            appliedBundleRuleId = matchedRule.id;
+            const localizedRule = translateObject(matchedRule, locale);
+            if (matchedRule.rewardType === 'percentage_discount') {
+              bundleDiscount = Math.round(subtotal * (matchedRule.rewardValue / 100));
+            } else if (matchedRule.rewardType === 'flat_discount') {
+              bundleDiscount = matchedRule.rewardValue;
+            } else {
+              appliedBundleRewardGiven = localizedRule.rewardDescription;
+            }
+            bundleDiscount = Math.min(bundleDiscount, subtotal - couponDiscount);
+          }
+        }
+
         // 3. Resolve store credits/points usage
         let creditsToUse = 0;
         if (redeemPoints > 0) {
           // Re-fetch user to get fresh credits balance
           const [userRecord] = await db.select().from(users).where(eq(users.id, currentUser.id));
           if (userRecord && userRecord.credits > 0) {
-            const maxUsableCredits = Math.min(userRecord.credits, subtotal - couponDiscount);
+            const maxUsableCredits = Math.min(userRecord.credits, subtotal - couponDiscount - bundleDiscount);
             creditsToUse = Math.min(redeemPoints, maxUsableCredits);
           }
         }
 
-        const totalAmount = subtotal - couponDiscount - creditsToUse;
+        const totalAmount = subtotal - couponDiscount - bundleDiscount - creditsToUse;
         const newOrderId = generateId();
 
         // 4. Insert into orders table
@@ -141,6 +179,9 @@ if (Astro.request.method === 'POST') {
           createdAt: new Date().toISOString(),
           couponCode: appliedCoupon,
           discountApplied: couponDiscount,
+          bundleRuleId: appliedBundleRuleId,
+          bundleDiscountApplied: bundleDiscount,
+          bundleRewardGiven: appliedBundleRewardGiven,
         });
 
         // 5. Insert order items
@@ -286,6 +327,15 @@ const t = {
                   <span class="font-bold font-mono" id="coupon-discount-value">-₹0</span>
                 </div>
 
+                <!-- Dynamic Bundle Row -->
+                <div class="flex flex-col border border-dashed border-secondary/35 rounded-md p-2.5 bg-secondary/5 hidden" id="bundle-discount-row">
+                  <div class="flex justify-between text-secondary font-bold">
+                    <span id="applied-bundle-label">Bundle Deal</span>
+                    <span class="font-bold font-mono" id="bundle-discount-value">-₹0</span>
+                  </div>
+                  <p class="text-[10px] text-neutral-500 mt-0.5" id="bundle-reward-desc"></p>
+                </div>
+
                 <!-- Dynamic Points Row -->
                 <div class="flex justify-between text-green-600 hidden" id="points-discount-row">
                   <span>{t.pointsApplied}</span>
@@ -353,6 +403,9 @@ const t = {
                 <input type="hidden" name="cartItems" id="cart-items-input" />
                 <input type="hidden" name="couponCode" id="coupon-code-input" />
                 <input type="hidden" name="redeemPoints" id="redeem-points-input" value="0" />
+                <input type="hidden" name="bundleRuleId" id="bundle-rule-input" />
+                <input type="hidden" name="bundleDiscountApplied" id="bundle-discount-input" value="0" />
+                <input type="hidden" name="bundleRewardGiven" id="bundle-reward-input" />
 
                 <h3 class="text-xs font-bold uppercase text-neutral-400 mt-2">
                   {t.detailsTitle}
@@ -412,7 +465,7 @@ const t = {
   </Container>
 </BaseLayout>
 
-<script is:inline define:vars={{ userCredits: currentUser?.credits || 0, successOrderId, locale, cloudName: cloudinaryConfig.cloudName }}>
+<script is:inline define:vars={{ userCredits: currentUser?.credits || 0, successOrderId, locale, cloudName: cloudinaryConfig.cloudName, bundleRulesList }}>
   // Manage client side cart
   const CART_KEY = 'ye_cart';
   let activeCoupon = null; // Holds { code, discountType, discountValue }
@@ -612,12 +665,66 @@ const t = {
       if (couponHiddenInput) couponHiddenInput.value = '';
     }
 
-    // 2. Calculate points discount
+    // 2. Calculate bundle discount
+    let bundleDiscount = 0;
+    let appliedBundleRuleId = '';
+    let appliedBundleRewardGiven = '';
+    
+    let eligibleQty = 0;
+    cart.forEach(item => {
+      if (item.eligibleForBundle) {
+        eligibleQty += item.quantity;
+      }
+    });
+
+    const bundleRow = document.getElementById('bundle-discount-row');
+    const bundleLabel = document.getElementById('applied-bundle-label');
+    const bundleVal = document.getElementById('bundle-discount-value');
+    const bundleDesc = document.getElementById('bundle-reward-desc');
+    const bundleRuleInput = document.getElementById('bundle-rule-input');
+    const bundleDiscountInput = document.getElementById('bundle-discount-input');
+    const bundleRewardInput = document.getElementById('bundle-reward-input');
+
+    if (eligibleQty > 0 && bundleRulesList && bundleRulesList.length > 0) {
+      const sortedRules = [...bundleRulesList].sort((a, b) => b.minQuantity - a.minQuantity);
+      const matchedRule = sortedRules.find(r => eligibleQty >= r.minQuantity);
+      
+      if (matchedRule) {
+        appliedBundleRuleId = matchedRule.id;
+        
+        if (matchedRule.rewardType === 'percentage_discount') {
+          bundleDiscount = Math.round(subtotal * (matchedRule.rewardValue / 100));
+        } else if (matchedRule.rewardType === 'flat_discount') {
+          bundleDiscount = matchedRule.rewardValue;
+        } else {
+          appliedBundleRewardGiven = matchedRule.rewardDescription;
+        }
+        
+        bundleDiscount = Math.min(bundleDiscount, subtotal - couponDiscount);
+        
+        if (bundleLabel) bundleLabel.textContent = matchedRule.name;
+        if (bundleVal) {
+          bundleVal.textContent = bundleDiscount > 0 ? `-₹${bundleDiscount.toLocaleString('en-IN')}` : 'FREE';
+        }
+        if (bundleDesc) bundleDesc.textContent = matchedRule.rewardDescription;
+        if (bundleRow) bundleRow.classList.remove('hidden');
+      } else {
+        if (bundleRow) bundleRow.classList.add('hidden');
+      }
+    } else {
+      if (bundleRow) bundleRow.classList.add('hidden');
+    }
+
+    if (bundleRuleInput) bundleRuleInput.value = appliedBundleRuleId;
+    if (bundleDiscountInput) bundleDiscountInput.value = bundleDiscount.toString();
+    if (bundleRewardInput) bundleRewardInput.value = appliedBundleRewardGiven;
+
+    // 3. Calculate points discount
     const pointsField = document.getElementById('points-redeem-field');
     let pointsToRedeem = pointsField ? parseInt(pointsField.value, 10) : 0;
     if (isNaN(pointsToRedeem) || pointsToRedeem < 0) pointsToRedeem = 0;
 
-    const maxUsablePoints = Math.min(userCredits, subtotal - couponDiscount);
+    const maxUsablePoints = Math.min(userCredits, subtotal - couponDiscount - bundleDiscount);
     if (pointsToRedeem > maxUsablePoints) {
       pointsToRedeem = maxUsablePoints;
       if (pointsField) pointsField.value = pointsToRedeem;
@@ -636,7 +743,7 @@ const t = {
       if (pointsHiddenInput) pointsHiddenInput.value = '0';
     }
 
-    const finalTotal = subtotal - couponDiscount - pointsToRedeem;
+    const finalTotal = subtotal - couponDiscount - bundleDiscount - pointsToRedeem;
 
     // Update UI elements
     const subtotalEl = document.getElementById('cart-subtotal');

@@ -1,0 +1,379 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Container from '../../components/ui/Container.astro';
+import SectionHeading from '../../components/ui/SectionHeading.astro';
+import { db } from '../../db';
+import { bundleRules } from '../../db/schema';
+import { eq, and, asc } from 'drizzle-orm';
+import { translateObject, t } from '../../lib/translations';
+import { getProducts } from '../../services/cms';
+
+export const prerender = false;
+
+const locale = Astro.currentLocale || 'gu';
+
+// Fetch active bundle rules
+const rawRules = await db
+  .select()
+  .from(bundleRules)
+  .where(eq(bundleRules.isActive, true))
+  .orderBy(asc(bundleRules.minQuantity));
+
+const rules = translateObject(rawRules, locale);
+
+// Fetch bundle eligible products
+const allCmsProducts = await getProducts();
+const rawProducts = allCmsProducts.filter(p => p.eligibleForBundle);
+const products = translateObject(rawProducts, locale);
+
+const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa';
+function getProductImageUrl(img: string | undefined | null) {
+  if (!img) return '/images/placeholder-product.svg';
+  if (img.startsWith('http') || img.startsWith('/')) return img;
+  return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_200,h_200,c_fill,f_auto,q_auto/${img}`;
+}
+---
+
+<BaseLayout
+  title={t('offers.bundlePageTitle', locale)}
+  description={t('offers.bundlePageDesc', locale)}
+  canonicalUrl="/offers/bundle"
+>
+  <Container class="py-8 max-w-7xl">
+    <SectionHeading
+      title={t('offers.bundlePageTitle', locale)}
+      subtitle={t('offers.bundlePageDesc', locale)}
+    />
+
+    <!-- BUNDLE RULES CARDS DECK -->
+    {rules.length > 0 && (
+      <section class="mb-10 mt-6 bg-neutral-900 text-neutral-100 p-6 rounded-2xl border border-neutral-850 shadow-xl relative overflow-hidden">
+        <!-- Accent decorative glow -->
+        <div class="absolute -top-24 -right-24 h-48 w-48 rounded-full bg-secondary/10 blur-3xl pointer-events-none"></div>
+        <div class="absolute -bottom-24 -left-24 h-48 w-48 rounded-full bg-primary/10 blur-3xl pointer-events-none"></div>
+
+        <h2 class="text-sm font-bold tracking-wider text-secondary uppercase mb-4 flex items-center gap-2">
+          <span>🎯</span> {t('offers.activeRules', locale)}
+        </h2>
+        
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {rules.map((rule) => (
+            <div 
+              id={`rule-card-${rule.id}`}
+              data-min-qty={rule.minQuantity}
+              class="relative bg-neutral-950/60 backdrop-blur border border-neutral-800 rounded-xl p-4 transition-all duration-300 shadow-inner flex flex-col justify-between group"
+            >
+              <div>
+                <div class="flex justify-between items-start gap-2">
+                  <h3 class="font-bold text-sm text-white group-hover:text-secondary transition-colors">{rule.name}</h3>
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-400 group-data-[unlocked=true]:bg-green-950 group-data-[unlocked=true]:text-green-400 border border-neutral-700 group-data-[unlocked=true]:border-green-800 shrink-0 select-none">
+                    Buy {rule.minQuantity}
+                  </span>
+                </div>
+                
+                <p class="text-xs text-neutral-400 mt-2 font-medium leading-relaxed">
+                  {rule.rewardDescription}
+                </p>
+              </div>
+
+              <!-- Unlock Status helper -->
+              <div class="mt-4 pt-3 border-t border-neutral-900 flex justify-between items-center text-[10px] font-semibold text-neutral-500 group-data-[unlocked=true]:text-green-400">
+                <span class="rule-status-label">{t('offers.ruleRequires', locale).replace('{qty}', rule.minQuantity.toString())}</span>
+                <span class="rule-status-icon text-sm">🔒</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <!-- MAIN TWO-COLUMN SPLIT GRID -->
+    <div class="grid gap-8 lg:grid-cols-4 items-start mt-6">
+      <!-- PRODUCTS SELECTION GRID (Col: 3) -->
+      <div class="lg:col-span-3">
+        <h3 class="font-bold text-neutral-900 text-base mb-4 flex items-center gap-2">
+          <span>📦</span> {t('offers.selectItems', locale)}
+          <span class="text-xs text-neutral-400 font-medium font-sans">({t('offers.eligibleProductsOnly', locale)})</span>
+        </h3>
+
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {products.map((prod) => {
+            const price = prod.offerPrice > 0 ? prod.offerPrice : prod.mrp;
+            return (
+              <div 
+                id={`prod-card-${prod.id}`}
+                class="bg-white border border-neutral-200 rounded-xl p-4 flex flex-col justify-between hover:shadow-card-hover transition-all duration-300 relative group"
+              >
+                <!-- Selection active ring border outline -->
+                <div class="absolute inset-0 border-2 border-secondary/0 group-[.selected]:border-secondary/80 rounded-xl pointer-events-none transition-all duration-300"></div>
+
+                <div>
+                  <!-- Thumbnail -->
+                  <div class="aspect-square bg-neutral-50 rounded-lg overflow-hidden border border-neutral-100 flex items-center justify-center relative shrink-0">
+                    <img 
+                      src={getProductImageUrl(prod.images?.[0])} 
+                      class="object-cover h-full w-full group-hover:scale-105 transition-transform duration-500" 
+                      alt={prod.name} 
+                    />
+                  </div>
+                  
+                  <div class="mt-3">
+                    <span class="text-[10px] uppercase font-bold text-neutral-400 select-none">{prod.brand}</span>
+                    <h4 class="font-bold text-neutral-800 text-sm truncate mt-0.5">{prod.name}</h4>
+                    <p class="text-[10px] text-neutral-400 font-medium">Model: {prod.modelNumber || '—'}</p>
+                  </div>
+                </div>
+
+                <div class="mt-4 flex items-center justify-between gap-3">
+                  <div class="flex flex-col">
+                    <span class="text-primary font-bold text-sm font-mono">₹{price.toLocaleString('en-IN')}</span>
+                    {prod.mrp > price && (
+                      <span class="text-[10px] text-neutral-400 line-through font-mono">₹{prod.mrp.toLocaleString('en-IN')}</span>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onclick={`toggleProductSelection('${prod.id}', '${encodeURIComponent(prod.name)}', ${price}, '${prod.images?.[0] || ''}')`}
+                    class="btn-select px-3 py-1.5 text-xs font-semibold rounded-md border border-neutral-200 text-neutral-700 hover:border-secondary hover:bg-secondary/5 transition-all select-none cursor-pointer"
+                  >
+                    + Add
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+          {products.length === 0 && (
+            <div class="col-span-full py-12 text-center text-neutral-500 font-semibold bg-white border border-neutral-200 rounded-xl">
+              No bundle-eligible products found. Check back later!
+            </div>
+          )}
+        </div>
+      </div>
+
+      <!-- STICKY BUNDLE SUMMARY (Col: 1) -->
+      <div class="lg:col-span-1 lg:sticky lg:top-24">
+        <div class="bg-white border border-neutral-200 rounded-xl p-5 shadow-sm">
+          <h3 class="text-neutral-900 font-bold text-sm border-b border-neutral-100 pb-3 flex items-center gap-2">
+            <span>📋</span> {t('offers.bundleSummary', locale)}
+          </h3>
+
+          <!-- Selection List container -->
+          <div class="mt-4 space-y-2.5 max-h-56 overflow-y-auto pr-1" id="selected-items-list">
+            <p class="text-xs text-neutral-500 text-center py-6 font-semibold">No items selected yet. Choose products from the list to start building your bundle!</p>
+          </div>
+
+          <!-- Totals block -->
+          <div class="border-t border-neutral-100 pt-4 mt-4 space-y-3">
+            <div class="flex justify-between text-xs text-neutral-600 font-medium">
+              <span>Items Subtotal</span>
+              <span class="font-bold text-neutral-900 font-mono" id="bundle-subtotal">₹0</span>
+            </div>
+
+            <!-- Dynamic Unlocked Reward detail display -->
+            <div class="border border-dashed border-secondary/35 rounded-lg p-2.5 bg-secondary/5 hidden" id="summary-reward-block">
+              <span class="text-[10px] font-bold text-secondary tracking-widest uppercase block mb-1">🎁 Unlocked Reward</span>
+              <p class="text-xs font-bold text-neutral-800" id="summary-reward-name">None</p>
+              <p class="text-[10px] text-green-600 font-bold mt-1 hidden" id="summary-discount-value"></p>
+            </div>
+
+            <button
+              type="button"
+              id="btn-submit-bundle"
+              disabled
+              onclick="submitCustomBundle()"
+              class="w-full btn-primary py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider shadow hover:shadow-lg disabled:opacity-40 disabled:pointer-events-none transition-all cursor-pointer text-center block mt-4"
+            >
+              {t('offers.addBundleToCart', locale)}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </Container>
+</BaseLayout>
+
+<!-- Client Side Bundle Logic -->
+<script is:inline define:vars={{ rules, locale }}>
+  const CART_KEY = 'ye_cart';
+  let selectedProducts = {}; // id -> { name, price, image, quantity }
+
+  window.toggleProductSelection = function (id, nameDecoded, price, image) {
+    const name = decodeURIComponent(nameDecoded);
+    const card = document.getElementById(`prod-card-${id}`);
+    
+    if (selectedProducts[id]) {
+      // Remove
+      delete selectedProducts[id];
+      if (card) {
+        card.classList.remove('selected');
+        const btn = card.querySelector('.btn-select');
+        if (btn) {
+          btn.textContent = '+ Add';
+          btn.className = 'btn-select px-3 py-1.5 text-xs font-semibold rounded-md border border-neutral-200 text-neutral-700 hover:border-secondary hover:bg-secondary/5 transition-all select-none cursor-pointer';
+        }
+      }
+    } else {
+      // Add
+      selectedProducts[id] = { id, name, price, image, quantity: 1 };
+      if (card) {
+        card.classList.add('selected');
+        const btn = card.querySelector('.btn-select');
+        if (btn) {
+          btn.textContent = '✓ Added';
+          btn.className = 'btn-select px-3 py-1.5 text-xs font-semibold rounded-md bg-secondary text-white border border-secondary transition-all select-none cursor-pointer';
+        }
+      }
+    }
+    
+    updateSummary();
+  };
+
+  function updateSummary() {
+    const listContainer = document.getElementById('selected-items-list');
+    const subtotalVal = document.getElementById('bundle-subtotal');
+    const submitBtn = document.getElementById('btn-submit-bundle');
+    const rewardBlock = document.getElementById('summary-reward-block');
+    const rewardName = document.getElementById('summary-reward-name');
+    const rewardDiscount = document.getElementById('summary-discount-value');
+    
+    const items = Object.values(selectedProducts);
+    const totalCount = items.reduce((sum, i) => sum + i.quantity, 0);
+    const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+    
+    if (subtotalVal) subtotalVal.textContent = '₹' + subtotal.toLocaleString('en-IN');
+    
+    // Render list
+    if (items.length === 0) {
+      if (listContainer) {
+        listContainer.innerHTML = `
+          <p class="text-xs text-neutral-500 text-center py-6 font-semibold">No items selected yet. Choose products from the list to start building your bundle!</p>
+        `;
+      }
+      if (submitBtn) submitBtn.disabled = true;
+      if (rewardBlock) rewardBlock.classList.add('hidden');
+      
+      // Reset rules cards UI
+      rules.forEach(r => {
+        const card = document.getElementById(`rule-card-${r.id}`);
+        if (card) {
+          card.removeAttribute('data-unlocked');
+          card.querySelector('.rule-status-label').textContent = locale === 'en' ? `Select ${r.minQuantity} products to unlock` : `અનલોક કરવા માટે ${r.minQuantity} પ્રોડક્ટ્સ પસંદ કરો`;
+          card.querySelector('.rule-status-icon').textContent = '🔒';
+        }
+      });
+      return;
+    }
+    
+    if (submitBtn) submitBtn.disabled = false;
+    
+    if (listContainer) {
+      listContainer.innerHTML = items.map(item => `
+        <div class="flex items-center gap-2 bg-neutral-50 border border-neutral-100 rounded-lg p-2 text-xs">
+          <div class="w-8 h-8 rounded border border-neutral-200 overflow-hidden shrink-0 flex items-center justify-center bg-white">
+            ${item.image ? `<img src="https://res.cloudinary.com/dyjsrdrxa/image/upload/w_50,h_50,c_fill/${item.image}" class="object-cover h-full w-full" />` : '📺'}
+          </div>
+          <div class="flex-1 min-w-0">
+            <h4 class="font-bold text-neutral-800 truncate">${item.name}</h4>
+            <span class="text-[10px] text-neutral-500 font-mono">₹${item.price.toLocaleString('en-IN')}</span>
+          </div>
+          <button type="button" onclick="toggleProductSelection('${item.id}', '', 0, '')" class="text-neutral-400 hover:text-red-500 text-sm shrink-0 cursor-pointer px-1">✕</button>
+        </div>
+      `).join('');
+    }
+    
+    // Evaluate active bundle rules
+    let bestRule = null;
+    rules.forEach(r => {
+      const card = document.getElementById(`rule-card-${r.id}`);
+      const isUnlocked = totalCount >= r.minQuantity;
+      
+      if (card) {
+        if (isUnlocked) {
+          card.setAttribute('data-unlocked', 'true');
+          card.querySelector('.rule-status-label').textContent = locale === 'en' ? 'Unlocked! 🎉' : 'અનલોક થયું! 🎉';
+          card.querySelector('.rule-status-icon').textContent = '✅';
+          
+          if (!bestRule || r.minQuantity > bestRule.minQuantity) {
+            bestRule = r;
+          }
+        } else {
+          card.removeAttribute('data-unlocked');
+          const remaining = r.minQuantity - totalCount;
+          card.querySelector('.rule-status-label').textContent = locale === 'en' ? `Select ${remaining} more to unlock` : `અનલોક કરવા માટે વધુ ${remaining} પસંદ કરો`;
+          card.querySelector('.rule-status-icon').textContent = '🔒';
+        }
+      }
+    });
+    
+    if (bestRule) {
+      if (rewardBlock) rewardBlock.classList.remove('hidden');
+      if (rewardName) rewardName.textContent = bestRule.rewardDescription;
+      
+      if (bestRule.rewardType === 'percentage_discount' && rewardDiscount) {
+        const discAmount = Math.round(subtotal * (bestRule.rewardValue / 100));
+        rewardDiscount.textContent = `Checkout Discount: -₹${discAmount.toLocaleString('en-IN')} (${bestRule.rewardValue}%)`;
+        rewardDiscount.classList.remove('hidden');
+      } else if (bestRule.rewardType === 'flat_discount' && rewardDiscount) {
+        const discAmount = Math.min(bestRule.rewardValue, subtotal);
+        rewardDiscount.textContent = `Checkout Discount: -₹${discAmount.toLocaleString('en-IN')}`;
+        rewardDiscount.classList.remove('hidden');
+      } else if (rewardDiscount) {
+        rewardDiscount.classList.add('hidden');
+      }
+    } else {
+      if (rewardBlock) rewardBlock.classList.add('hidden');
+    }
+  }
+
+  window.submitCustomBundle = function () {
+    try {
+      const items = Object.values(selectedProducts);
+      if (items.length === 0) return;
+      
+      // Load current cart
+      let cart = JSON.parse(localStorage.getItem(CART_KEY) || '[]');
+      
+      // Merge selected products
+      items.forEach(item => {
+        const existing = cart.find(i => i.id === item.id);
+        if (existing) {
+          existing.quantity = Math.max(existing.quantity, item.quantity);
+          existing.eligibleForBundle = true; // force flag
+        } else {
+          cart.push({
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            image: item.image,
+            eligibleForBundle: true,
+            quantity: 1
+          });
+        }
+      });
+      
+      localStorage.setItem(CART_KEY, JSON.stringify(cart));
+      window.dispatchEvent(new CustomEvent('cart-updated'));
+      
+      const isEn = locale === 'en';
+      window.showToast(isEn ? 'Custom bundle added to cart!' : 'બંડલ કાર્ટમાં ઉમેરવામાં આવ્યું છે!');
+      
+      setTimeout(() => {
+        window.location.href = isEn ? '/en/cart' : '/cart';
+      }, 600);
+    } catch (e) {
+      console.error('Failed to add bundle to cart:', e);
+    }
+  };
+</script>
+
+<style>
+  /* Custom micro-animations */
+  @keyframes pulseSlow {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.9; }
+  }
+  .animate-pulse-subtle {
+    animation: pulseSlow 3s infinite ease-in-out;
+  }
+</style>

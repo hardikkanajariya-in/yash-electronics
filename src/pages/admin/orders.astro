@@ -207,6 +207,21 @@ const counts = {
 
                 {/* Totals */}
                 <div class="flex flex-col items-end border-t border-neutral-100 pt-3 gap-1">
+                  {order.discountApplied > 0 && (
+                    <span class="text-xs text-green-600 font-medium">
+                      Coupon Discount ({order.couponCode || 'Promo'}): -₹{order.discountApplied.toLocaleString('en-IN')}
+                    </span>
+                  )}
+                  {order.bundleDiscountApplied > 0 && (
+                    <span class="text-xs text-secondary font-bold">
+                      Bundle Discount: -₹{order.bundleDiscountApplied.toLocaleString('en-IN')}
+                    </span>
+                  )}
+                  {order.bundleRewardGiven && (
+                    <span class="text-xs text-purple-700 bg-purple-50 border border-purple-200 rounded-md px-2 py-1 font-bold">
+                      🎁 Bundle Reward: {order.bundleRewardGiven}
+                    </span>
+                  )}
                   {order.creditsUsed > 0 && (
                     <span class="text-xs text-green-600 font-medium">
                       In-store Credits Discount: -₹{order.creditsUsed.toLocaleString('en-IN')}

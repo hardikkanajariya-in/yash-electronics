@@ -98,6 +98,7 @@ export async function importProductsFromCsv(csvText: string) {
   const offerPriceIdx = headerRow.indexOf('offerprice') !== -1 ? headerRow.indexOf('offerprice') : headerRow.indexOf('price');
   const imagesIdx = headerRow.indexOf('images');
   const featuredIdx = headerRow.indexOf('isfeatured') !== -1 ? headerRow.indexOf('isfeatured') : headerRow.indexOf('featured');
+  const eligibleBundleIdx = headerRow.indexOf('eligibleforbundle') !== -1 ? headerRow.indexOf('eligibleforbundle') : headerRow.indexOf('eligiblebundle');
   const activeIdx = headerRow.indexOf('isactive') !== -1 ? headerRow.indexOf('isactive') : headerRow.indexOf('active');
 
   if (nameIdx === -1) {
@@ -258,6 +259,7 @@ export async function importProductsFromCsv(csvText: string) {
       };
 
       const isFeatured = featuredIdx !== -1 ? valBool(row[featuredIdx], false) : false;
+      const eligibleForBundle = eligibleBundleIdx !== -1 ? valBool(row[eligibleBundleIdx], true) : true;
       const isActive = activeIdx !== -1 ? valBool(row[activeIdx], true) : true;
 
       // 5. Upsert Product
@@ -279,6 +281,7 @@ export async function importProductsFromCsv(csvText: string) {
           offerPrice,
           // We do NOT update images from CSV, keeping existing ones
           isFeatured,
+          eligibleForBundle,
           isActive,
           updatedAt: now,
         }).where(eq(products.id, existingProduct.id));
@@ -300,6 +303,7 @@ export async function importProductsFromCsv(csvText: string) {
           offerPrice,
           images: [], // New products get empty image lists
           isFeatured,
+          eligibleForBundle,
           isActive,
           createdAt: now,
           updatedAt: now,
@@ -336,6 +340,7 @@ export async function exportProductsToCsv(): Promise<string> {
     'MRP',
     'Offer Price',
     'Featured',
+    'Eligible for Bundle',
     'Active',
     'Specifications',
     'Description',
@@ -377,6 +382,7 @@ export async function exportProductsToCsv(): Promise<string> {
       'MRP': p.mrp,
       'Offer Price': p.offerPrice,
       'Featured': p.isFeatured ? 'true' : 'false',
+      'Eligible for Bundle': p.eligibleForBundle ? 'true' : 'false',
       'Active': p.isActive ? 'true' : 'false',
       'Specifications': specStr,
       'Description': p.description || '',
