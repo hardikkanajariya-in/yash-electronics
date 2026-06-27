@@ -50,6 +50,12 @@ if (Astro.request.method === 'POST') {
         throw new Error('Name and Slug are required.');
       }
 
+      // Check if a brand with the same slug already exists
+      const existingBrand = await db.select({ id: brands.id }).from(brands).where(eq(brands.slug, slug));
+      if (existingBrand.length > 0 && (!brandId || existingBrand[0].id !== brandId)) {
+        throw new Error(`A brand with the slug "${slug}" already exists. Please choose a different, unique slug.`);
+      }
+
       if (brandId) {
         // Edit existing brand
         await db.update(brands).set({
@@ -79,7 +85,12 @@ if (Astro.request.method === 'POST') {
       }
     }
   } catch (e: any) {
-    error = e.message || 'Failed to save brand. Make sure the slug is unique.';
+    const errMsg = e.message || '';
+    if (errMsg.includes('unique constraint') || errMsg.includes('brands_slug_unique') || errMsg.includes('duplicate key')) {
+      error = 'A brand with this slug already exists. Please choose a different, unique slug.';
+    } else {
+      error = errMsg || 'Failed to save brand.';
+    }
   }
 }
 

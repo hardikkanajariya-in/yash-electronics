@@ -57,6 +57,12 @@ if (Astro.request.method === 'POST') {
       const minOrderValue = parseInt(formData.get('minOrderValue')?.toString() || '0', 10);
       const discountCap = formData.get('discountCap')?.toString().trim() ? parseInt(formData.get('discountCap')?.toString() || '0', 10) : null;
 
+      // Check if an offer with the same slug already exists
+      const existingOffer = await db.select({ id: offers.id }).from(offers).where(eq(offers.slug, slug));
+      if (existingOffer.length > 0 && (!offerId || existingOffer[0].id !== offerId)) {
+        throw new Error(`An offer with the slug "${slug}" already exists. Please choose a different, unique slug.`);
+      }
+
       if (offerId) {
         // Edit existing
         await db.update(offers).set({
@@ -108,7 +114,12 @@ if (Astro.request.method === 'POST') {
       }
     }
   } catch (e: any) {
-    error = e.message || 'Failed to save offer. Ensure slug is unique.';
+    const errMsg = e.message || '';
+    if (errMsg.includes('unique constraint') || errMsg.includes('offers_slug_unique') || errMsg.includes('duplicate key')) {
+      error = 'An offer with this slug already exists. Please choose a different, unique slug.';
+    } else {
+      error = errMsg || 'Failed to save offer.';
+    }
   }
 }
 

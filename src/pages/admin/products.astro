@@ -159,6 +159,12 @@ if (Astro.request.method === 'POST') {
       const imagesString = formData.get('images')?.toString() || '';
       const imagesArray = imagesString.split(',').map(s => s.trim()).filter(Boolean);
 
+      // Check if a product with the same slug already exists
+      const existingProduct = await db.select({ id: products.id }).from(products).where(eq(products.slug, slug));
+      if (existingProduct.length > 0 && (!productId || existingProduct[0].id !== productId)) {
+        throw new Error(`A product with the slug "${slug}" already exists. Please choose a different, unique slug.`);
+      }
+
       if (productId) {
         // Edit existing product
         await db.update(products).set({
@@ -225,7 +231,12 @@ if (Astro.request.method === 'POST') {
       redirectUrl = '/admin/products?success=' + encodeURIComponent('Bundle eligibility updated successfully!');
     }
   } catch (e: any) {
-    error = e.message || 'Failed to save product. Ensure slug is unique.';
+    const errMsg = e.message || '';
+    if (errMsg.includes('unique constraint') || errMsg.includes('products_slug_unique') || errMsg.includes('duplicate key')) {
+      error = 'A product with this slug already exists. Please choose a different, unique slug.';
+    } else {
+      error = errMsg || 'Failed to save product.';
+    }
   }
 }
 

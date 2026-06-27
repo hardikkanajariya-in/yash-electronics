@@ -53,6 +53,12 @@ if (Astro.request.method === 'POST') {
         throw new Error('Name and Slug are required.');
       }
 
+      // Check if a category with the same slug already exists
+      const existingCategory = await db.select({ id: categories.id }).from(categories).where(eq(categories.slug, slug));
+      if (existingCategory.length > 0 && (!categoryId || existingCategory[0].id !== categoryId)) {
+        throw new Error(`A category with the slug "${slug}" already exists. Please choose a different, unique slug.`);
+      }
+
       if (categoryId) {
         // Edit existing category
         await db.update(categories).set({
@@ -88,7 +94,12 @@ if (Astro.request.method === 'POST') {
       }
     }
   } catch (e: any) {
-    error = e.message || 'Failed to save category. Make sure the slug is unique.';
+    const errMsg = e.message || '';
+    if (errMsg.includes('unique constraint') || errMsg.includes('categories_slug_unique') || errMsg.includes('duplicate key')) {
+      error = 'A category with this slug already exists. Please choose a different, unique slug.';
+    } else {
+      error = errMsg || 'Failed to save category.';
+    }
   }
 }
 
