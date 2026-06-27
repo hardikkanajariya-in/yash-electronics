@@ -23,6 +23,16 @@ const rawBundleRules = await db
   .orderBy(asc(bundleRules.minQuantity));
 const bundleRulesList = translateObject(rawBundleRules, locale);
 
+const rawBundleProducts = await db
+  .select()
+  .from(products)
+  .where(and(eq(products.isActive, true), eq(products.eligibleForBundle, true)))
+  .orderBy(desc(products.createdAt));
+const bundleProductsList = translateObject(rawBundleProducts, locale);
+
+
+
+
 // Authenticate user. Redirect to login if not logged in.
 Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
 const currentUser = await getSessionUser(Astro.cookies);
@@ -306,6 +316,11 @@ const t = {
             <div id="cart-items-container" class="space-y-3">
               {/* Dynanically populated by JS */}
             </div>
+
+            <!-- Bundle Organizer View -->
+            <div id="bundle-organizer-container" class="hidden mt-6 bg-white border border-neutral-200 rounded-xl p-5 shadow-sm space-y-4">
+              <!-- Dynamically populated by JS -->
+            </div>
           </div>
 
           {/* Checkout & Summary Form Column */}
@@ -465,7 +480,7 @@ const t = {
   </Container>
 </BaseLayout>
 
-<script is:inline define:vars={{ userCredits: currentUser?.credits || 0, successOrderId, locale, cloudName: cloudinaryConfig.cloudName, bundleRulesList }}>
+<script is:inline define:vars={{ userCredits: currentUser?.credits || 0, successOrderId, locale, cloudName: cloudinaryConfig.cloudName, bundleRulesList, bundleProductsList }}>
   // Manage client side cart
   const CART_KEY = 'ye_cart';
   let activeCoupon = null; // Holds { code, discountType, discountValue }
@@ -496,6 +511,8 @@ const t = {
     if (cart.length === 0) {
       if (emptyEl) emptyEl.classList.remove('hidden');
       if (containerEl) containerEl.innerHTML = '';
+      const organizerContainer = document.getElementById('bundle-organizer-container');
+      if (organizerContainer) organizerContainer.classList.add('hidden');
       if (checkoutForm) {
         const submitBtn = document.getElementById('checkout-submit-btn');
         if (submitBtn) submitBtn.disabled = true;
@@ -539,7 +556,7 @@ const t = {
 
           <!-- Remove -->
           <button type="button" onclick="removeItem('${item.id}')" class="text-xs font-semibold text-red-500 hover:text-red-700 hover:underline cursor-pointer">
-            Remove
+            ${locale === 'en' ? 'Remove' : 'કાઢી નાખો'}
           </button>
         </div>
       </div>
@@ -590,26 +607,198 @@ const t = {
         const subtotal = getCart().reduce((sum, item) => sum + item.price * item.quantity, 0);
         if (data.minOrderValue && subtotal < data.minOrderValue) {
           activeCoupon = null;
-          errEl.textContent = `Minimum order value of ₹${data.minOrderValue} required for this coupon.`;
+          errEl.textContent = locale === 'en' 
+            ? `Minimum order value of ₹${data.minOrderValue} required for this coupon.`
+            : `આ કૂપન માટે ન્યૂનતમ ₹${data.minOrderValue} નો ઓર્ડર જરૂરી છે.`;
           errEl.classList.remove('hidden');
         } else {
           activeCoupon = data;
-          succEl.textContent = `Coupon ${data.code} applied successfully!`;
+          succEl.textContent = locale === 'en' 
+            ? `Coupon ${data.code} applied successfully!` 
+            : `કૂપન ${data.code} સફળતાપૂર્વક લાગુ થઈ!`;
           succEl.classList.remove('hidden');
         }
       } else {
         activeCoupon = null;
-        errEl.textContent = data.message || 'Invalid coupon code.';
+        errEl.textContent = data.message || (locale === 'en' ? 'Invalid coupon code.' : 'અમાન્ય કૂપન કોડ.');
         errEl.classList.remove('hidden');
       }
     } catch (e) {
       activeCoupon = null;
-      errEl.textContent = 'Failed to validate coupon.';
+      errEl.textContent = locale === 'en' ? 'Failed to validate coupon.' : 'કૂપન તપાસવામાં ભૂલ આવી.';
       errEl.classList.remove('hidden');
     }
 
     recalculateTotals();
   };
+
+  window.addEligibleProductToCart = function (productId) {
+    const product = bundleProductsList.find(p => p.id === productId);
+    if (!product) return;
+
+    let cart = getCart();
+    const existing = cart.find(item => item.id === productId);
+    const price = product.offerPrice > 0 ? product.offerPrice : product.mrp;
+    
+    if (existing) {
+      existing.quantity += 1;
+    } else {
+      cart.push({
+        id: product.id,
+        name: product.name,
+        price: price,
+        image: product.images?.[0] || '',
+        eligibleForBundle: true,
+        quantity: 1
+      });
+    }
+    
+    saveCart(cart);
+    renderCart();
+    
+    if (window.showToast) {
+      window.showToast(locale === 'en' ? 'Product added to cart!' : 'પ્રોડક્ટ કાર્ટમાં ઉમેરવામાં આવી!');
+    }
+  };
+
+  function renderBundleOrganizer(cart, eligibleQty, subtotal) {
+    const organizerContainer = document.getElementById('bundle-organizer-container');
+    if (!organizerContainer) return;
+
+    if (cart.length === 0 || !bundleRulesList || bundleRulesList.length === 0) {
+      organizerContainer.classList.add('hidden');
+      return;
+    }
+
+    organizerContainer.classList.remove('hidden');
+
+    // Sort rules ascending by minQuantity
+    const sortedRules = [...bundleRulesList].sort((a, b) => a.minQuantity - b.minQuantity);
+    const maxRuleQty = sortedRules.length > 0 ? sortedRules[sortedRules.length - 1].minQuantity : 1;
+
+    // Progress bar percentage
+    const progressPercentage = Math.min(100, (eligibleQty / maxRuleQty) * 100);
+
+    // Determine next locked rule or highest unlocked rule message
+    let progressTip = '';
+    const nextLockedRule = sortedRules.find(r => eligibleQty < r.minQuantity);
+    const highestUnlockedRule = [...sortedRules].reverse().find(r => eligibleQty >= r.minQuantity);
+
+    if (nextLockedRule) {
+      const diff = nextLockedRule.minQuantity - eligibleQty;
+      progressTip = locale === 'en'
+        ? `Add <strong class="text-secondary">${diff}</strong> more eligible item${diff > 1 ? 's' : ''} to unlock: <strong class="text-primary">${nextLockedRule.rewardDescription}</strong>`
+        : `મેળવવા માટે વધુ <strong class="text-secondary">${diff}</strong> લાયક પ્રોડક્ટ ઉમેરો: <strong class="text-primary">${nextLockedRule.rewardDescription}</strong>`;
+    } else if (highestUnlockedRule) {
+      progressTip = locale === 'en'
+        ? `<span class="text-green-600 font-bold">Congratulations! You have unlocked the best bundle deal: <strong>${highestUnlockedRule.rewardDescription}</strong> 🌟</span>`
+        : `<span class="text-green-600 font-bold">અભિનંદન! તમે શ્રેષ્ઠ બંડલ ડીલ અનલોક કરી દીધી છે: <strong>${highestUnlockedRule.rewardDescription}</strong> 🌟</span>`;
+    } else {
+      progressTip = locale === 'en'
+        ? `Add bundle-eligible products to start unlocking discounts!`
+        : `બંડલ ડિસ્કાઉન્ટ મેળવવા માટે લાયક પ્રોડક્ટ્સ ઉમેરો!`;
+    }
+
+    // Render milestones / rules list
+    const rulesListHtml = sortedRules.map(r => {
+      const isUnlocked = eligibleQty >= r.minQuantity;
+      return `
+        <div class="flex items-center justify-between p-3 rounded-lg border ${isUnlocked ? 'border-green-200 bg-green-50/40 text-green-800' : 'border-neutral-200 bg-neutral-50 text-neutral-600'} transition-all">
+          <div class="flex items-center gap-2.5">
+            <span class="text-sm shrink-0">${isUnlocked ? '✅' : '🔒'}</span>
+            <div class="min-w-0">
+              <span class="text-xs font-bold font-sans block truncate">${r.name}</span>
+              <p class="text-[10px] text-neutral-500 mt-0.5 leading-tight">${r.rewardDescription}</p>
+            </div>
+          </div>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-white border ${isUnlocked ? 'border-green-300 text-green-700' : 'border-neutral-300 text-neutral-500'} font-mono shrink-0 select-none ml-2">
+            Min Qty: ${r.minQuantity}
+          </span>
+        </div>
+      `;
+    }).join('');
+
+    // Filter products to show: bundle eligible and NOT already in cart
+    const cartIds = new Set(cart.map(item => item.id));
+    let itemsToShow = bundleProductsList.filter(p => !cartIds.has(p.id)).slice(0, 3);
+    if (itemsToShow.length === 0) {
+      itemsToShow = bundleProductsList.slice(0, 3);
+    }
+
+    const productsHtml = itemsToShow.map(p => {
+      const price = p.offerPrice > 0 ? p.offerPrice : p.mrp;
+      const imageUrl = p.images && p.images[0]
+        ? (p.images[0].startsWith('/') || p.images[0].startsWith('http') ? p.images[0] : `https://res.cloudinary.com/${cloudName}/image/upload/w_150,h_150,c_fill,f_auto,q_auto/${p.images[0]}`)
+        : '/images/placeholder-product.svg';
+      
+      return `
+        <div class="bg-neutral-50 border border-neutral-200 rounded-xl p-3 flex flex-col justify-between hover:shadow-sm transition-all group">
+          <div class="flex gap-2.5 items-start">
+            <div class="w-12 h-12 bg-white rounded border border-neutral-100 overflow-hidden shrink-0 flex items-center justify-center">
+              <img src="${imageUrl}" alt="${p.name}" class="object-cover h-full w-full" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <span class="text-[9px] uppercase font-bold text-neutral-400 font-sans tracking-wide block truncate">${p.brand}</span>
+              <h4 class="font-bold text-neutral-850 text-xs truncate mt-0.5" title="${p.name}">${p.name}</h4>
+              <div class="flex items-center gap-1.5 mt-0.5">
+                <span class="text-primary font-bold text-xs font-mono">₹${price.toLocaleString('en-IN')}</span>
+                ${p.mrp > price ? `<span class="text-[9px] text-neutral-400 line-through font-mono">₹${p.mrp.toLocaleString('en-IN')}</span>` : ''}
+              </div>
+            </div>
+          </div>
+          <button 
+            type="button" 
+            onclick="addEligibleProductToCart('${p.id}')"
+            class="mt-2.5 w-full bg-white border border-neutral-200 hover:border-secondary hover:bg-secondary/5 text-neutral-700 hover:text-secondary text-[10px] font-bold py-1.5 px-2 rounded transition-all cursor-pointer text-center"
+          >
+            ${locale === 'en' ? '+ Add to Cart' : '+ કાર્ટમાં ઉમેરો'}
+          </button>
+        </div>
+      `;
+    }).join('');
+
+    const relevantProductsSectionHtml = productsHtml.length > 0 
+      ? `
+        <div class="border-t border-neutral-100 pt-4">
+          <h4 class="text-xs font-bold text-neutral-850 mb-3 flex items-center gap-1.5">
+            <span>📦</span> ${locale === 'en' ? 'Eligible Products You Can Add Directly' : 'લાયક પ્રોડક્ટ્સ જે તમે ઉમેરી શકો છો'}
+          </h4>
+          <div class="grid gap-3 sm:grid-cols-3">
+            ${productsHtml}
+          </div>
+        </div>
+      `
+      : '';
+
+    organizerContainer.innerHTML = `
+      <div class="flex items-center justify-between border-b border-neutral-100 pb-3 mb-1">
+        <h3 class="text-sm font-bold text-neutral-900 flex items-center gap-1.5">
+          <span>🎁</span> ${locale === 'en' ? 'Bundle Deal Organizer' : 'બંડલ ડીલ ઓર્ગેનાઇઝર'}
+        </h3>
+        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-secondary/10 text-secondary border border-secondary/20 font-mono">
+          ${locale === 'en' ? `Eligible Items: ${eligibleQty}` : `લાયક આઇટમ્સ: ${eligibleQty}`}
+        </span>
+      </div>
+
+      <!-- Progress Tip -->
+      <p class="text-xs text-neutral-600 font-medium leading-relaxed">
+        ${progressTip}
+      </p>
+
+      <!-- Progress Bar -->
+      <div class="relative w-full h-3 bg-neutral-100 rounded-full overflow-hidden border border-neutral-200">
+        <div class="h-full bg-gradient-to-r from-secondary to-primary transition-all duration-500" style="width: ${progressPercentage}%"></div>
+      </div>
+
+      <!-- Milestones list -->
+      <div class="space-y-2 pt-2">
+        ${rulesListHtml}
+      </div>
+
+      <!-- Relevant Products Section -->
+      ${relevantProductsSectionHtml}
+    `;
+  }
 
   window.recalculateTotals = function () {
     const cart = getCart();
@@ -627,7 +816,9 @@ const t = {
         const errEl = document.getElementById('coupon-error');
         const succEl = document.getElementById('coupon-success');
         if (errEl) {
-          errEl.textContent = `Minimum order value of ₹${activeCoupon.minOrderValue} required for this coupon.`;
+          errEl.textContent = locale === 'en'
+            ? `Minimum order value of ₹${activeCoupon.minOrderValue} required for this coupon.`
+            : `આ કૂપન માટે ન્યૂનતમ ₹${activeCoupon.minOrderValue} નો ઓર્ડર જરૂરી છે.`;
           errEl.classList.remove('hidden');
         }
         if (succEl) succEl.classList.add('hidden');
@@ -637,11 +828,13 @@ const t = {
       } else {
         const errEl = document.getElementById('coupon-error');
         const succEl = document.getElementById('coupon-success');
-        if (errEl && errEl.textContent.includes('Minimum order value')) {
+        if (errEl && errEl.textContent.includes(locale === 'en' ? 'Minimum order' : 'ન્યૂનતમ')) {
           errEl.classList.add('hidden');
         }
         if (succEl && activeCoupon.code) {
-          succEl.textContent = `Coupon ${activeCoupon.code} applied successfully!`;
+          succEl.textContent = locale === 'en' 
+            ? `Coupon ${activeCoupon.code} applied successfully!` 
+            : `કૂપન ${activeCoupon.code} સફળતાપૂર્વક લાગુ થઈ!`;
           succEl.classList.remove('hidden');
         }
 
@@ -755,6 +948,9 @@ const t = {
     // Populate checkout form hidden value for items
     const itemsInput = document.getElementById('cart-items-input');
     if (itemsInput) itemsInput.value = JSON.stringify(cart);
+
+    // Render bundle deal organizer progress and product recommendations
+    renderBundleOrganizer(cart, eligibleQty, subtotal);
   };
 
   // Render on mount
