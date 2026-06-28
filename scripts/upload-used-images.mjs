@@ -29,7 +29,7 @@ const isCleanup = args.includes('--cleanup');
 if (!isExecute) {
   console.log(`${COLORS.bright}${COLORS.yellow}ℹ RUNNING IN DRY-RUN MODE.${COLORS.reset}`);
   console.log(`${COLORS.yellow}No files will be uploaded, no assets deleted, and no DB updates made.${COLORS.reset}`);
-  console.log(`${COLORS.yellow}To execute the actions, run: ${COLORS.bright}npm run sync:cloudinary -- --execute${COLORS.reset}\n`);
+  console.log(`${COLORS.yellow}To execute the actions, run: ${COLORS.bright}pnpm sync -- --execute${COLORS.reset}\n`);
 } else {
   console.log(`${COLORS.bright}${COLORS.magenta}⚠ EXECUTE MODE ENABLED.${COLORS.reset}`);
   if (isCleanup) {
@@ -141,9 +141,11 @@ function findLocalFile(ref) {
     if (fs.existsSync(folderPath)) {
       const files = fs.readdirSync(folderPath);
       const baseName = path.basename(ref).toLowerCase();
+      const baseNameWithoutExt = path.parse(ref).name.toLowerCase();
       const match = files.find(file => {
+        const fileLower = file.toLowerCase();
         const fileBase = path.parse(file).name.toLowerCase();
-        return fileBase === baseName;
+        return fileLower === baseName || fileBase === baseName || fileBase === baseNameWithoutExt;
       });
       if (match) return path.join(folderPath, match);
     }

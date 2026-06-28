@@ -11,8 +11,7 @@ const { videos } = Astro.props;
 const locale = Astro.currentLocale || 'gu';
 
 if (!videos || videos.length === 0) return null;
-
-
+---
 
 <section class="py-12 bg-neutral-50/50 border-t border-b border-neutral-100 overflow-hidden">
   <div class="max-w-7xl mx-auto px-4 sm:px-6">
@@ -42,7 +41,7 @@ if (!videos || videos.length === 0) return null;
     >
       {videos.map((video, idx) => {
         const videoDisplayUrl = buildCloudinaryUrl(video.videoUrl);
-        const thumbDisplayUrl = buildCloudinaryUrl(video.thumbnailUrl, { width: 400, height: 700 });
+        const thumbDisplayUrl = buildCloudinaryUrl(video.thumbnailUrl!, { width: 400, height: 700 });
 
         return (
           <div 
