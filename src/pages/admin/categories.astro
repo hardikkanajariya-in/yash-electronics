@@ -5,6 +5,8 @@ import { categories } from '../../db/schema';
 import { eq, and, or, ilike, sql, asc, desc } from 'drizzle-orm';
 import { getSessionUser, generateId } from '../../lib/auth';
 import { clearCmsCache } from '../../services/cms';
+import { buildCloudinaryUrl } from '../../lib/cloudinary';
+import { deleteCloudinaryAsset } from '../../lib/cloudinary-server';
 
 export const prerender = false;
 
@@ -32,7 +34,6 @@ if (Astro.request.method === 'POST') {
       const idToDelete = formData.get('id')?.toString() || '';
       const [existing] = await db.select().from(categories).where(eq(categories.id, idToDelete));
       if (existing?.image) {
-        const { deleteCloudinaryAsset } = await import('../../lib/cloudinary');
         await deleteCloudinaryAsset(existing.image);
       }
       await db.delete(categories).where(eq(categories.id, idToDelete));
@@ -68,7 +69,6 @@ if (Astro.request.method === 'POST') {
         // Edit existing category
         const [existing] = await db.select().from(categories).where(eq(categories.id, categoryId));
         if (existing?.image && existing.image !== image) {
-          const { deleteCloudinaryAsset } = await import('../../lib/cloudinary');
           await deleteCloudinaryAsset(existing.image);
         }
         // Edit existing category
@@ -262,11 +262,7 @@ const totalPages = Math.ceil(totalCount / limit);
             {allCategories.map((cat) => {
               const editUrl = "/admin/categories?action=edit&id=" + cat.id;
 
-              const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa';
-              let displayUrl = cat.image || '/images/placeholder-product.svg';
-              if (cat.image && !cat.image.startsWith('http') && !cat.image.startsWith('/')) {
-                displayUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_100,h_100,c_fill,f_auto,q_auto/${cat.image}`;
-              }
+              const displayUrl = buildCloudinaryUrl(cat.image, { width: 100, height: 100 });
 
               return (
                 <tr class="border-b border-neutral-100 hover:bg-neutral-50/50">
@@ -313,11 +309,7 @@ const totalPages = Math.ceil(totalCount / limit);
       {/* Mobile Flat List View */}
       <div class="md:hidden bg-white border border-neutral-200 rounded-lg shadow-sm divide-y divide-neutral-100">
         {allCategories.map((cat) => {
-          const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa';
-          let displayUrl = cat.image || '/images/placeholder-product.svg';
-          if (cat.image && !cat.image.startsWith('http') && !cat.image.startsWith('/')) {
-            displayUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_100,h_100,c_fill,f_auto,q_auto/${cat.image}`;
-          }
+          const displayUrl = buildCloudinaryUrl(cat.image, { width: 100, height: 100 });
 
           return (
             <div class="p-4 flex gap-3 items-center relative pr-20 min-h-[5.5rem]">
@@ -595,18 +587,13 @@ const totalPages = Math.ceil(totalCount / limit);
         const progressBar = document.getElementById('upload-progress-bar');
         const progressPercent = document.getElementById('upload-percent');
 
-        const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa';
-
         function renderPreview() {
           if (!previewContainer) return;
           previewContainer.innerHTML = '';
           const imgVal = imageInput.value.trim();
           if (!imgVal) return;
 
-          let displayUrl = imgVal;
-          if (!imgVal.startsWith('http') && !imgVal.startsWith('/')) {
-            displayUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_200,h_200,c_fill,f_auto,q_auto/${imgVal}`;
-          }
+          const displayUrl = buildCloudinaryUrl(imgVal, { width: 100, height: 100 });
 
           const div = document.createElement('div');
           div.className = 'relative group w-24 h-24 border border-neutral-200 rounded-md overflow-hidden bg-neutral-50 shadow-sm';

@@ -13,7 +13,9 @@
     "seed:images": "node scripts/download-seed-images.mjs",
     "db:push": "drizzle-kit push",
     "db:seed": "node scripts/db-seed.mjs",
-    "db:fresh": "drizzle-kit push && node scripts/db-seed.mjs"
+    "db:fresh": "drizzle-kit push && node scripts/db-seed.mjs",
+    "backup:cloudinary": "node scripts/backup-cloudinary.mjs",
+    "sync:cloudinary": "node scripts/upload-used-images.mjs"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.9",

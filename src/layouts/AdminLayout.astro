@@ -1,6 +1,7 @@
 ---
 import BaseLayout from './BaseLayout.astro';
 import Container from '../components/ui/Container.astro';
+import { buildCloudinaryUrl } from '../lib/cloudinary';
 import { db } from '../db';
 import { settings } from '../db/schema';
 import { getSessionUser } from '../lib/auth';
@@ -29,16 +30,7 @@ dbSettingsList.forEach(s => {
 });
 const businessName = currentSettings.businessName || 'Yash Electronics';
 
-const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa';
-const logoUrl = currentSettings.logoUrl;
-let logoDisplayUrl = '';
-if (logoUrl) {
-  if (logoUrl.startsWith('http') || logoUrl.startsWith('/')) {
-    logoDisplayUrl = logoUrl;
-  } else {
-    logoDisplayUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_100,h_100,c_fill,f_auto,q_auto/${logoUrl}`;
-  }
-}
+const logoDisplayUrl = buildCloudinaryUrl(currentSettings.logoUrl, { width: 100, height: 100 });
 
 // Side navigation links (16 items)
 const menuItems = [

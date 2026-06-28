@@ -4,6 +4,7 @@ import { db } from '../../db';
 import { teamMembers } from '../../db/schema';
 import { getSessionUser, generateId } from '../../lib/auth';
 import { eq } from 'drizzle-orm';
+import { deleteCloudinaryAsset } from '../../lib/cloudinary-server';
 
 export const prerender = false;
 Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -25,7 +26,6 @@ if (Astro.request.method === 'POST') {
       if (deleteId) {
         const [existing] = await db.select().from(teamMembers).where(eq(teamMembers.id, deleteId));
         if (existing?.photo) {
-          const { deleteCloudinaryAsset } = await import('../../lib/cloudinary');
           await deleteCloudinaryAsset(existing.photo);
         }
         await db.delete(teamMembers).where(eq(teamMembers.id, deleteId));
@@ -45,7 +45,6 @@ if (Astro.request.method === 'POST') {
       } else if (id) {
         const [existing] = await db.select().from(teamMembers).where(eq(teamMembers.id, id));
         if (existing?.photo && existing.photo !== photo) {
-          const { deleteCloudinaryAsset } = await import('../../lib/cloudinary');
           await deleteCloudinaryAsset(existing.photo);
         }
         await db.update(teamMembers).set({ name, phone, photo, role, department, sortOrder }).where(eq(teamMembers.id, id));
@@ -156,7 +155,7 @@ const showForm = isAdding || editMember;
           const progressBar = document.getElementById('upload-progress-bar');
           const progressPercent = document.getElementById('upload-percent');
 
-          const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa';
+          import { buildCloudinaryUrl } from '../../lib/cloudinary';
 
           function renderPreview() {
             if (!previewContainer) return;
@@ -164,10 +163,7 @@ const showForm = isAdding || editMember;
             const imgVal = photoInput.value.trim();
             if (!imgVal) return;
 
-            let displayUrl = imgVal;
-            if (!imgVal.startsWith('http') && !imgVal.startsWith('/')) {
-              displayUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_200,h_200,c_fill,f_auto,q_auto/${imgVal}`;
-            }
+            const displayUrl = buildCloudinaryUrl(imgVal, { width: 200, height: 200 });
 
             const div = document.createElement('div');
             div.className = 'relative group w-24 h-24 border border-neutral-200 rounded-md overflow-hidden bg-neutral-50 shadow-sm';

@@ -4,6 +4,7 @@ import { db } from '../../db';
 import { promoVideos } from '../../db/schema';
 import { getSessionUser, generateId } from '../../lib/auth';
 import { eq, asc } from 'drizzle-orm';
+import { deleteCloudinaryAsset } from '../../lib/cloudinary-server';
 
 export const prerender = false;
 Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -27,7 +28,6 @@ if (Astro.request.method === 'POST') {
         // Fetch existing first to delete from Cloudinary
         const [existing] = await db.select().from(promoVideos).where(eq(promoVideos.id, deleteId));
         if (existing) {
-          const { deleteCloudinaryAsset } = await import('../../lib/cloudinary');
           if (existing.videoUrl) {
             await deleteCloudinaryAsset(existing.videoUrl, 'video');
           }
@@ -57,7 +57,6 @@ if (Astro.request.method === 'POST') {
         // Fetch existing to delete replaced files from Cloudinary
         const [existing] = await db.select().from(promoVideos).where(eq(promoVideos.id, id));
         if (existing) {
-          const { deleteCloudinaryAsset } = await import('../../lib/cloudinary');
           if (existing.videoUrl && existing.videoUrl !== videoUrl) {
             await deleteCloudinaryAsset(existing.videoUrl, 'video');
           }
@@ -109,7 +108,7 @@ const editId = Astro.url.searchParams.get('edit');
 const isAdding = Astro.url.searchParams.get('action') === 'add';
 const editVideo = editId ? allVideos.find(v => v.id === editId) : null;
 const showForm = isAdding || editVideo;
-const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa';
+const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME;
 ---
 
 <AdminLayout title="Promo Videos" activeTab="promo-videos" subtitle={`${allVideos.length} promo videos configured`}>
@@ -229,7 +228,7 @@ const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa';
         const thumbBar = document.getElementById('thumbnail-progress-bar');
         const thumbPct = document.getElementById('thumbnail-percent');
 
-        const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa';
+        import { buildCloudinaryUrl } from '../../lib/cloudinary';
 
         async function deleteAssetClient(publicId: string, resourceType: 'image' | 'video') {
           if (!publicId || publicId.startsWith('http') || publicId.startsWith('/')) return;
@@ -254,10 +253,7 @@ const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa';
           }
 
           videoPreview.classList.remove('hidden');
-          let displayUrl = url;
-          if (!url.startsWith('http') && !url.startsWith('/')) {
-            displayUrl = `https://res.cloudinary.com/${CLOUD_NAME}/video/upload/${url}`;
-          }
+          const displayUrl = buildCloudinaryUrl(url);
 
           videoPreview.innerHTML = `
             <div class="relative group aspect-[9/16] w-36 border border-neutral-250 rounded-lg overflow-hidden bg-black shadow-sm">
@@ -286,10 +282,7 @@ const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa';
           }
 
           thumbPreview.classList.remove('hidden');
-          let displayUrl = url;
-          if (!url.startsWith('http') && !url.startsWith('/')) {
-            displayUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_200,c_fill,f_auto,q_auto/${url}`;
-          }
+          const displayUrl = buildCloudinaryUrl(url, { width: 200 });
 
           thumbPreview.innerHTML = `
             <div class="relative group w-24 h-24 border border-neutral-200 rounded-md overflow-hidden bg-neutral-50 shadow-sm">

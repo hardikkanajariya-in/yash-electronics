@@ -7,19 +7,17 @@ import { getSessionUser, generateId } from '../../lib/auth';
 import { importProductsFromCsv, exportProductsToCsv } from '../../lib/csv';
 import { clearCmsCache } from '../../services/cms';
 import { seedReviewsForProduct } from '../../lib/review-seeder';
+import { buildCloudinaryUrl } from '../../lib/cloudinary';
+import { deleteCloudinaryAsset } from '../../lib/cloudinary-server';
 
 export const prerender = false;
 
-const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa';
 function getProductImageUrl(img: string | undefined | null) {
-  if (!img) return '/images/placeholder-product.svg';
-  if (img.startsWith('http') || img.startsWith('/')) return img;
-  const isVideo = img.endsWith('.mp4') || img.endsWith('.webm') || img.endsWith('.ogg') || img.endsWith('.mov');
+  const isVideo = img?.endsWith('.mp4') || img?.endsWith('.webm') || img?.endsWith('.ogg') || img?.endsWith('.mov');
   if (isVideo) {
-    const publicIdWithJpg = img.substring(0, img.lastIndexOf('.')) + '.jpg';
-    return `https://res.cloudinary.com/${CLOUD_NAME}/video/upload/w_100,h_100,c_fill,q_auto/${publicIdWithJpg}`;
+    return buildCloudinaryUrl(img, { width: 100, height: 100, format: 'jpg' });
   }
-  return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_100,h_100,c_fill,f_auto,q_auto/${img}`;
+  return buildCloudinaryUrl(img, { width: 100, height: 100 });
 }
 
 // Authenticate
@@ -134,7 +132,6 @@ if (Astro.request.method === 'POST') {
       const idToDelete = formData.get('id')?.toString() || '';
       const [existing] = await db.select().from(products).where(eq(products.id, idToDelete));
       if (existing?.images && Array.isArray(existing.images)) {
-        const { deleteCloudinaryAsset } = await import('../../lib/cloudinary');
         for (const img of existing.images) {
           const isVideo = img.endsWith('.mp4') || img.endsWith('.webm') || img.endsWith('.ogg') || img.endsWith('.mov');
           await deleteCloudinaryAsset(img, isVideo ? 'video' : 'image');
@@ -177,7 +174,6 @@ if (Astro.request.method === 'POST') {
         // Edit existing product
         const [existing] = await db.select().from(products).where(eq(products.id, productId));
         if (existing?.images && Array.isArray(existing.images)) {
-          const { deleteCloudinaryAsset } = await import('../../lib/cloudinary');
           for (const img of existing.images) {
             if (!imagesArray.includes(img)) {
               const isVideo = img.endsWith('.mp4') || img.endsWith('.webm') || img.endsWith('.ogg') || img.endsWith('.mov');
@@ -1038,7 +1034,7 @@ if (action === 'bulk-images') {
           const progressPercent = document.getElementById('upload-percent');
           const progressStatus = document.getElementById('upload-status');
 
-          const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa';
+          import { buildCloudinaryUrl } from '../../lib/cloudinary';
 
           async function deleteAssetClient(publicId: string, resourceType: 'image' | 'video' = 'image') {
             if (!publicId || publicId.startsWith('http') || publicId.startsWith('/')) return;
@@ -1070,10 +1066,7 @@ if (action === 'bulk-images') {
               let mediaHtml = '';
               
               if (isVideo) {
-                let videoUrl = img;
-                if (!img.startsWith('http') && !img.startsWith('/')) {
-                  videoUrl = `https://res.cloudinary.com/${CLOUD_NAME}/video/upload/w_200,h_200,c_fill/${img}`;
-                }
+                const videoUrl = buildCloudinaryUrl(img, { width: 200, height: 200 });
                 mediaHtml = `
                   <video src="${videoUrl}" class="w-full h-full object-cover" muted playsinline></video>
                   <div class="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/20">
@@ -1081,14 +1074,11 @@ if (action === 'bulk-images') {
                   </div>
                 `;
               } else {
-                let displayUrl = img;
-                if (!img.startsWith('http') && !img.startsWith('/')) {
-                  displayUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_200,h_200,c_fill,f_auto,q_auto/${img}`;
-                }
+                const displayUrl = buildCloudinaryUrl(img, { width: 200, height: 200, crop: 'fill' });
                 mediaHtml = `<img src="${displayUrl}" class="w-full h-full object-cover" />`;
               }
               
-              const fullMediaUrl = (img.startsWith('http') || img.startsWith('/')) ? img : `https://res.cloudinary.com/${CLOUD_NAME}/${isVideo ? 'video' : 'image'}/upload/${img}`;
+              const fullMediaUrl = buildCloudinaryUrl(img);
               const div = document.createElement('div');
               div.className = 'relative group w-20 h-20 border border-neutral-200 rounded-md overflow-hidden bg-neutral-50 shadow-sm';
               div.innerHTML = `
@@ -1329,8 +1319,8 @@ if (action === 'bulk-images') {
                           const isVideo = img.endsWith('.mp4') || img.endsWith('.webm') || img.endsWith('.ogg') || img.endsWith('.mov');
                           const mediaUrl = (img.startsWith('http') || img.startsWith('/')) 
                             ? img 
-                            : `https://res.cloudinary.com/${import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa'}/${isVideo ? 'video' : 'image'}/upload/w_100,h_100,c_fill${isVideo ? '' : ',f_auto,q_auto'}/${img}`;
-                          const fullPreviewUrl = (img.startsWith('http') || img.startsWith('/')) ? img : `https://res.cloudinary.com/${import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa'}/${isVideo ? 'video' : 'image'}/upload/${img}`;
+                            : `https://res.cloudinary.com/${CLOUD_NAME}/${isVideo ? 'video' : 'image'}/upload/w_100,h_100,c_fill${isVideo ? '' : ',f_auto,q_auto'}/${img}`;
+                          const fullPreviewUrl = (img.startsWith('http') || img.startsWith('/')) ? img : `https://res.cloudinary.com/${CLOUD_NAME}/${isVideo ? 'video' : 'image'}/upload/${img}`;
                           return (
                             <div class="relative group w-16 h-16 rounded overflow-hidden shadow-sm border border-neutral-200 bg-neutral-50 shrink-0">
                               {isVideo ? (
@@ -1461,8 +1451,8 @@ if (action === 'bulk-images') {
                       const isVideo = img.endsWith('.mp4') || img.endsWith('.webm') || img.endsWith('.ogg') || img.endsWith('.mov');
                       const mediaUrl = (img.startsWith('http') || img.startsWith('/')) 
                         ? img 
-                        : `https://res.cloudinary.com/${import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa'}/${isVideo ? 'video' : 'image'}/upload/w_100,h_100,c_fill${isVideo ? '' : ',f_auto,q_auto'}/${img}`;
-                      const fullPreviewUrl = (img.startsWith('http') || img.startsWith('/')) ? img : `https://res.cloudinary.com/${import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa'}/${isVideo ? 'video' : 'image'}/upload/${img}`;
+                        : `https://res.cloudinary.com/${CLOUD_NAME}/${isVideo ? 'video' : 'image'}/upload/w_100,h_100,c_fill${isVideo ? '' : ',f_auto,q_auto'}/${img}`;
+                      const fullPreviewUrl = (img.startsWith('http') || img.startsWith('/')) ? img : `https://res.cloudinary.com/${CLOUD_NAME}/${isVideo ? 'video' : 'image'}/upload/${img}`;
                       return (
                         <div class="relative group w-14 h-14 rounded overflow-hidden shadow-sm border border-neutral-200 bg-neutral-50 shrink-0">
                           {isVideo ? (

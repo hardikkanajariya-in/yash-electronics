@@ -1,5 +1,5 @@
 import { getSessionUser } from '../../../lib/auth';
-import { deleteCloudinaryAsset } from '../../../lib/cloudinary';
+import { deleteCloudinaryAsset } from '../../../lib/cloudinary-server';
 
 export const prerender = false;
 

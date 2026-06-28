@@ -1,4 +1,4 @@
 export const cloudinaryConfig = {
-  cloudName: import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'demo',
+  cloudName: import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME,
   defaultTransform: 'f_auto,q_auto',
 } as const;

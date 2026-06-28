@@ -7,6 +7,7 @@ import { bundleRules } from '../../db/schema';
 import { eq, and, asc } from 'drizzle-orm';
 import { translateObject, t } from '../../lib/translations';
 import { getProducts } from '../../services/cms';
+import { buildCloudinaryUrl } from '../../lib/cloudinary';
 
 export const prerender = false;
 
@@ -26,11 +27,8 @@ const allCmsProducts = await getProducts();
 const rawProducts = allCmsProducts.filter(p => p.eligibleForBundle);
 const products = translateObject(rawProducts, locale);
 
-const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa';
 function getProductImageUrl(img: string | undefined | null) {
-  if (!img) return '/images/placeholder-product.svg';
-  if (img.startsWith('http') || img.startsWith('/')) return img;
-  return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_200,h_200,c_fill,f_auto,q_auto/${img}`;
+  return buildCloudinaryUrl(img, { width: 200, height: 200 });
 }
 ---
 

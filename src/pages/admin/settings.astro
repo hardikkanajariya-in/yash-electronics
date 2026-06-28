@@ -5,6 +5,7 @@ import { settings } from '../../db/schema';
 import { getSessionUser } from '../../lib/auth';
 import { eq } from 'drizzle-orm';
 import { clearCmsCache } from '../../services/cms';
+import { deleteCloudinaryAsset } from '../../lib/cloudinary-server';
 
 export const prerender = false;
 Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -49,7 +50,7 @@ if (Astro.request.method === 'POST') {
     }
 
     // Save/Update keys
-    const { deleteCloudinaryAsset } = await import('../../lib/cloudinary');
+
     for (const [key, value] of Object.entries(updatedSettings)) {
       const [existing] = await db.select().from(settings).where(eq(settings.key, key));
       if (existing) {
@@ -248,7 +249,7 @@ if (Astro.request.method === 'POST') {
   </form>
 
   <script>
-    const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa';
+    import { buildCloudinaryUrl } from '../../lib/cloudinary';
 
     function setupUploader(inputId: string, filePickerId: string, previewId: string, progressContainerId: string, progressBarId: string, percentId: string) {
       const input = document.getElementById(inputId) as HTMLInputElement;
@@ -264,10 +265,7 @@ if (Astro.request.method === 'POST') {
         const val = input.value.trim();
         if (!val) return;
 
-        let displayUrl = val;
-        if (!val.startsWith('http') && !val.startsWith('/')) {
-          displayUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_200,h_200,c_fill,f_auto,q_auto/${val}`;
-        }
+        const displayUrl = buildCloudinaryUrl(val, { width: 200, height: 200 });
 
         const div = document.createElement('div');
         div.className = 'relative group w-24 h-24 border border-neutral-200 rounded-md overflow-hidden bg-neutral-50 shadow-sm';

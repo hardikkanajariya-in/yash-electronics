@@ -5,6 +5,8 @@ import { offers } from '../../db/schema';
 import { eq, and, or, ilike, sql, asc, desc } from 'drizzle-orm';
 import { getSessionUser, generateId } from '../../lib/auth';
 import { clearCmsCache } from '../../services/cms';
+import { buildCloudinaryUrl } from '../../lib/cloudinary';
+import { deleteCloudinaryAsset } from '../../lib/cloudinary-server';
 
 export const prerender = false;
 
@@ -32,7 +34,6 @@ if (Astro.request.method === 'POST') {
       const idToDelete = formData.get('id')?.toString() || '';
       const [existing] = await db.select().from(offers).where(eq(offers.id, idToDelete));
       if (existing?.image) {
-        const { deleteCloudinaryAsset } = await import('../../lib/cloudinary');
         await deleteCloudinaryAsset(existing.image);
       }
       await db.delete(offers).where(eq(offers.id, idToDelete));
@@ -72,7 +73,6 @@ if (Astro.request.method === 'POST') {
         // Edit existing
         const [existing] = await db.select().from(offers).where(eq(offers.id, offerId));
         if (existing?.image && existing.image !== image) {
-          const { deleteCloudinaryAsset } = await import('../../lib/cloudinary');
           await deleteCloudinaryAsset(existing.image);
         }
         await db.update(offers).set({
@@ -204,11 +204,8 @@ try {
 
 const totalPages = Math.ceil(totalCount / limit);
 
-const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa';
 function getOfferImageUrl(img: string | undefined | null) {
-  if (!img) return '/images/placeholder-product.svg';
-  if (img.startsWith('http') || img.startsWith('/')) return img;
-  return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_100,h_100,c_fill,f_auto,q_auto/${img}`;
+  return buildCloudinaryUrl(img, { width: 100, height: 100 });
 }
 ---
 
@@ -752,18 +749,13 @@ function getOfferImageUrl(img: string | undefined | null) {
           const progressBar = document.getElementById('upload-progress-bar');
           const progressPercent = document.getElementById('upload-percent');
 
-          const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa';
-
           function renderPreview() {
             if (!previewContainer) return;
             previewContainer.innerHTML = '';
             const imgVal = imageInput.value.trim();
             if (!imgVal) return;
 
-            let displayUrl = imgVal;
-            if (!imgVal.startsWith('http') && !imgVal.startsWith('/')) {
-              displayUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_200,h_200,c_fill,f_auto,q_auto/${imgVal}`;
-            }
+            const displayUrl = buildCloudinaryUrl(imgVal, { width: 100, height: 100 });
 
             const div = document.createElement('div');
             div.className = 'relative group w-24 h-24 border border-neutral-200 rounded-md overflow-hidden bg-neutral-50 shadow-sm';

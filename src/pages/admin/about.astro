@@ -4,6 +4,7 @@ import { db } from '../../db';
 import { aboutInfo } from '../../db/schema';
 import { getSessionUser, generateId } from '../../lib/auth';
 import { eq } from 'drizzle-orm';
+import { deleteCloudinaryAsset } from '../../lib/cloudinary-server';
 
 export const prerender = false;
 Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -24,7 +25,6 @@ if (Astro.request.method === 'POST') {
       if (deleteId) {
         const [existing] = await db.select().from(aboutInfo).where(eq(aboutInfo.id, deleteId));
         if (existing?.photo) {
-          const { deleteCloudinaryAsset } = await import('../../lib/cloudinary');
           await deleteCloudinaryAsset(existing.photo);
         }
         await db.delete(aboutInfo).where(eq(aboutInfo.id, deleteId));
@@ -43,7 +43,6 @@ if (Astro.request.method === 'POST') {
       } else if (id) {
         const [existing] = await db.select().from(aboutInfo).where(eq(aboutInfo.id, id));
         if (existing?.photo && existing.photo !== photo) {
-          const { deleteCloudinaryAsset } = await import('../../lib/cloudinary');
           await deleteCloudinaryAsset(existing.photo);
         }
         await db.update(aboutInfo).set({ name, role, photo, description, sortOrder }).where(eq(aboutInfo.id, id));
@@ -137,7 +136,7 @@ const roleLabels: Record<string, string> = { founder: 'Founder', owner: 'Owner',
           const progressBar = document.getElementById('upload-progress-bar');
           const progressPercent = document.getElementById('upload-percent');
 
-          const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa';
+          import { buildCloudinaryUrl } from '../../lib/cloudinary';
 
           function renderPreview() {
             if (!previewContainer) return;
@@ -145,10 +144,7 @@ const roleLabels: Record<string, string> = { founder: 'Founder', owner: 'Owner',
             const imgVal = photoInput.value.trim();
             if (!imgVal) return;
 
-            let displayUrl = imgVal;
-            if (!imgVal.startsWith('http') && !imgVal.startsWith('/')) {
-              displayUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_200,h_200,c_fill,f_auto,q_auto/${imgVal}`;
-            }
+            const displayUrl = buildCloudinaryUrl(imgVal, { width: 200, height: 200 });
 
             const div = document.createElement('div');
             div.className = 'relative group w-24 h-24 border border-neutral-200 rounded-md overflow-hidden bg-neutral-50 shadow-sm';
@@ -261,7 +257,7 @@ const roleLabels: Record<string, string> = { founder: 'Founder', owner: 'Owner',
                 <div class="h-12 w-12 rounded border border-neutral-200 overflow-hidden bg-neutral-50 flex-shrink-0">
                   <img src={entry.photo.startsWith('http') || entry.photo.startsWith('/') 
                     ? entry.photo 
-                    : `https://res.cloudinary.com/${import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa'}/image/upload/w_100,h_100,c_fill,f_auto,q_auto/${entry.photo}`} 
+                    : `https://res.cloudinary.com/${import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/w_100,h_100,c_fill,f_auto,q_auto/${entry.photo}`} 
                     class="w-full h-full object-cover" />
                 </div>
               )}

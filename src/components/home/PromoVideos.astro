@@ -1,6 +1,7 @@
 ---
 import type { PromoVideo } from '../../types';
 import { t } from '../../lib/translations';
+import { buildCloudinaryUrl } from '../../lib/cloudinary';
 
 interface Props {
   videos: PromoVideo[];
@@ -11,8 +12,7 @@ const locale = Astro.currentLocale || 'gu';
 
 if (!videos || videos.length === 0) return null;
 
-const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa';
----
+
 
 <section class="py-12 bg-neutral-50/50 border-t border-b border-neutral-100 overflow-hidden">
   <div class="max-w-7xl mx-auto px-4 sm:px-6">
@@ -41,15 +41,8 @@ const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa';
       class="flex overflow-x-auto gap-4 pb-4 snap-x snap-mandatory scroll-smooth scrollbar-none"
     >
       {videos.map((video, idx) => {
-        let videoDisplayUrl = video.videoUrl;
-        if (!video.videoUrl.startsWith('http') && !video.videoUrl.startsWith('/')) {
-          videoDisplayUrl = `https://res.cloudinary.com/${CLOUD_NAME}/video/upload/${video.videoUrl}`;
-        }
-
-        let thumbDisplayUrl = video.thumbnailUrl;
-        if (thumbDisplayUrl && !thumbDisplayUrl.startsWith('http') && !thumbDisplayUrl.startsWith('/')) {
-          thumbDisplayUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_400,h_700,c_fill/${thumbDisplayUrl}`;
-        }
+        const videoDisplayUrl = buildCloudinaryUrl(video.videoUrl);
+        const thumbDisplayUrl = buildCloudinaryUrl(video.thumbnailUrl, { width: 400, height: 700 });
 
         return (
           <div 
