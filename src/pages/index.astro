@@ -4,6 +4,7 @@ import ShopByCategory from '../components/home/ShopByCategory.astro';
 import FeaturedProducts from '../components/home/FeaturedProducts.astro';
 import TopBrands from '../components/home/TopBrands.astro';
 import SpecialOfferZone from '../components/home/SpecialOfferZone.astro';
+import PromoVideos from '../components/home/PromoVideos.astro';
 import WhyChooseUs from '../components/home/WhyChooseUs.astro';
 import ContactSection from '../components/home/ContactSection.astro';
 import {
@@ -12,18 +13,20 @@ import {
   getBrands,
   getProducts,
   getOffers,
+  getPromoVideos,
 } from '../services/cms';
 import { getFeaturedProducts } from '../features/catalog/filterProducts';
 import { translateObject } from '../lib/translations';
 
 const locale = Astro.currentLocale || 'gu';
 
-const [rawSettings, rawCategories, rawBrands, rawProducts, rawOffers] = await Promise.all([
+const [rawSettings, rawCategories, rawBrands, rawProducts, rawOffers, rawVideos] = await Promise.all([
   getSettings(),
   getCategories(),
   getBrands(),
   getProducts(),
   getOffers(),
+  getPromoVideos(),
 ]);
 
 const settings = translateObject(rawSettings, locale);
@@ -31,6 +34,7 @@ const categories = translateObject(rawCategories, locale);
 const brands = translateObject(rawBrands, locale);
 const products = translateObject(rawProducts, locale);
 const offers = translateObject(rawOffers, locale);
+const videos = translateObject(rawVideos, locale);
 
 const featuredProducts = getFeaturedProducts(products).slice(0, 8);
 ---
@@ -43,6 +47,7 @@ const featuredProducts = getFeaturedProducts(products).slice(0, 8);
   <FeaturedProducts products={featuredProducts} />
   <TopBrands brands={brands} />
   <SpecialOfferZone offers={offers} settings={settings} />
+  <PromoVideos videos={videos} />
   <WhyChooseUs />
   <ContactSection settings={settings} />
 </BaseLayout>

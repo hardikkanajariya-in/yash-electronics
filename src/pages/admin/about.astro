@@ -22,6 +22,11 @@ if (Astro.request.method === 'POST') {
     if (formAction === 'delete') {
       const deleteId = formData.get('id')?.toString();
       if (deleteId) {
+        const [existing] = await db.select().from(aboutInfo).where(eq(aboutInfo.id, deleteId));
+        if (existing?.photo) {
+          const { deleteCloudinaryAsset } = await import('../../lib/cloudinary');
+          await deleteCloudinaryAsset(existing.photo);
+        }
         await db.delete(aboutInfo).where(eq(aboutInfo.id, deleteId));
         return Astro.redirect('/admin/about?message=' + encodeURIComponent('Entry deleted.'));
       }
@@ -36,6 +41,11 @@ if (Astro.request.method === 'POST') {
       if (!name) {
         error = 'Name is required.';
       } else if (id) {
+        const [existing] = await db.select().from(aboutInfo).where(eq(aboutInfo.id, id));
+        if (existing?.photo && existing.photo !== photo) {
+          const { deleteCloudinaryAsset } = await import('../../lib/cloudinary');
+          await deleteCloudinaryAsset(existing.photo);
+        }
         await db.update(aboutInfo).set({ name, role, photo, description, sortOrder }).where(eq(aboutInfo.id, id));
         return Astro.redirect('/admin/about?message=' + encodeURIComponent('Entry updated.'));
       } else {
@@ -147,12 +157,29 @@ const roleLabels: Record<string, string> = { founder: 'Founder', owner: 'Owner',
               <button type="button" class="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold font-mono">Remove</button>
             `;
 
-            div.querySelector('button')?.addEventListener('click', () => {
+            div.querySelector('button')?.addEventListener('click', async () => {
+              const oldVal = photoInput.value.trim();
+              if (oldVal) {
+                await deleteAssetClient(oldVal, 'image');
+              }
               photoInput.value = '';
               renderPreview();
             });
 
             previewContainer.appendChild(div);
+          }
+
+          async function deleteAssetClient(publicId: string, resourceType: 'image' | 'video' = 'image') {
+            if (!publicId || publicId.startsWith('http') || publicId.startsWith('/')) return;
+            try {
+              await fetch('/api/admin/delete-asset', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ publicId, resourceType })
+              });
+            } catch (e) {
+              console.error('[Client delete error]', e);
+            }
           }
 
           filePicker?.addEventListener('change', async () => {
@@ -196,6 +223,10 @@ const roleLabels: Record<string, string> = { founder: 'Founder', owner: 'Owner',
               });
 
               if (resVal) {
+                const oldVal = photoInput.value.trim();
+                if (oldVal && oldVal !== resVal) {
+                  await deleteAssetClient(oldVal, 'image');
+                }
                 photoInput.value = resVal;
                 renderPreview();
               }

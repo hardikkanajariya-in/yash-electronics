@@ -22,6 +22,12 @@ if (Astro.request.method === 'POST') {
     if (formAction === 'delete') {
       const deleteId = formData.get('id')?.toString();
       if (deleteId) {
+        const [existing] = await db.select().from(bankDetails).where(eq(bankDetails.id, deleteId));
+        if (existing) {
+          const { deleteCloudinaryAsset } = await import('../../lib/cloudinary');
+          if (existing.upiQrCode) await deleteCloudinaryAsset(existing.upiQrCode);
+          if (existing.bankQrCode) await deleteCloudinaryAsset(existing.bankQrCode);
+        }
         await db.delete(bankDetails).where(eq(bankDetails.id, deleteId));
         return Astro.redirect('/admin/bank-details?message=' + encodeURIComponent('Bank detail deleted.'));
       }
@@ -38,6 +44,12 @@ if (Astro.request.method === 'POST') {
       if (!bankName || !accountHolderName || !accountNumber || !ifscCode || !branchName) {
         error = 'All bank fields are required.';
       } else if (id) {
+        const [existing] = await db.select().from(bankDetails).where(eq(bankDetails.id, id));
+        if (existing) {
+          const { deleteCloudinaryAsset } = await import('../../lib/cloudinary');
+          if (existing.upiQrCode && existing.upiQrCode !== upiQrCode) await deleteCloudinaryAsset(existing.upiQrCode);
+          if (existing.bankQrCode && existing.bankQrCode !== bankQrCode) await deleteCloudinaryAsset(existing.bankQrCode);
+        }
         await db.update(bankDetails).set({ bankName, accountHolderName, accountNumber, ifscCode, branchName, upiQrCode, bankQrCode }).where(eq(bankDetails.id, id));
         return Astro.redirect('/admin/bank-details?message=' + encodeURIComponent('Bank details updated.'));
       } else {
@@ -161,12 +173,29 @@ const showForm = isAdding || editBank;
                 <button type="button" class="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold font-mono">Remove</button>
               `;
 
-              div.querySelector('button')?.addEventListener('click', () => {
+              div.querySelector('button')?.addEventListener('click', async () => {
+                const oldVal = input.value.trim();
+                if (oldVal) {
+                  await deleteAssetClient(oldVal, 'image');
+                }
                 input.value = '';
                 render();
               });
 
               preview.appendChild(div);
+            }
+
+            async function deleteAssetClient(publicId: string, resourceType: 'image' | 'video' = 'image') {
+              if (!publicId || publicId.startsWith('http') || publicId.startsWith('/')) return;
+              try {
+                await fetch('/api/admin/delete-asset', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ publicId, resourceType })
+                });
+              } catch (e) {
+                console.error('[Client delete error]', e);
+              }
             }
 
             picker?.addEventListener('change', async () => {
@@ -210,6 +239,10 @@ const showForm = isAdding || editBank;
                 });
 
                 if (resVal) {
+                  const oldVal = input.value.trim();
+                  if (oldVal && oldVal !== resVal) {
+                    await deleteAssetClient(oldVal, 'image');
+                  }
                   input.value = resVal;
                   render();
                 }

@@ -163,6 +163,76 @@ if (Astro.request.method === 'POST') {
 if (Astro.url.searchParams.get('successReview') === 'true') {
   reviewSuccess = locale === 'en' ? 'Thank you! Your review has been submitted.' : 'આભાર! તમારો રિવ્યુ સબમિટ થઈ ગયો છે.';
 }
+
+// Helper to parse description into structured HTML blocks
+const parseDescription = (descText: string | null | undefined) => {
+  if (!descText) return [];
+
+  const lines = descText.split(/\r?\n/);
+  const blocks: Array<{ type: 'paragraph' | 'list'; content: string | string[] }> = [];
+  let currentListItems: string[] = [];
+
+  const parseInline = (text: string) => {
+    return text
+      .trim()
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<strong>$1</strong>');
+  };
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      if (currentListItems.length > 0) {
+        blocks.push({ type: 'list', content: currentListItems });
+        currentListItems = [];
+      }
+      continue;
+    }
+
+    // Check if line starts with bullet like - or * or •
+    const listMatch = trimmed.match(/^([•\-\*])\s*(.*)/);
+    if (listMatch) {
+      currentListItems.push(parseInline(listMatch[2]));
+      continue;
+    }
+
+    // Check if the line has inline • characters
+    if (trimmed.includes('•')) {
+      if (currentListItems.length > 0) {
+        blocks.push({ type: 'list', content: currentListItems });
+        currentListItems = [];
+      }
+
+      const parts = trimmed.split('•');
+      const intro = parts[0].trim();
+      if (intro) {
+        blocks.push({ type: 'paragraph', content: parseInline(intro) });
+      }
+
+      const items = parts.slice(1).map(p => parseInline(p)).filter(Boolean);
+      if (items.length > 0) {
+        blocks.push({ type: 'list', content: items });
+      }
+      continue;
+    }
+
+    // If it's a regular line
+    if (currentListItems.length > 0) {
+      blocks.push({ type: 'list', content: currentListItems });
+      currentListItems = [];
+    }
+
+    blocks.push({ type: 'paragraph', content: parseInline(trimmed) });
+  }
+
+  if (currentListItems.length > 0) {
+    blocks.push({ type: 'list', content: currentListItems });
+  }
+
+  return blocks;
+};
+
+const descriptionBlocks = parseDescription(product.description);
 ---
 
 <BaseLayout
@@ -262,10 +332,28 @@ if (Astro.url.searchParams.get('successReview') === 'true') {
           <Button href={`tel:${settings.phone.replace(/\s/g, '')}`} text={t('product.callStore', locale)} variant="outline" class="flex-1 py-2.5 text-sm" />
         </div>
 
-        <div class="mt-6">
-          <h2 class="font-semibold text-neutral-900">{t('product.description', locale)}</h2>
-          <p class="mt-2 text-sm leading-relaxed text-neutral-600">{product.description}</p>
-        </div>
+        {descriptionBlocks.length > 0 && (
+          <div class="mt-6">
+            <h2 class="font-semibold text-neutral-900">{t('product.description', locale)}</h2>
+            <div class="mt-2 space-y-3">
+              {descriptionBlocks.map((block) => {
+                if (block.type === 'list') {
+                  return (
+                    <ul class="list-disc list-inside space-y-1.5 pl-2 text-sm leading-relaxed text-neutral-600">
+                      {(block.content as string[]).map((item) => (
+                        <li set:html={item} />
+                      ))}
+                    </ul>
+                  );
+                } else {
+                  return (
+                    <p class="text-sm leading-relaxed text-neutral-600" set:html={block.content} />
+                  );
+                }
+              })}
+            </div>
+          </div>
+        )}
 
         {Object.keys(specs).length > 0 && (
           <div class="mt-6">

@@ -71,6 +71,19 @@ pool.query(`
   ALTER TABLE orders ADD COLUMN IF NOT EXISTS bundle_rule_id VARCHAR(255) REFERENCES bundle_rules(id) ON DELETE SET NULL;
   ALTER TABLE orders ADD COLUMN IF NOT EXISTS bundle_discount_applied INTEGER NOT NULL DEFAULT 0;
   ALTER TABLE orders ADD COLUMN IF NOT EXISTS bundle_reward_given TEXT;
+  
+  CREATE TABLE IF NOT EXISTS promo_videos (
+    id VARCHAR(255) PRIMARY KEY,
+    title TEXT NOT NULL,
+    title_gu TEXT,
+    video_url TEXT NOT NULL,
+    thumbnail_url TEXT,
+    description TEXT,
+    description_gu TEXT,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TEXT NOT NULL
+  );
 `).then(async () => {
   await autoSeedEmptyProductReviews(pool);
 }).catch(err => {

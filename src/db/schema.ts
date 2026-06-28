@@ -367,4 +367,21 @@ export const pushSubscriptionsRelations = relations(pushSubscriptions, ({ one })
   }),
 }));
 
+/**
+ * Promo Videos — For Home Page advertisement reels
+ */
+export const promoVideos = pgTable('promo_videos', {
+  id: varchar('id', { length: 255 }).primaryKey(),
+  title: text('title').notNull(),
+  titleGu: text('title_gu'),
+  videoUrl: text('video_url').notNull(),
+  thumbnailUrl: text('thumbnail_url'),
+  description: text('description'),
+  descriptionGu: text('description_gu'),
+  sortOrder: integer('sort_order').notNull().default(0),
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt: text('created_at').notNull(),
+});
+
+
 

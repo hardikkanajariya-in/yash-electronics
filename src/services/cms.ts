@@ -1,6 +1,6 @@
 import type { CmsData } from '../types';
 import { db } from '../db';
-import { settings, categories, brands, offers, teamMembers, services, aboutInfo, bankDetails, businessHours, referralHistory, bundleRules } from '../db/schema';
+import { settings, categories, brands, offers, teamMembers, services, aboutInfo, bankDetails, businessHours, referralHistory, bundleRules, promoVideos } from '../db/schema';
 import { eq, asc } from 'drizzle-orm';
 
 let cachedData: CmsData | null = null;
@@ -241,6 +241,16 @@ export async function getBundleRules() {
     return rules;
   } catch (e) {
     console.error('[CMS] Failed to fetch bundle rules:', e);
+    return [];
+  }
+}
+
+export async function getPromoVideos() {
+  try {
+    const videos = await db.select().from(promoVideos).orderBy(asc(promoVideos.sortOrder));
+    return videos;
+  } catch (e) {
+    console.error('[CMS] Failed to fetch promo videos:', e);
     return [];
   }
 }

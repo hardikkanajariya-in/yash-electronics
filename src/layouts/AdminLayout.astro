@@ -58,6 +58,7 @@ const menuItems = [
   { path: '/admin/about', label: 'About Info', icon: 'info', key: 'about' },
   { path: '/admin/bank-details', label: 'Bank Details', icon: 'credit-card', key: 'bank' },
   { path: '/admin/business-hours', label: 'Business Hours', icon: 'clock', key: 'hours' },
+  { path: '/admin/promo-videos', label: 'Promo Videos', icon: 'video', key: 'promo-videos' },
   { path: '/admin/settings', label: 'Settings', icon: 'settings', key: 'settings' },
 ];
 
@@ -83,6 +84,7 @@ const drawerNavItems = [
   { path: '/admin/about', label: 'About Info', icon: 'info', key: 'about' },
   { path: '/admin/bank-details', label: 'Bank Details', icon: 'credit-card', key: 'bank' },
   { path: '/admin/business-hours', label: 'Business Hours', icon: 'clock', key: 'hours' },
+  { path: '/admin/promo-videos', label: 'Promo Videos', icon: 'video', key: 'promo-videos' },
   { path: '/admin/settings', label: 'Settings', icon: 'settings', key: 'settings' },
 ];
 ---
@@ -188,6 +190,9 @@ const drawerNavItems = [
                 )}
                 {item.icon === 'layers' && (
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polygon points="2 17 12 22 22 17"/><polygon points="2 12 12 17 22 12"/></svg>
+                )}
+                {item.icon === 'video' && (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></svg>
                 )}
               </span>
               <span>{item.label}</span>
@@ -451,6 +456,9 @@ const drawerNavItems = [
                     )}
                     {item.icon === 'settings' && (
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    )}
+                    {item.icon === 'video' && (
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></svg>
                     )}
                   </span>
                   <span class="truncate">{item.label}</span>

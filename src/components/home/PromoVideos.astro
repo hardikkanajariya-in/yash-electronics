@@ -1,0 +1,374 @@
+---
+import type { PromoVideo } from '../../types';
+import { t } from '../../lib/translations';
+
+interface Props {
+  videos: PromoVideo[];
+}
+
+const { videos } = Astro.props;
+const locale = Astro.currentLocale || 'gu';
+
+if (!videos || videos.length === 0) return null;
+
+const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa';
+---
+
+<section class="py-12 bg-neutral-50/50 border-t border-b border-neutral-100 overflow-hidden">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6">
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <h2 class="text-2xl font-bold text-neutral-900 md:text-3xl tracking-tight">
+          {t('home.promoVideos', locale)}
+        </h2>
+        <p class="mt-1 text-xs sm:text-sm text-neutral-500">
+          {locale === 'en' ? 'Watch our latest product updates and reviews' : 'અમારા નવીનતમ ઉત્પાદનો અને રિવ્યુઝ જુઓ'}
+        </p>
+      </div>
+      <div class="flex gap-2">
+        <button id="reels-prev" class="w-8 h-8 rounded-full border border-neutral-200 bg-white flex items-center justify-center text-xs text-neutral-600 hover:border-primary hover:text-primary transition-all disabled:opacity-40 disabled:hover:text-neutral-600 disabled:hover:border-neutral-200 cursor-pointer shadow-sm">
+          ←
+        </button>
+        <button id="reels-next" class="w-8 h-8 rounded-full border border-neutral-200 bg-white flex items-center justify-center text-xs text-neutral-600 hover:border-primary hover:text-primary transition-all disabled:opacity-40 disabled:hover:text-neutral-600 disabled:hover:border-neutral-200 cursor-pointer shadow-sm">
+          →
+        </button>
+      </div>
+    </div>
+
+    <!-- Reels shelf container -->
+    <div 
+      id="reels-shelf" 
+      class="flex overflow-x-auto gap-4 pb-4 snap-x snap-mandatory scroll-smooth scrollbar-none"
+    >
+      {videos.map((video, idx) => {
+        let videoDisplayUrl = video.videoUrl;
+        if (!video.videoUrl.startsWith('http') && !video.videoUrl.startsWith('/')) {
+          videoDisplayUrl = `https://res.cloudinary.com/${CLOUD_NAME}/video/upload/${video.videoUrl}`;
+        }
+
+        let thumbDisplayUrl = video.thumbnailUrl;
+        if (thumbDisplayUrl && !thumbDisplayUrl.startsWith('http') && !thumbDisplayUrl.startsWith('/')) {
+          thumbDisplayUrl = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_400,h_700,c_fill/${thumbDisplayUrl}`;
+        }
+
+        return (
+          <div 
+            class="snap-start snap-always shrink-0 w-[180px] sm:w-[220px] aspect-[9/16] rounded-2xl overflow-hidden relative shadow-md hover:shadow-xl hover:scale-[1.02] transition-all duration-300 cursor-pointer group bg-neutral-900 border border-neutral-200/40"
+            data-action="play-reel"
+            data-index={idx}
+            data-video-url={videoDisplayUrl}
+            data-title={video.title}
+            data-desc={video.description || ''}
+          >
+            {thumbDisplayUrl ? (
+              <img src={thumbDisplayUrl} class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt={video.title} loading="lazy" />
+            ) : (
+              <div class="w-full h-full flex flex-col items-center justify-center bg-neutral-900/90 text-white gap-2">
+                <span class="text-3xl">🎥</span>
+                <span class="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">Play Video</span>
+              </div>
+            )}
+
+            <!-- Play button overlay -->
+            <div class="absolute inset-0 bg-black/25 group-hover:bg-black/35 transition-colors flex items-center justify-center">
+              <div class="w-10 h-10 rounded-full bg-white/95 text-primary flex items-center justify-center shadow-lg transform scale-90 group-hover:scale-100 transition-transform duration-300">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 translate-x-0.5"><path fill-rule="evenodd" d="M4.5 5.653c0-1.427 1.529-2.33 2.779-1.643l11.54 6.347c1.295.712 1.295 2.573 0 3.286L7.28 19.99c-1.25.687-2.779-.217-2.779-1.643V5.653Z" clip-rule="evenodd" /></svg>
+              </div>
+            </div>
+
+            <!-- Bottom title overlay -->
+            <div class="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-8 text-white">
+              <h3 class="text-xs sm:text-sm font-bold truncate">{video.title}</h3>
+              {video.description && <p class="text-[10px] text-neutral-300 truncate mt-0.5">{video.description}</p>}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+</section>
+
+<!-- Full-screen Reel Player Modal -->
+<div 
+  id="reels-modal" 
+  class="fixed inset-0 bg-black/95 z-[9999] flex items-center justify-center hidden opacity-0 transition-opacity duration-300 pointer-events-auto"
+>
+  <!-- Main Immersive 9:16 Video Player -->
+  <div 
+    id="reels-player-container" 
+    class="w-full h-full sm:h-[85vh] sm:max-h-[800px] sm:w-[420px] sm:aspect-[9/16] bg-black sm:rounded-2xl relative shadow-2xl overflow-hidden flex items-center justify-center transform scale-95 transition-transform duration-300"
+  >
+    <!-- Video element -->
+    <video 
+      id="reels-video" 
+      class="w-full h-full object-cover" 
+      loop 
+      playsinline 
+      autoplay
+    ></video>
+
+    <!-- Tap center toggle overlay -->
+    <div id="video-tap-area" class="absolute inset-0 z-10 cursor-pointer flex items-center justify-center">
+      <div id="video-play-indicator" class="w-14 h-14 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 scale-75 transition-all duration-200 pointer-events-none">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-7 h-7"><path fill-rule="evenodd" d="M6.75 5.25a.75.75 0 0 1 .75-.75H9a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H7.5a.75.75 0 0 1-.75-.75V5.25Zm7.5 0A.75.75 0 0 1 15 4.5h1.5a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H15a.75.75 0 0 1-.75-.75V5.25Z" clip-rule="evenodd" /></svg>
+      </div>
+    </div>
+
+    <!-- Top Controls: Close, Mute -->
+    <div class="absolute top-4 left-4 right-4 flex items-center justify-between z-20">
+      <button id="modal-close" class="h-9 w-9 flex items-center justify-center text-white bg-black/40 hover:bg-black/60 rounded-full transition-colors cursor-pointer border border-white/10" title="Close">
+        ✕
+      </button>
+      <button id="modal-mute" class="h-9 w-9 flex items-center justify-center text-white bg-black/40 hover:bg-black/60 rounded-full transition-colors cursor-pointer border border-white/10" title="Mute/Unmute">
+        🔇
+      </button>
+    </div>
+
+    <!-- Bottom info details overlay -->
+    <div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 via-black/50 to-transparent pt-16 text-white z-20">
+      <h3 id="modal-title" class="text-sm sm:text-base font-bold leading-tight"></h3>
+      <p id="modal-desc" class="text-xs text-neutral-300 mt-1 leading-normal max-h-20 overflow-y-auto custom-scrollbar"></p>
+    </div>
+  </div>
+
+  <!-- Large Prev/Next Controls (visible on screens wider than sm) -->
+  <button id="modal-prev" class="absolute left-6 top-1/2 -translate-y-1/2 bg-neutral-800/60 hover:bg-neutral-800 text-white w-12 h-12 rounded-full hover:scale-105 transition-all cursor-pointer hidden md:flex items-center justify-center border border-white/15" title="Previous Video">
+    ←
+  </button>
+  <button id="modal-next" class="absolute right-6 top-1/2 -translate-y-1/2 bg-neutral-800/60 hover:bg-neutral-800 text-white w-12 h-12 rounded-full hover:scale-105 transition-all cursor-pointer hidden md:flex items-center justify-center border border-white/15" title="Next Video">
+    →
+  </button>
+</div>
+
+<style>
+  /* Custom scrollbar utility */
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 9999px;
+  }
+</style>
+
+<script is:inline>
+  (function() {
+    const shelf = document.getElementById('reels-shelf');
+    const nextBtn = document.getElementById('reels-next');
+    const prevBtn = document.getElementById('reels-prev');
+
+    if (shelf) {
+      // Horizontal shelf scrolling arrows
+      function updateShelfArrows() {
+        if (!prevBtn || !nextBtn) return;
+        prevBtn.disabled = shelf.scrollLeft <= 5;
+        nextBtn.disabled = shelf.scrollLeft + shelf.clientWidth >= shelf.scrollWidth - 5;
+      }
+
+      shelf.addEventListener('scroll', updateShelfArrows);
+      window.addEventListener('resize', updateShelfArrows);
+      setTimeout(updateShelfArrows, 500);
+
+      prevBtn?.addEventListener('click', () => {
+        shelf.scrollBy({ left: -240, behavior: 'smooth' });
+      });
+      nextBtn?.addEventListener('click', () => {
+        shelf.scrollBy({ left: 240, behavior: 'smooth' });
+      });
+    }
+
+    // Modal Player Logic
+    const modal = document.getElementById('reels-modal');
+    const playerContainer = document.getElementById('reels-player-container');
+    const video = document.getElementById('reels-video');
+    const modalClose = document.getElementById('modal-close');
+    const modalMute = document.getElementById('modal-mute');
+    const modalTitle = document.getElementById('modal-title');
+    const modalDesc = document.getElementById('modal-desc');
+    const modalPrev = document.getElementById('modal-prev');
+    const modalNext = document.getElementById('modal-next');
+    const tapArea = document.getElementById('video-tap-area');
+    const playIndicator = document.getElementById('video-play-indicator');
+
+    let videoItems = [];
+    let currentIndex = 0;
+    let isMuted = true; // Auto-play reels are muted initially by default
+
+    // Parse list of active video items on screen
+    const cards = document.querySelectorAll('[data-action="play-reel"]');
+    cards.forEach((card) => {
+      videoItems.push({
+        url: card.getAttribute('data-video-url'),
+        title: card.getAttribute('data-title'),
+        desc: card.getAttribute('data-desc'),
+      });
+
+      card.addEventListener('click', () => {
+        const idx = parseInt(card.getAttribute('data-index') || '0', 10);
+        openPlayer(idx);
+      });
+    });
+
+    function openPlayer(index) {
+      if (!modal || !video) return;
+      currentIndex = index;
+      
+      modal.classList.remove('hidden');
+      requestAnimationFrame(() => {
+        modal.classList.remove('opacity-0');
+        playerContainer?.classList.remove('scale-95');
+      });
+
+      loadVideo(currentIndex);
+      updateMuteUI();
+    }
+
+    function closePlayer() {
+      if (!modal || !video) return;
+      
+      modal.classList.add('opacity-0');
+      playerContainer?.classList.add('scale-95');
+      video.pause();
+
+      setTimeout(() => {
+        modal.classList.add('hidden');
+        video.src = '';
+      }, 300);
+    }
+
+    function loadVideo(index) {
+      if (index < 0 || index >= videoItems.length || !video) return;
+      const item = videoItems[index];
+
+      video.src = item.url;
+      video.muted = isMuted;
+      video.play().catch(e => console.warn('Autoplay block:', e));
+
+      if (modalTitle) modalTitle.textContent = item.title;
+      if (modalDesc) {
+        modalDesc.textContent = item.desc;
+        modalDesc.scrollTop = 0;
+      }
+
+      // Update Prev/Next button states
+      if (modalPrev) modalPrev.style.display = index === 0 ? 'none' : 'flex';
+      if (modalNext) modalNext.style.display = index === videoItems.length - 1 ? 'none' : 'flex';
+    }
+
+    function toggleMute() {
+      if (!video) return;
+      isMuted = !isMuted;
+      video.muted = isMuted;
+      updateMuteUI();
+    }
+
+    function updateMuteUI() {
+      if (!modalMute) return;
+      modalMute.textContent = isMuted ? '🔇' : '🔊';
+      modalMute.title = isMuted ? 'Unmute' : 'Mute';
+    }
+
+    function togglePlay() {
+      if (!video || !playIndicator) return;
+      if (video.paused) {
+        video.play();
+        showPlayIndicator('play');
+      } else {
+        video.pause();
+        showPlayIndicator('pause');
+      }
+    }
+
+    function showPlayIndicator(action) {
+      if (!playIndicator) return;
+      
+      // Update SVG inside playIndicator
+      if (action === 'play') {
+        playIndicator.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-7 h-7"><path fill-rule="evenodd" d="M4.5 5.653c0-1.427 1.529-2.33 2.779-1.643l11.54 6.347c1.295.712 1.295 2.573 0 3.286L7.28 19.99c-1.25.687-2.779-.217-2.779-1.643V5.653Z" clip-rule="evenodd" /></svg>`;
+      } else {
+        playIndicator.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-7 h-7"><path fill-rule="evenodd" d="M6.75 5.25a.75.75 0 0 1 .75-.75H9a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H7.5a.75.75 0 0 1-.75-.75V5.25Zm7.5 0A.75.75 0 0 1 15 4.5h1.5a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H15a.75.75 0 0 1-.75-.75V5.25Z" clip-rule="evenodd" /></svg>`;
+      }
+
+      playIndicator.style.opacity = '1';
+      playIndicator.style.transform = 'scale(1)';
+
+      setTimeout(() => {
+        playIndicator.style.opacity = '0';
+        playIndicator.style.transform = 'scale(0.75)';
+      }, 500);
+    }
+
+    // Modal click listeners
+    modalClose?.addEventListener('click', closePlayer);
+    modalMute?.addEventListener('click', toggleMute);
+    tapArea?.addEventListener('click', togglePlay);
+
+    modalPrev?.addEventListener('click', () => {
+      if (currentIndex > 0) {
+        currentIndex--;
+        loadVideo(currentIndex);
+      }
+    });
+
+    modalNext?.addEventListener('click', () => {
+      if (currentIndex < videoItems.length - 1) {
+        currentIndex++;
+        loadVideo(currentIndex);
+      }
+    });
+
+    // Close when clicking backdrop outside player container
+    modal?.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        closePlayer();
+      }
+    });
+
+    // Handle escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modal && !modal.classList.contains('hidden')) {
+        closePlayer();
+      }
+    });
+
+    // Mobile Swipe Gestures (Swipe Up/Down to change videos)
+    let touchStartY = 0;
+    let touchEndY = 0;
+
+    tapArea?.addEventListener('touchstart', (e) => {
+      touchStartY = e.changedTouches[0].screenY;
+    }, { passive: true });
+
+    tapArea?.addEventListener('touchend', (e) => {
+      touchEndY = e.changedTouches[0].screenY;
+      handleSwipe();
+    }, { passive: true });
+
+    function handleSwipe() {
+      const swipeDistance = touchEndY - touchStartY;
+      const threshold = 60; // minimum distance to trigger swipe
+
+      if (swipeDistance < -threshold) {
+        // Swipe Up -> Next Video
+        if (currentIndex < videoItems.length - 1) {
+          currentIndex++;
+          loadVideo(currentIndex);
+        }
+      } else if (swipeDistance > threshold) {
+        // Swipe Down -> Prev Video
+        if (currentIndex > 0) {
+          currentIndex--;
+          loadVideo(currentIndex);
+        }
+      }
+    }
+  })();
+</script>

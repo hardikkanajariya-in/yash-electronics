@@ -182,3 +182,17 @@ export interface BundleRule {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface PromoVideo {
+  id: string;
+  title: string;
+  titleGu?: string | null;
+  videoUrl: string;
+  thumbnailUrl?: string | null;
+  description?: string | null;
+  descriptionGu?: string | null;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string;
+}
+

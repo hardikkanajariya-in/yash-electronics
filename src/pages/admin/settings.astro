@@ -49,9 +49,13 @@ if (Astro.request.method === 'POST') {
     }
 
     // Save/Update keys
+    const { deleteCloudinaryAsset } = await import('../../lib/cloudinary');
     for (const [key, value] of Object.entries(updatedSettings)) {
       const [existing] = await db.select().from(settings).where(eq(settings.key, key));
       if (existing) {
+        if (key === 'logoUrl' && existing.value && existing.value !== value) {
+          await deleteCloudinaryAsset(existing.value);
+        }
         await db.update(settings).set({ value }).where(eq(settings.key, key));
       } else {
         await db.insert(settings).values({ key, value });
@@ -272,12 +276,29 @@ if (Astro.request.method === 'POST') {
           <button type="button" class="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold font-mono">Remove</button>
         `;
 
-        div.querySelector('button')?.addEventListener('click', () => {
+        div.querySelector('button')?.addEventListener('click', async () => {
+          const oldVal = input.value.trim();
+          if (oldVal) {
+            await deleteAssetClient(oldVal, 'image');
+          }
           input.value = '';
           render();
         });
 
         preview.appendChild(div);
+      }
+
+      async function deleteAssetClient(publicId: string, resourceType: 'image' | 'video' = 'image') {
+        if (!publicId || publicId.startsWith('http') || publicId.startsWith('/')) return;
+        try {
+          await fetch('/api/admin/delete-asset', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ publicId, resourceType })
+          });
+        } catch (e) {
+          console.error('[Client delete error]', e);
+        }
       }
 
       picker?.addEventListener('change', async () => {
@@ -321,6 +342,10 @@ if (Astro.request.method === 'POST') {
           });
 
           if (resVal) {
+            const oldVal = input.value.trim();
+            if (oldVal && oldVal !== resVal) {
+              await deleteAssetClient(oldVal, 'image');
+            }
             input.value = resVal;
             render();
           }

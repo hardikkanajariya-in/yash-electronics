@@ -132,6 +132,14 @@ if (Astro.request.method === 'POST') {
       }
     } else if (formAction === 'delete') {
       const idToDelete = formData.get('id')?.toString() || '';
+      const [existing] = await db.select().from(products).where(eq(products.id, idToDelete));
+      if (existing?.images && Array.isArray(existing.images)) {
+        const { deleteCloudinaryAsset } = await import('../../lib/cloudinary');
+        for (const img of existing.images) {
+          const isVideo = img.endsWith('.mp4') || img.endsWith('.webm') || img.endsWith('.ogg') || img.endsWith('.mov');
+          await deleteCloudinaryAsset(img, isVideo ? 'video' : 'image');
+        }
+      }
       await db.delete(products).where(eq(products.id, idToDelete));
       clearCmsCache();
       redirectUrl = '/admin/products?success=' + encodeURIComponent('Product deleted successfully!');
@@ -167,6 +175,16 @@ if (Astro.request.method === 'POST') {
 
       if (productId) {
         // Edit existing product
+        const [existing] = await db.select().from(products).where(eq(products.id, productId));
+        if (existing?.images && Array.isArray(existing.images)) {
+          const { deleteCloudinaryAsset } = await import('../../lib/cloudinary');
+          for (const img of existing.images) {
+            if (!imagesArray.includes(img)) {
+              const isVideo = img.endsWith('.mp4') || img.endsWith('.webm') || img.endsWith('.ogg') || img.endsWith('.mov');
+              await deleteCloudinaryAsset(img, isVideo ? 'video' : 'image');
+            }
+          }
+        }
         await db.update(products).set({
           name,
           nameGu: nameGu || null,
@@ -1022,6 +1040,19 @@ if (action === 'bulk-images') {
 
           const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa';
 
+          async function deleteAssetClient(publicId: string, resourceType: 'image' | 'video' = 'image') {
+            if (!publicId || publicId.startsWith('http') || publicId.startsWith('/')) return;
+            try {
+              await fetch('/api/admin/delete-asset', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ publicId, resourceType })
+              });
+            } catch (e) {
+              console.error('[Client delete error]', e);
+            }
+          }
+
           function getImages() {
             return imagesInput.value.split(',').map(s => s.trim()).filter(Boolean);
           }
@@ -1068,10 +1099,11 @@ if (action === 'bulk-images') {
                 </div>
               `;
               
-              div.querySelector('.remove-btn-direct')?.addEventListener('click', () => {
+              div.querySelector('.remove-btn-direct')?.addEventListener('click', async () => {
                 const remaining = getImages().filter(x => x !== img);
                 saveImages(remaining);
                 renderPreviews();
+                await deleteAssetClient(img, isVideo ? 'video' : 'image');
               });
               
               previewsContainer.appendChild(div);

@@ -67,6 +67,8 @@ export const UI_TRANSLATIONS = {
     'sort.priceAsc': 'કિંમત: ઓછી થી વધુ',
     'sort.priceDesc': 'કિંમત: વધુ થી ઓછી',
 
+    'home.promoVideos': 'ખાસ વિડીયો',
+
     // Why Choose Us
     'why.title': 'શા માટે યશ ઇલેક્ટ્રોનિક્સ પસંદ કરવું',
     'why.subtitle': 'નજીકના શહેરો અને નગરોના પરિવારો દ્વારા વિશ્વસનીય',
@@ -231,6 +233,8 @@ export const UI_TRANSLATIONS = {
     'sort.latest': 'Latest',
     'sort.priceAsc': 'Price: Low to High',
     'sort.priceDesc': 'Price: High to Low',
+
+    'home.promoVideos': 'Promo Videos',
 
     // Why Choose Us
     'why.title': 'Why Choose Yash Electronics',
@@ -441,6 +445,17 @@ export function translateOffer(offer: any, locale: string = 'gu') {
   };
 }
 
+// Translate promo video object using database titleGu/descriptionGu
+export function translatePromoVideo(video: any, locale: string = 'gu') {
+  if (!video) return video;
+  const isGu = locale !== 'en';
+  return {
+    ...video,
+    title: (isGu && video.titleGu) ? video.titleGu : video.title,
+    description: (isGu && video.descriptionGu) ? video.descriptionGu : video.description,
+  };
+}
+
 // General translation helper for array or objects
 export function translateObject<T>(obj: T, locale: string = 'gu'): T {
   if (!obj) return obj;
@@ -466,6 +481,9 @@ export function translateObject<T>(obj: T, locale: string = 'gu'): T {
   }
   if ('discountText' in anyObj) {
     return translateOffer(anyObj, targetLocale) as any;
+  }
+  if ('videoUrl' in anyObj) {
+    return translatePromoVideo(anyObj, targetLocale) as any;
   }
 
   return obj;
