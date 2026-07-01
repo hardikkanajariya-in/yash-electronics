@@ -263,7 +263,7 @@ export const referralHistory = pgTable('referral_history', {
   referrerId: varchar('referrer_id', { length: 255 }).references(() => users.id, { onDelete: 'cascade' }),
   referredUserId: varchar('referred_user_id', { length: 255 }).references(() => users.id, { onDelete: 'cascade' }),
   pointsEarned: integer('points_earned').notNull().default(0),
-  type: text('type').$type<'referrer_bonus' | 'signup_bonus'>().notNull(),
+  type: text('type').$type<'referrer_bonus' | 'signup_bonus' | 'admin_adjustment'>().notNull(),
   createdAt: text('created_at').notNull(),
 });
 

@@ -59,6 +59,7 @@ const t = {
   errRefInvalid: 'The entered referral code is invalid.',
   errPhoneExists: 'An account with this phone number already exists.',
   errGeneric: 'Something went wrong. Please try again.',
+  forgotPassword: 'Forgot Password?',
 };
 
 let error = '';
@@ -253,6 +254,11 @@ if (Astro.request.method === 'POST') {
             placeholder="••••••••"
             class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none"
           />
+          <div class="flex justify-end mt-1.5">
+            <a href="/en/account/forgot-password" class="text-xs text-primary hover:underline font-medium">
+              {t.forgotPassword}
+            </a>
+          </div>
         </div>
 
         <button type="submit" class="w-full btn-primary py-2.5 text-sm font-semibold">

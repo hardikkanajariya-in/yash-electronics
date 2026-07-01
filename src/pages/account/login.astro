@@ -62,6 +62,7 @@ const translations = {
     errRefInvalid: 'દાખલ કરેલ રેફરલ કોડ અમાન્ય છે.',
     errPhoneExists: 'આ ફોન નંબર પર પહેલેથી જ ખાતું બનેલું છે.',
     errGeneric: 'કંઈક ખોટું થયું. કૃપા કરીને ફરી પ્રયાસ કરો.',
+    forgotPassword: 'પાસવર્ડ ભૂલી ગયા છો?',
   },
   en: {
     title: `${settingsObj.businessName} - Account`,
@@ -79,6 +80,7 @@ const translations = {
     errRefInvalid: 'The entered referral code is invalid.',
     errPhoneExists: 'An account with this phone number already exists.',
     errGeneric: 'Something went wrong. Please try again.',
+    forgotPassword: 'Forgot Password?',
   }
 };
 
@@ -276,6 +278,11 @@ if (Astro.request.method === 'POST') {
             placeholder="••••••••"
             class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none"
           />
+          <div class="flex justify-end mt-1.5">
+            <a href={locale === 'en' ? '/en/account/forgot-password' : '/account/forgot-password'} class="text-xs text-primary hover:underline font-medium">
+              {t.forgotPassword}
+            </a>
+          </div>
         </div>
 
         <button type="submit" class="w-full btn-primary py-2.5 text-sm font-semibold">

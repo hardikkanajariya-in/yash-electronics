@@ -1,9 +1,9 @@
 ---
 import AdminLayout from "../../layouts/AdminLayout.astro";
 import { db } from "../../db";
-import { users, orders, settings } from "../../db/schema";
+import { users, orders, settings, referralHistory } from "../../db/schema";
 import { eq, and, or, ilike, desc, asc, gt, sql } from "drizzle-orm";
-import { getSessionUser } from "../../lib/auth";
+import { getSessionUser, hashPassword, generateId } from "../../lib/auth";
 
 export const prerender = false;
 
@@ -38,13 +38,47 @@ if (Astro.request.method === "POST") {
       if (isNaN(newCredits) || newCredits < 0) {
         error = "Credits must be a valid positive integer.";
       } else {
-        await db
-          .update(users)
-          .set({ credits: newCredits })
+        const [targetCustomer] = await db
+          .select()
+          .from(users)
           .where(eq(users.id, targetId));
+
+        if (targetCustomer) {
+          const difference = newCredits - targetCustomer.credits;
+          if (difference !== 0) {
+            await db
+              .update(users)
+              .set({ credits: newCredits })
+              .where(eq(users.id, targetId));
+
+            await db.insert(referralHistory).values({
+              id: generateId(),
+              referrerId: targetId,
+              referredUserId: null,
+              pointsEarned: difference,
+              type: 'admin_adjustment',
+              createdAt: new Date().toISOString(),
+            });
+          }
+        }
         return Astro.redirect(
           `/admin/customers?action=view&id=${targetId}&success=` +
             encodeURIComponent("Customer credits updated successfully!"),
+        );
+      }
+    } else if (formAction === "reset_password" && targetId) {
+      const newPassword = formData.get("newPassword")?.toString() || "";
+      if (!newPassword || newPassword.length < 6) {
+        error = "Password must be at least 6 characters long.";
+      } else {
+        const hashedPassword = hashPassword(newPassword);
+        await db
+          .update(users)
+          .set({ password: hashedPassword })
+          .where(eq(users.id, targetId));
+        return Astro.redirect(
+          `/admin/customers?action=view&id=${targetId}&success=` +
+            encodeURIComponent("Customer password reset successfully!"),
         );
       }
     } else if (formAction === "delete" && targetId) {
@@ -163,6 +197,24 @@ if (action === "view" && customerId) {
       points: -order.creditsUsed,
       description: `Redeemed points on order #${order.id.slice(0, 8)}`,
       link: `/admin/orders`,
+    });
+  }
+
+  // 4. Admin adjustments
+  const adminAdjustments = await db
+    .select()
+    .from(referralHistory)
+    .where(and(eq(referralHistory.referrerId, customer.id), eq(referralHistory.type, 'admin_adjustment')))
+    .orderBy(desc(referralHistory.createdAt));
+
+  for (const adj of adminAdjustments) {
+    ledger.push({
+      date: adj.createdAt,
+      type: "admin_adjustment",
+      points: adj.pointsEarned,
+      description: adj.pointsEarned > 0
+        ? `Points added by administrator`
+        : `Points removed by administrator`,
     });
   }
 
@@ -598,69 +650,105 @@ const formatDate = (dateStr: string) => {
             </div>
           </div>
 
-          {/* Credits Balance Card */}
-          <div class="bg-white border border-neutral-200 rounded-lg p-5 shadow-sm flex flex-col justify-between">
-            <div class="space-y-4">
-              <h3 class="text-xs font-bold text-neutral-800 uppercase tracking-wider border-b border-neutral-100 pb-2 flex items-center gap-1.5">
-                💎 Credits Wallet
-              </h3>
-              <div class="bg-gradient-to-br from-green-600 to-emerald-700 rounded-xl p-4 text-white shadow-sm flex flex-col justify-between min-h-[7rem]">
-                <div class="flex justify-between items-start">
-                  <span class="text-[10px] uppercase font-semibold text-green-150 tracking-wider">Wallet Balance</span>
-                  <span class="text-lg">💳</span>
-                </div>
-                <div class="mt-2">
-                  <span class="text-3xl font-black font-mono">{customer.credits}</span>
-                  <span class="text-xs font-semibold ml-1 text-green-150">Points</span>
+          <div class="space-y-6">
+            {/* Credits Balance Card */}
+            <div class="bg-white border border-neutral-200 rounded-lg p-5 shadow-sm flex flex-col justify-between">
+              <div class="space-y-4">
+                <h3 class="text-xs font-bold text-neutral-800 uppercase tracking-wider border-b border-neutral-100 pb-2 flex items-center gap-1.5">
+                  💎 Credits Wallet
+                </h3>
+                <div class="bg-gradient-to-br from-green-600 to-emerald-700 rounded-xl p-4 text-white shadow-sm flex flex-col justify-between min-h-[7rem]">
+                  <div class="flex justify-between items-start">
+                    <span class="text-[10px] uppercase font-semibold text-green-150 tracking-wider">Wallet Balance</span>
+                    <span class="text-lg">💳</span>
+                  </div>
+                  <div class="mt-2">
+                    <span class="text-3xl font-black font-mono">{customer.credits}</span>
+                    <span class="text-xs font-semibold ml-1 text-green-150">Points</span>
+                  </div>
                 </div>
               </div>
+
+              <form method="post" class="space-y-4 mt-6">
+                <input type="hidden" name="formAction" value="adjust_credits" />
+                <input type="hidden" name="customerId" value={customer.id} />
+
+                <div>
+                  <label for="credits-input" class="block text-[10px] font-bold text-neutral-500 uppercase mb-1.5">
+                    Adjust Credits Balance
+                  </label>
+                  <div class="flex gap-2">
+                    <button 
+                      type="button" 
+                      onclick="document.getElementById('credits-input').stepDown(50)"
+                      class="bg-neutral-100 hover:bg-neutral-200 border border-neutral-300 rounded px-2.5 text-xs font-bold cursor-pointer select-none"
+                    >
+                      -50
+                    </button>
+                    <input
+                      type="number"
+                      id="credits-input"
+                      name="credits"
+                      required
+                      min="0"
+                      value={customer.credits}
+                      class="w-full text-center rounded border border-neutral-300 px-3 py-1.5 text-sm font-mono font-bold focus:border-primary focus:outline-none"
+                    />
+                    <button 
+                      type="button" 
+                      onclick="document.getElementById('credits-input').stepUp(50)"
+                      class="bg-neutral-100 hover:bg-neutral-200 border border-neutral-300 rounded px-2.5 text-xs font-bold cursor-pointer select-none"
+                    >
+                      +50
+                    </button>
+                  </div>
+                  <p class="text-[10px] text-neutral-400 mt-1.5 leading-normal">
+                    Update customer's total loyalty credit point balance.
+                  </p>
+                </div>
+
+                <button
+                  type="submit"
+                  class="w-full bg-primary text-white text-xs font-bold rounded px-4 py-2 hover:bg-primary/95 transition-colors cursor-pointer"
+                >
+                  Save New Balance
+                </button>
+              </form>
             </div>
 
-            <form method="post" class="space-y-4 mt-6">
-              <input type="hidden" name="formAction" value="adjust_credits" />
-              <input type="hidden" name="customerId" value={customer.id} />
+            {/* Reset Password Card */}
+            <div class="bg-white border border-neutral-200 rounded-lg p-5 shadow-sm space-y-4">
+              <h3 class="text-xs font-bold text-neutral-800 uppercase tracking-wider border-b border-neutral-100 pb-2 flex items-center gap-1.5">
+                🔑 Reset Password
+              </h3>
+              
+              <form method="post" class="space-y-4" onsubmit="return confirm('Are you sure you want to reset this customer\'s password? They will need to log in with this new password.')">
+                <input type="hidden" name="formAction" value="reset_password" />
+                <input type="hidden" name="customerId" value={customer.id} />
 
-              <div>
-                <label for="credits-input" class="block text-[10px] font-bold text-neutral-500 uppercase mb-1.5">
-                  Adjust Credits Balance
-                </label>
-                <div class="flex gap-2">
-                  <button 
-                    type="button" 
-                    onclick="document.getElementById('credits-input').stepDown(50)"
-                    class="bg-neutral-100 hover:bg-neutral-200 border border-neutral-300 rounded px-2.5 text-xs font-bold cursor-pointer select-none"
-                  >
-                    -50
-                  </button>
+                <div>
+                  <label for="newPassword" class="block text-[10px] font-bold text-neutral-500 uppercase mb-1.5">
+                    New Password
+                  </label>
                   <input
-                    type="number"
-                    id="credits-input"
-                    name="credits"
+                    type="password"
+                    id="newPassword"
+                    name="newPassword"
                     required
-                    min="0"
-                    value={customer.credits}
-                    class="w-full text-center rounded border border-neutral-300 px-3 py-1.5 text-sm font-mono font-bold focus:border-primary focus:outline-none"
+                    minlength="6"
+                    placeholder="Enter new password"
+                    class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
                   />
-                  <button 
-                    type="button" 
-                    onclick="document.getElementById('credits-input').stepUp(50)"
-                    class="bg-neutral-100 hover:bg-neutral-200 border border-neutral-300 rounded px-2.5 text-xs font-bold cursor-pointer select-none"
-                  >
-                    +50
-                  </button>
                 </div>
-                <p class="text-[10px] text-neutral-400 mt-1.5 leading-normal">
-                  Update customer's total loyalty credit point balance.
-                </p>
-              </div>
 
-              <button
-                type="submit"
-                class="w-full bg-primary text-white text-xs font-bold rounded px-4 py-2 hover:bg-primary/95 transition-colors cursor-pointer"
-              >
-                Save New Balance
-              </button>
-            </form>
+                <button
+                  type="submit"
+                  class="w-full bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded px-4 py-2 transition-colors cursor-pointer"
+                >
+                  Reset Password
+                </button>
+              </form>
+            </div>
           </div>
         </div>
 
@@ -742,10 +830,12 @@ const formatDate = (dateStr: string) => {
                   <span class={`absolute -left-[31px] top-1.5 w-4 h-4 rounded-full border-2 border-white shadow-sm flex items-center justify-center text-[8px] ${
                     item.type === "signup_bonus" ? "bg-blue-500 text-white" :
                     item.type === "referral_bonus" ? "bg-green-500 text-white" :
+                    item.type === "admin_adjustment" ? "bg-purple-500 text-white" :
                     "bg-red-500 text-white"
                   }`}>
                     {item.type === "signup_bonus" ? "👤" :
                      item.type === "referral_bonus" ? "🤝" :
+                     item.type === "admin_adjustment" ? "🛠️" :
                      "🛍️"}
                   </span>
 
@@ -755,6 +845,7 @@ const formatDate = (dateStr: string) => {
                         <span class={`inline-block rounded px-1.5 py-0.5 text-[9px] font-bold uppercase border ${
                           item.type === "signup_bonus" ? "bg-blue-50 text-blue-700 border-blue-100" :
                           item.type === "referral_bonus" ? "bg-green-50 text-green-700 border-green-100" :
+                          item.type === "admin_adjustment" ? "bg-purple-50 text-purple-700 border-purple-100" :
                           "bg-red-50 text-red-700 border-red-100"
                         }`}>
                           {item.type.replace("_", " ")}

@@ -168,7 +168,13 @@ if (Astro.request.method === 'POST') {
           // Re-fetch user to get fresh credits balance
           const [userRecord] = await db.select().from(users).where(eq(users.id, currentUser.id));
           if (userRecord && userRecord.credits > 0) {
-            const maxUsableCredits = Math.min(userRecord.credits, subtotal - couponDiscount - bundleDiscount);
+            let maxUsableCredits = Math.min(userRecord.credits, subtotal - couponDiscount - bundleDiscount);
+            
+            const maxRedemptionPoints = parseInt(rawSettings.max_redemption_points || '0', 10);
+            if (maxRedemptionPoints > 0) {
+              maxUsableCredits = Math.min(maxUsableCredits, maxRedemptionPoints);
+            }
+            
             creditsToUse = Math.min(redeemPoints, maxUsableCredits);
           }
         }
@@ -253,6 +259,7 @@ const t = {
   redeemMax: 'Redeem Max',
   couponApplied: 'Coupon Discount',
   pointsApplied: 'Points Redeemed',
+  maxRedemptionLimit: 'Max redemption limit (per order): {amount} Pts',
 };
 ---
 
@@ -404,7 +411,14 @@ const t = {
                       {t.redeemMax}
                     </button>
                   </div>
-                  <p class="text-[9px] text-neutral-400 mt-1 leading-tight">{t.pointsHelper}</p>
+                  <p class="text-[9px] text-neutral-400 mt-1 leading-tight">
+                    {t.pointsHelper}
+                    {parseInt(rawSettings.max_redemption_points || '0', 10) > 0 && (
+                      <span class="block mt-1 text-amber-600 font-semibold animate-pulse">
+                        ⚠️ {t.maxRedemptionLimit.replace('{amount}', parseInt(rawSettings.max_redemption_points, 10).toLocaleString('en-IN'))}
+                      </span>
+                    )}
+                  </p>
                 </div>
 
                 <div class="flex justify-between text-neutral-900 font-bold border-t border-neutral-100 pt-3">
@@ -480,7 +494,7 @@ const t = {
   </Container>
 </BaseLayout>
 
-<script is:inline define:vars={{ userCredits: currentUser?.credits || 0, successOrderId, locale, cloudName: cloudinaryConfig.cloudName, bundleRulesList, bundleProductsList }}>
+<script is:inline define:vars={{ userCredits: currentUser?.credits || 0, successOrderId, locale, cloudName: cloudinaryConfig.cloudName, bundleRulesList, bundleProductsList, maxRedemptionPoints: parseInt(rawSettings.max_redemption_points || '0', 10) }}>
   // Manage client side cart
   const CART_KEY = 'ye_cart';
   let activeCoupon = null; // Holds { code, discountType, discountValue }
@@ -917,7 +931,11 @@ const t = {
     let pointsToRedeem = pointsField ? parseInt(pointsField.value, 10) : 0;
     if (isNaN(pointsToRedeem) || pointsToRedeem < 0) pointsToRedeem = 0;
 
-    const maxUsablePoints = Math.min(userCredits, subtotal - couponDiscount - bundleDiscount);
+    let maxUsablePoints = Math.min(userCredits, subtotal - couponDiscount - bundleDiscount);
+    if (maxRedemptionPoints > 0) {
+      maxUsablePoints = Math.min(maxUsablePoints, maxRedemptionPoints);
+    }
+    
     if (pointsToRedeem > maxUsablePoints) {
       pointsToRedeem = maxUsablePoints;
       if (pointsField) pointsField.value = pointsToRedeem;
