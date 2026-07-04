@@ -27,7 +27,7 @@ const allCmsProducts = await getProducts();
 const rawProducts = allCmsProducts.filter(p => p.eligibleForBundle);
 const products = translateObject(rawProducts, locale);
 
-function getProductImageUrl(img: string | undefined | null) {
+function getProductImageUrl(img: string) {
   return buildCloudinaryUrl(img, { width: 200, height: 200 });
 }
 ---
@@ -266,10 +266,11 @@ function getProductImageUrl(img: string | undefined | null) {
     if (submitBtn) submitBtn.disabled = false;
     
     if (listContainer) {
+      const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME;  
       listContainer.innerHTML = items.map(item => `
         <div class="flex items-center gap-2 bg-neutral-50 border border-neutral-100 rounded-lg p-2 text-xs">
           <div class="w-8 h-8 rounded border border-neutral-200 overflow-hidden shrink-0 flex items-center justify-center bg-white">
-            ${item.image ? `<img src="https://res.cloudinary.com/dyjsrdrxa/image/upload/w_50,h_50,c_fill/${item.image}" class="object-cover h-full w-full" />` : '📺'}
+            ${item.image ? `<img src="https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_50,h_50,c_fill/${item.image}" class="object-cover h-full w-full" />` : '📺'}
           </div>
           <div class="flex-1 min-w-0">
             <h4 class="font-bold text-neutral-800 truncate">${item.name}</h4>

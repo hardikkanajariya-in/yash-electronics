@@ -11,8 +11,9 @@ import { buildCloudinaryUrl } from '../../lib/cloudinary';
 import { deleteCloudinaryAsset } from '../../lib/cloudinary-server';
 
 export const prerender = false;
+const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME;
 
-function getProductImageUrl(img: string | undefined | null) {
+function getProductImageUrl(img: string) {
   const isVideo = img?.endsWith('.mp4') || img?.endsWith('.webm') || img?.endsWith('.ogg') || img?.endsWith('.mov');
   if (isVideo) {
     return buildCloudinaryUrl(img, { width: 100, height: 100, format: 'jpg' });
@@ -1499,8 +1500,6 @@ if (action === 'bulk-images') {
         </div>
 
         <script>
-          const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME || 'dyjsrdrxa';
-
           // Search filtering
           const searchInput = document.getElementById('bulk-search') as HTMLInputElement;
           searchInput?.addEventListener('input', (e) => {
@@ -1567,7 +1566,7 @@ if (action === 'bulk-images') {
                 const isVideo = img.endsWith('.mp4') || img.endsWith('.webm') || img.endsWith('.ogg') || img.endsWith('.mov');
                 const mediaUrl = (img.startsWith('http') || img.startsWith('/')) 
                   ? img 
-                  : `https://res.cloudinary.com/${CLOUD_NAME}/${isVideo ? 'video' : 'image'}/upload/w_100,h_100,c_fill${isVideo ? '' : ',f_auto,q_auto'}/${img}`;
+                  : `https://res.cloudinary.com/xvfrtmvs/${isVideo ? 'video' : 'image'}/upload/w_100,h_100,c_fill${isVideo ? '' : ',f_auto,q_auto'}/${img}`;
                   
                 const div = document.createElement('div');
                 div.className = 'relative group w-14 h-14 md:w-16 md:h-16 rounded overflow-hidden shadow-sm border border-neutral-200 bg-neutral-50 shrink-0';
@@ -1584,7 +1583,7 @@ if (action === 'bulk-images') {
                   mediaHtml = `<img src="${mediaUrl}" class="w-full h-full object-cover" />`;
                 }
                 
-                const fullUrl = (img.startsWith('http') || img.startsWith('/')) ? img : `https://res.cloudinary.com/${CLOUD_NAME}/${isVideo ? 'video' : 'image'}/upload/${img}`;
+                const fullUrl = (img.startsWith('http') || img.startsWith('/')) ? img : `https://res.cloudinary.com/xvfrtmvs/${isVideo ? 'video' : 'image'}/upload/${img}`;
                 div.innerHTML = `
                   ${mediaHtml}
                   <div class="absolute inset-0 bg-black/40 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 z-10">
