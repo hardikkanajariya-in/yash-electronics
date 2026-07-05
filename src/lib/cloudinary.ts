@@ -42,3 +42,32 @@ export function buildSrcSet(publicId: string, widths: number[]): string {
 export function isLocalImage(publicId: string): boolean {
   return Boolean(publicId && (publicId.startsWith('/') || publicId.startsWith('http')));
 }
+
+export function getPublicIdFromUrl(url: string): string {
+  if (!url) return '';
+  if (!url.startsWith('http')) return url;
+  try {
+    const uploadIndex = url.indexOf('/upload/');
+    if (uploadIndex === -1) return url;
+    
+    let path = url.substring(uploadIndex + 8);
+    const segments = path.split('/');
+    const cleanSegments = segments.filter(seg => {
+      if (/^v\d+$/.test(seg)) return false;
+      if (seg.includes('_') && (seg.includes(',') || seg.startsWith('w_') || seg.startsWith('h_') || seg.startsWith('c_') || seg.startsWith('q_') || seg.startsWith('f_'))) {
+        return false;
+      }
+      return true;
+    });
+    
+    let publicId = cleanSegments.join('/');
+    const lastDotIndex = publicId.lastIndexOf('.');
+    if (lastDotIndex !== -1 && lastDotIndex > publicId.lastIndexOf('/')) {
+      publicId = publicId.substring(0, lastDotIndex);
+    }
+    return publicId;
+  } catch (e) {
+    return url;
+  }
+}
+

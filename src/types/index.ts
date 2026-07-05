@@ -78,6 +78,7 @@ export interface SiteSettings {
   instagramUrl: string;
   youtubeUrl: string;
   logoUrl?: string;
+  [key: string]: any;
 }
 
 export interface CmsData {

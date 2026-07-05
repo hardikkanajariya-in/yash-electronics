@@ -189,19 +189,34 @@ function getProductImageUrl(img: string) {
       </div>
     </div>
   </Container>
+
+  <div id="bundle-data" class="hidden" data-rules={JSON.stringify(rules)} data-locale={locale}></div>
 </BaseLayout>
 
 <!-- Client Side Bundle Logic -->
-<script is:inline define:vars={{ rules, locale }}>
-  const CART_KEY = 'ye_cart';
-  let selectedProducts = {}; // id -> { name, price, image, quantity }
+<script>
+  import { buildCloudinaryUrl } from '../../lib/cloudinary';
+  import type { BundleRule } from '../../types';
 
-  window.toggleProductSelection = function (id, nameDecoded, price, image) {
+  interface SelectedProduct {
+    id: string;
+    name: string;
+    price: number;
+    image: string;
+    quantity: number;
+  }
+
+  const bundleDataEl = document.getElementById('bundle-data');
+  const rules: BundleRule[] = JSON.parse(bundleDataEl?.getAttribute('data-rules') || '[]');
+  const locale = bundleDataEl?.getAttribute('data-locale') || 'gu';
+  const CART_KEY = 'ye_cart';
+  let selectedProducts: Record<string, SelectedProduct> = {};
+
+  function toggleProductSelection(id: string, nameDecoded: string, price: number, image: string) {
     const name = decodeURIComponent(nameDecoded);
     const card = document.getElementById(`prod-card-${id}`);
     
     if (selectedProducts[id]) {
-      // Remove
       delete selectedProducts[id];
       if (card) {
         card.classList.remove('selected');
@@ -212,7 +227,6 @@ function getProductImageUrl(img: string) {
         }
       }
     } else {
-      // Add
       selectedProducts[id] = { id, name, price, image, quantity: 1 };
       if (card) {
         card.classList.add('selected');
@@ -225,12 +239,12 @@ function getProductImageUrl(img: string) {
     }
     
     updateSummary();
-  };
+  }
 
   function updateSummary() {
     const listContainer = document.getElementById('selected-items-list');
     const subtotalVal = document.getElementById('bundle-subtotal');
-    const submitBtn = document.getElementById('btn-submit-bundle');
+    const submitBtn = document.getElementById('btn-submit-bundle') as HTMLButtonElement | null;
     const rewardBlock = document.getElementById('summary-reward-block');
     const rewardName = document.getElementById('summary-reward-name');
     const rewardDiscount = document.getElementById('summary-discount-value');
@@ -241,7 +255,6 @@ function getProductImageUrl(img: string) {
     
     if (subtotalVal) subtotalVal.textContent = '₹' + subtotal.toLocaleString('en-IN');
     
-    // Render list
     if (items.length === 0) {
       if (listContainer) {
         listContainer.innerHTML = `
@@ -251,13 +264,18 @@ function getProductImageUrl(img: string) {
       if (submitBtn) submitBtn.disabled = true;
       if (rewardBlock) rewardBlock.classList.add('hidden');
       
-      // Reset rules cards UI
       rules.forEach(r => {
         const card = document.getElementById(`rule-card-${r.id}`);
         if (card) {
           card.removeAttribute('data-unlocked');
-          card.querySelector('.rule-status-label').textContent = locale === 'en' ? `Select ${r.minQuantity} products to unlock` : `અનલોક કરવા માટે ${r.minQuantity} પ્રોડક્ટ્સ પસંદ કરો`;
-          card.querySelector('.rule-status-icon').textContent = '🔒';
+          const labelEl = card.querySelector('.rule-status-label');
+          if (labelEl) {
+            labelEl.textContent = locale === 'en' ? `Select ${r.minQuantity} products to unlock` : `અનલોક કરવા માટે ${r.minQuantity} પ્રોડક્ટ્સ પસંદ કરો`;
+          }
+          const iconEl = card.querySelector('.rule-status-icon');
+          if (iconEl) {
+            iconEl.textContent = '🔒';
+          }
         }
       });
       return;
@@ -266,11 +284,10 @@ function getProductImageUrl(img: string) {
     if (submitBtn) submitBtn.disabled = false;
     
     if (listContainer) {
-      const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME;  
       listContainer.innerHTML = items.map(item => `
         <div class="flex items-center gap-2 bg-neutral-50 border border-neutral-100 rounded-lg p-2 text-xs">
           <div class="w-8 h-8 rounded border border-neutral-200 overflow-hidden shrink-0 flex items-center justify-center bg-white">
-            ${item.image ? `<img src="https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_50,h_50,c_fill/${item.image}" class="object-cover h-full w-full" />` : '📺'}
+            ${item.image ? `<img src="${buildCloudinaryUrl(item.image, { width: 50, height: 50, crop: 'fill' })}" class="object-cover h-full w-full" />` : '📺'}
           </div>
           <div class="flex-1 min-w-0">
             <h4 class="font-bold text-neutral-800 truncate">${item.name}</h4>
@@ -281,8 +298,7 @@ function getProductImageUrl(img: string) {
       `).join('');
     }
     
-    // Evaluate active bundle rules
-    let bestRule = null;
+    let bestRule: BundleRule | null = null;
     rules.forEach(r => {
       const card = document.getElementById(`rule-card-${r.id}`);
       const isUnlocked = totalCount >= r.minQuantity;
@@ -290,8 +306,14 @@ function getProductImageUrl(img: string) {
       if (card) {
         if (isUnlocked) {
           card.setAttribute('data-unlocked', 'true');
-          card.querySelector('.rule-status-label').textContent = locale === 'en' ? 'Unlocked! 🎉' : 'અનલોક થયું! 🎉';
-          card.querySelector('.rule-status-icon').textContent = '✅';
+          const labelEl = card.querySelector('.rule-status-label');
+          if (labelEl) {
+            labelEl.textContent = locale === 'en' ? 'Unlocked! 🎉' : 'અનલોક થયું! 🎉';
+          }
+          const iconEl = card.querySelector('.rule-status-icon');
+          if (iconEl) {
+            iconEl.textContent = '✅';
+          }
           
           if (!bestRule || r.minQuantity > bestRule.minQuantity) {
             bestRule = r;
@@ -299,22 +321,29 @@ function getProductImageUrl(img: string) {
         } else {
           card.removeAttribute('data-unlocked');
           const remaining = r.minQuantity - totalCount;
-          card.querySelector('.rule-status-label').textContent = locale === 'en' ? `Select ${remaining} more to unlock` : `અનલોક કરવા માટે વધુ ${remaining} પસંદ કરો`;
-          card.querySelector('.rule-status-icon').textContent = '🔒';
+          const labelEl = card.querySelector('.rule-status-label');
+          if (labelEl) {
+            labelEl.textContent = locale === 'en' ? `Select ${remaining} more to unlock` : `અનલોક કરવા માટે વધુ ${remaining} પસંદ કરો`;
+          }
+          const iconEl = card.querySelector('.rule-status-icon');
+          if (iconEl) {
+            iconEl.textContent = '🔒';
+          }
         }
       }
     });
     
     if (bestRule) {
+      const rule = bestRule as BundleRule;
       if (rewardBlock) rewardBlock.classList.remove('hidden');
-      if (rewardName) rewardName.textContent = bestRule.rewardDescription;
+      if (rewardName) rewardName.textContent = rule.rewardDescription;
       
-      if (bestRule.rewardType === 'percentage_discount' && rewardDiscount) {
-        const discAmount = Math.round(subtotal * (bestRule.rewardValue / 100));
-        rewardDiscount.textContent = `Checkout Discount: -₹${discAmount.toLocaleString('en-IN')} (${bestRule.rewardValue}%)`;
+      if (rule.rewardType === 'percentage_discount' && rewardDiscount) {
+        const discAmount = Math.round(subtotal * (rule.rewardValue / 100));
+        rewardDiscount.textContent = `Checkout Discount: -₹${discAmount.toLocaleString('en-IN')} (${rule.rewardValue}%)`;
         rewardDiscount.classList.remove('hidden');
-      } else if (bestRule.rewardType === 'flat_discount' && rewardDiscount) {
-        const discAmount = Math.min(bestRule.rewardValue, subtotal);
+      } else if (rule.rewardType === 'flat_discount' && rewardDiscount) {
+        const discAmount = Math.min(rule.rewardValue, subtotal);
         rewardDiscount.textContent = `Checkout Discount: -₹${discAmount.toLocaleString('en-IN')}`;
         rewardDiscount.classList.remove('hidden');
       } else if (rewardDiscount) {
@@ -325,20 +354,18 @@ function getProductImageUrl(img: string) {
     }
   }
 
-  window.submitCustomBundle = function () {
+  function submitCustomBundle() {
     try {
       const items = Object.values(selectedProducts);
       if (items.length === 0) return;
       
-      // Load current cart
       let cart = JSON.parse(localStorage.getItem(CART_KEY) || '[]');
       
-      // Merge selected products
       items.forEach(item => {
-        const existing = cart.find(i => i.id === item.id);
+        const existing = cart.find((i: any) => i.id === item.id);
         if (existing) {
           existing.quantity = Math.max(existing.quantity, item.quantity);
-          existing.eligibleForBundle = true; // force flag
+          existing.eligibleForBundle = true;
         } else {
           cart.push({
             id: item.id,
@@ -355,7 +382,9 @@ function getProductImageUrl(img: string) {
       window.dispatchEvent(new CustomEvent('cart-updated'));
       
       const isEn = locale === 'en';
-      window.showToast(isEn ? 'Custom bundle added to cart!' : 'બંડલ કાર્ટમાં ઉમેરવામાં આવ્યું છે!');
+      if ((window as any).showToast) {
+        (window as any).showToast(isEn ? 'Custom bundle added to cart!' : 'બંડલ કાર્ટમાં ઉમેરવામાં આવ્યું છે!');
+      }
       
       setTimeout(() => {
         window.location.href = isEn ? '/en/cart' : '/cart';
@@ -363,9 +392,11 @@ function getProductImageUrl(img: string) {
     } catch (e) {
       console.error('Failed to add bundle to cart:', e);
     }
-  };
-</script>
+  }
 
+  (window as any).toggleProductSelection = toggleProductSelection;
+  (window as any).submitCustomBundle = submitCustomBundle;
+</script>
 <style>
   /* Custom micro-animations */
   @keyframes pulseSlow {

@@ -1,5 +1,6 @@
 ---
 import AdminLayout from '../../layouts/AdminLayout.astro';
+import CropModal from '../../components/admin/CropModal.astro';
 import { db } from '../../db';
 import { settings } from '../../db/schema';
 import { getSessionUser } from '../../lib/auth';
@@ -82,7 +83,7 @@ if (Astro.request.method === 'POST') {
   {message && <div class="bg-green-50 border border-green-200 text-green-700 text-sm rounded-md p-3 mb-6">{message}</div>}
   {error && <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md p-3 mb-6">{error}</div>}
 
-  <form method="post" class="space-y-6 max-w-4xl mx-auto pb-12">
+  <form id="settings-form" method="post" data-deferred-upload-form class="space-y-6 max-w-4xl mx-auto pb-12">
     <!-- Group 1: Store Branding -->
     <div class="bg-white border border-neutral-200 rounded-lg p-5 shadow-sm space-y-4">
       <h3 class="text-sm font-bold text-neutral-800 border-b border-neutral-100 pb-2 flex items-center gap-2">
@@ -116,7 +117,16 @@ if (Astro.request.method === 'POST') {
         <input type="hidden" id="logoUrl" name="logoUrl" value={currentSettings.logoUrl || ''} />
         <div id="logo-preview" class="mb-2"></div>
         <div class="relative border border-dashed border-neutral-300 rounded p-4 hover:border-primary hover:bg-neutral-50/50 transition-colors cursor-pointer text-center" id="logo-dropzone">
-          <input type="file" id="logo-file-picker" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer" />
+          <input type="file" id="logo-file-picker" accept="image/*"
+                 data-deferred-upload-picker
+                 data-hidden-input="logoUrl"
+                 data-previews-container="logo-preview"
+                 data-folder="yash-electronics/settings"
+                 data-aspect-ratio="1"
+                 data-progress-bar="logo-upload-progress-bar"
+                 data-progress-container="logo-upload-progress"
+                 data-progress-percent="logo-upload-percent"
+                 class="absolute inset-0 opacity-0 cursor-pointer" />
           <p class="text-xs font-semibold text-neutral-600">Choose Logo</p>
         </div>
         <div id="logo-upload-progress" class="hidden mt-2 space-y-1">
@@ -252,117 +262,6 @@ if (Astro.request.method === 'POST') {
     </div>
   </form>
 
-  <script>
-    import { buildCloudinaryUrl } from '../../lib/cloudinary';
 
-    function setupUploader(inputId: string, filePickerId: string, previewId: string, progressContainerId: string, progressBarId: string, percentId: string) {
-      const input = document.getElementById(inputId) as HTMLInputElement;
-      const preview = document.getElementById(previewId);
-      const picker = document.getElementById(filePickerId) as HTMLInputElement;
-      const progressContainer = document.getElementById(progressContainerId);
-      const progressBar = document.getElementById(progressBarId);
-      const percent = document.getElementById(percentId);
-
-      function render() {
-        if (!preview) return;
-        preview.innerHTML = '';
-        const val = input.value.trim();
-        if (!val) return;
-
-        const displayUrl = buildCloudinaryUrl(val, { width: 200, height: 200 });
-
-        const div = document.createElement('div');
-        div.className = 'relative group w-24 h-24 border border-neutral-200 rounded-md overflow-hidden bg-neutral-50 shadow-sm';
-        div.innerHTML = `
-          <img src="${displayUrl}" class="w-full h-full object-cover" />
-          <button type="button" class="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold font-mono">Remove</button>
-        `;
-
-        div.querySelector('button')?.addEventListener('click', async () => {
-          const oldVal = input.value.trim();
-          if (oldVal) {
-            await deleteAssetClient(oldVal, 'image');
-          }
-          input.value = '';
-          render();
-        });
-
-        preview.appendChild(div);
-      }
-
-      async function deleteAssetClient(publicId: string, resourceType: 'image' | 'video' = 'image') {
-        if (!publicId || publicId.startsWith('http') || publicId.startsWith('/')) return;
-        try {
-          await fetch('/api/admin/delete-asset', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ publicId, resourceType })
-          });
-        } catch (e) {
-          console.error('[Client delete error]', e);
-        }
-      }
-
-      picker?.addEventListener('change', async () => {
-        const files = picker.files;
-        if (!files || files.length === 0) return;
-
-        const file = files[0];
-        progressContainer?.classList.remove('hidden');
-
-        try {
-          const resVal = await new Promise<string>((resolve, reject) => {
-            const xhr = new XMLHttpRequest();
-            xhr.open('POST', '/api/upload', true);
-            
-            xhr.upload.onprogress = (e) => {
-              if (e.lengthComputable) {
-                const pct = Math.round((e.loaded / e.total) * 100);
-                progressBar!.style.width = `${pct}%`;
-                percent!.textContent = `${pct}%`;
-              }
-            };
-
-            xhr.onload = () => {
-              if (xhr.status === 200) {
-                try {
-                  const res = JSON.parse(xhr.responseText);
-                  resolve(res.public_id || res.url);
-                } catch(e) {
-                  reject('Invalid response');
-                }
-              } else {
-                reject('Server returned status ' + xhr.status);
-              }
-            };
-
-            xhr.onerror = () => reject('Network error');
-
-            const formData = new FormData();
-            formData.append('file', file);
-            xhr.send(formData);
-          });
-
-          if (resVal) {
-            const oldVal = input.value.trim();
-            if (oldVal && oldVal !== resVal) {
-              await deleteAssetClient(oldVal, 'image');
-            }
-            input.value = resVal;
-            render();
-          }
-        } catch (err) {
-          alert('Upload failed: ' + err);
-        } finally {
-          progressContainer?.classList.add('hidden');
-          picker.value = '';
-        }
-      });
-
-      render();
-    }
-
-    // Setup uploader for Logo & Hero image
-    setupUploader('logoUrl', 'logo-file-picker', 'logo-preview', 'logo-upload-progress', 'logo-upload-progress-bar', 'logo-upload-percent');
-  </script>
+  <CropModal />
 </AdminLayout>

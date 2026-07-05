@@ -204,7 +204,7 @@ try {
 
 const totalPages = Math.ceil(totalCount / limit);
 
-function getOfferImageUrl(img: string | undefined | null) {
+function getOfferImageUrl(img: string) {
   return buildCloudinaryUrl(img, { width: 100, height: 100 });
 }
 ---
@@ -488,7 +488,7 @@ function getOfferImageUrl(img: string | undefined | null) {
       <div class="bg-white border border-neutral-200 rounded-lg p-6 shadow-sm max-w-2xl mx-auto">
         <h2 class="text-lg font-bold text-neutral-900 mb-6">{action === 'edit' ? 'Edit Offer' : 'Create Offer'}</h2>
         
-        <form method="post" class="space-y-4">
+        <form id="offer-form" method="post" class="space-y-4">
           <input type="hidden" name="formAction" value="save" />
 
           <div class="grid gap-4 sm:grid-cols-2">
@@ -731,6 +731,9 @@ function getOfferImageUrl(img: string | undefined | null) {
         </form>
 
         <script>
+          import { fileManager } from '../../lib/file-manager';
+          import { buildCloudinaryUrl } from '../../lib/cloudinary';
+
           const slugInput = document.getElementById('slug') as HTMLInputElement;
           if (slugInput) {
             slugInput.addEventListener('input', () => {
@@ -742,20 +745,30 @@ function getOfferImageUrl(img: string | undefined | null) {
             });
           }
 
+          const offerForm = document.getElementById('offer-form') as HTMLFormElement;
           const imageInput = document.getElementById('image') as HTMLInputElement;
           const previewContainer = document.getElementById('image-preview');
           const filePicker = document.getElementById('file-picker') as HTMLInputElement;
           const progressContainer = document.getElementById('upload-progress-container');
           const progressBar = document.getElementById('upload-progress-bar');
           const progressPercent = document.getElementById('upload-percent');
+          const progressStatus = document.getElementById('upload-status');
+
+          let selectedFile: File | null = null;
+          let removedPublicIds: string[] = [];
 
           function renderPreview() {
             if (!previewContainer) return;
             previewContainer.innerHTML = '';
-            const imgVal = imageInput.value.trim();
-            if (!imgVal) return;
-
-            const displayUrl = buildCloudinaryUrl(imgVal, { width: 100, height: 100 });
+            
+            let displayUrl = '';
+            if (selectedFile) {
+              displayUrl = URL.createObjectURL(selectedFile);
+            } else {
+              const imgVal = imageInput.value.trim();
+              if (!imgVal) return;
+              displayUrl = buildCloudinaryUrl(imgVal, { width: 100, height: 100 });
+            }
 
             const div = document.createElement('div');
             div.className = 'relative group w-24 h-24 border border-neutral-200 rounded-md overflow-hidden bg-neutral-50 shadow-sm';
@@ -764,88 +777,88 @@ function getOfferImageUrl(img: string | undefined | null) {
               <button type="button" class="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold font-mono">Remove</button>
             `;
 
-            div.querySelector('button')?.addEventListener('click', async () => {
-              const oldVal = imageInput.value.trim();
-              if (oldVal) {
-                await deleteAssetClient(oldVal, 'image');
+            div.querySelector('button')?.addEventListener('click', () => {
+              if (selectedFile) {
+                selectedFile = null;
+                filePicker.value = '';
+              } else {
+                const oldVal = imageInput.value.trim();
+                if (oldVal) {
+                  removedPublicIds.push(oldVal);
+                }
+                imageInput.value = '';
               }
-              imageInput.value = '';
               renderPreview();
             });
 
             previewContainer.appendChild(div);
           }
 
-          async function deleteAssetClient(publicId: string, resourceType: 'image' | 'video' = 'image') {
-            if (!publicId || publicId.startsWith('http') || publicId.startsWith('/')) return;
-            try {
-              await fetch('/api/admin/delete-asset', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ publicId, resourceType })
-              });
-            } catch (e) {
-              console.error('[Client delete error]', e);
-            }
-          }
-
           filePicker?.addEventListener('change', async () => {
             const files = filePicker.files;
             if (!files || files.length === 0) return;
 
-            const file = files[0];
-            progressContainer?.classList.remove('hidden');
+            let file = files[0];
+            if (file.type.startsWith('image/')) {
+              // Free cropping aspect ratio for offers since they can vary
+              const cropped = await (window as any).cropImage(file, { aspectRatio: NaN, title: 'Crop Offer Image' });
+              if (cropped === null) {
+                filePicker.value = '';
+                return;
+              }
+              file = cropped;
+            }
+
+            selectedFile = file;
+            renderPreview();
+          });
+
+          offerForm?.addEventListener('submit', async (e) => {
+            if (!selectedFile && removedPublicIds.length === 0) {
+              return; // Normal submit
+            }
+
+            e.preventDefault();
+
+            if (progressContainer) {
+              progressContainer.classList.remove('hidden');
+              if (progressStatus) progressStatus.textContent = 'Saving offer...';
+              if (progressBar) progressBar.style.width = '20%';
+              if (progressPercent) progressPercent.textContent = '20%';
+            }
 
             try {
-              const resVal = await new Promise<string>((resolve, reject) => {
-                const xhr = new XMLHttpRequest();
-                xhr.open('POST', '/api/upload', true);
+              // 1. Upload new image if selected
+              if (selectedFile) {
+                if (progressStatus) progressStatus.textContent = 'Uploading image...';
+                if (progressBar) progressBar.style.width = '50%';
+                if (progressPercent) progressPercent.textContent = '50%';
                 
-                xhr.upload.onprogress = (e) => {
-                  if (e.lengthComputable) {
-                    const pct = Math.round((e.loaded / e.total) * 100);
-                    progressBar!.style.width = `${pct}%`;
-                    progressPercent!.textContent = `${pct}%`;
-                  }
-                };
-
-                xhr.onload = () => {
-                  if (xhr.status === 200) {
-                    try {
-                      const res = JSON.parse(xhr.responseText);
-                      resolve(res.public_id || res.url);
-                    } catch(e) {
-                      reject('Invalid response');
-                    }
-                  } else {
-                    reject('Server returned status ' + xhr.status);
-                  }
-                };
-
-                xhr.onerror = () => reject('Network error');
-
-                const formData = new FormData();
-                formData.append('file', file);
-                xhr.send(formData);
-              });
-
-              if (resVal) {
-                const oldVal = imageInput.value.trim();
-                if (oldVal && oldVal !== resVal) {
-                  await deleteAssetClient(oldVal, 'image');
-                }
-                imageInput.value = resVal;
-                renderPreview();
+                const uploadedId = await fileManager.upload(selectedFile, 'yash-electronics/offers');
+                imageInput.value = uploadedId;
               }
-            } catch (err) {
-              alert('Upload failed: ' + err);
-            } finally {
-              progressContainer?.classList.add('hidden');
-              filePicker.value = '';
+
+              // 2. Delete removed images
+              if (removedPublicIds.length > 0) {
+                if (progressStatus) progressStatus.textContent = 'Removing old image...';
+                if (progressBar) progressBar.style.width = '80%';
+                if (progressPercent) progressPercent.textContent = '80%';
+                
+                await Promise.all(removedPublicIds.map(id => fileManager.remove(id)));
+                removedPublicIds = [];
+              }
+
+              if (progressBar) progressBar.style.width = '100%';
+              if (progressPercent) progressPercent.textContent = '100%';
+
+              // Submit form
+              offerForm.submit();
+            } catch (err: any) {
+              alert('Error saving offer image: ' + err.message);
+              if (progressContainer) progressContainer.classList.add('hidden');
             }
           });
 
-          // Initialize preview
           renderPreview();
         </script>
       </div>

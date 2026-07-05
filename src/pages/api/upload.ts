@@ -19,7 +19,7 @@ export const POST = async ({ request }: { request: Request }) => {
     }
 
     const timestamp = Math.round(new Date().getTime() / 1000);
-    const folder = 'yash-electronics/uploads';
+    const folder = data.get('folder')?.toString() || 'yash-electronics/uploads';
     const paramString = `folder=${folder}&timestamp=${timestamp}${apiSecret}`;
     const signature = createHash('sha1').update(paramString).digest('hex');
 

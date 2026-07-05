@@ -1,0 +1,278 @@
+<!-- Standalone Image Crop Modal -->
+<div id="crop-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/60 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300">
+  <link rel="stylesheet" href="/cropper.min.css" />
+  <script is:inline src="/cropper.min.js"></script>
+
+  <div class="bg-white rounded-xl shadow-2xl border border-neutral-200 w-full max-w-lg max-h-[calc(100vh-2rem)] overflow-hidden flex flex-col transform scale-95 transition-transform duration-300">
+    <!-- Modal Header -->
+    <div class="px-5 py-4 border-b border-neutral-200 flex items-center justify-between bg-neutral-50/80 flex-shrink-0">
+      <div class="flex-1 min-w-0 mr-4">
+        <h3 id="crop-modal-title" class="text-sm font-bold text-neutral-900 truncate">Crop Image</h3>
+      </div>
+      <button id="crop-modal-close-btn" type="button" class="text-neutral-400 hover:text-neutral-600 p-1 hover:bg-neutral-100 rounded-full transition-all flex-shrink-0">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <!-- Crop Area -->
+    <div class="flex-1 min-h-[220px] h-[45vh] sm:h-80 bg-neutral-100/50 relative overflow-hidden">
+      <!-- Direct absolute container wrapper without padding so Cropper.js offsetWidth matches exact layout width -->
+      <div class="w-full h-full absolute inset-0">
+        <img id="crop-image" src="" alt="Crop image" class="max-w-full max-h-full" style="display: block; margin: auto;" />
+      </div>
+    </div>
+
+    <!-- Controls & Ratio Selectors -->
+    <div class="p-5 border-t border-neutral-200 bg-white space-y-4 flex-shrink-0">
+      <!-- Aspect Ratios -->
+      <div>
+        <span class="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-2">Select Crop Aspect Ratio</span>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <button type="button" class="crop-ratio-btn border-2 border-neutral-200 hover:border-primary/30 hover:bg-neutral-50 text-xs font-semibold py-2 px-3 rounded-lg text-neutral-700 transition-all select-none focus:outline-none" data-ratio-val="1">
+            1:1 (Square)
+          </button>
+          <button type="button" class="crop-ratio-btn border-2 border-neutral-200 hover:border-primary/30 hover:bg-neutral-50 text-xs font-semibold py-2 px-3 rounded-lg text-neutral-700 transition-all select-none focus:outline-none" data-ratio-val="1.5">
+            3:2 (Classic)
+          </button>
+          <button type="button" class="crop-ratio-btn border-2 border-neutral-200 hover:border-primary/30 hover:bg-neutral-50 text-xs font-semibold py-2 px-3 rounded-lg text-neutral-700 transition-all select-none focus:outline-none" data-ratio-val="0.75">
+            3:4 (Portrait)
+          </button>
+          <button type="button" class="crop-ratio-btn border-2 border-neutral-200 hover:border-primary/30 hover:bg-neutral-50 text-xs font-semibold py-2 px-3 rounded-lg text-neutral-700 transition-all select-none focus:outline-none" data-ratio-val="NaN">
+            Free (Other)
+          </button>
+        </div>
+      </div>
+
+      <!-- Image adjustment controls -->
+      <div class="flex flex-col sm:flex-row gap-3 sm:items-center justify-between border-t border-neutral-100 pt-3">
+        <span class="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Adjustment Tools</span>
+        <div class="flex flex-wrap gap-2 justify-end">
+          <button type="button" id="crop-zoom-in" class="p-1.5 border border-neutral-200 hover:border-neutral-300 text-xs font-semibold rounded hover:bg-neutral-50 focus:outline-none" title="Zoom In">
+            🔍+
+          </button>
+          <button type="button" id="crop-zoom-out" class="p-1.5 border border-neutral-200 hover:border-neutral-300 text-xs font-semibold rounded hover:bg-neutral-50 focus:outline-none" title="Zoom Out">
+            🔍-
+          </button>
+          <button type="button" id="crop-rotate-left" class="p-1.5 border border-neutral-200 hover:border-neutral-300 text-xs font-semibold rounded hover:bg-neutral-50 focus:outline-none" title="Rotate Left">
+            ↺
+          </button>
+          <button type="button" id="crop-rotate-right" class="p-1.5 border border-neutral-200 hover:border-neutral-300 text-xs font-semibold rounded hover:bg-neutral-50 focus:outline-none" title="Rotate Right">
+            ↻
+          </button>
+          <button type="button" id="crop-reset" class="p-1.5 border border-neutral-200 hover:border-neutral-300 text-xs font-semibold rounded hover:bg-neutral-50 focus:outline-none text-red-500 hover:text-red-600" title="Reset Crop">
+            Reset
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="px-5 py-4 border-t border-neutral-200 bg-neutral-50 flex gap-2 justify-end items-center flex-shrink-0">
+      <button id="crop-modal-skip-btn" type="button" class="text-xs font-semibold text-neutral-600 hover:text-neutral-800 px-3 py-2 rounded hover:bg-neutral-100 transition-colors focus:outline-none">
+        Upload Original
+      </button>
+      <button id="crop-modal-save-btn" type="button" class="btn-primary text-xs font-bold px-4 py-2 rounded shadow-sm focus:outline-none">
+        Crop & Done
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  class CropModalController {
+    private modal: HTMLElement;
+    private cropImage: HTMLImageElement;
+    private titleEl: HTMLElement;
+    private saveBtn: HTMLButtonElement;
+    private skipBtn: HTMLButtonElement;
+    private closeBtn: HTMLButtonElement;
+    private ratioButtons: NodeListOf<HTMLButtonElement>;
+
+    private activeCropper: any = null;
+    private activeAspectRatio: number = NaN;
+    private currentResolve: ((value: File | null) => void) | null = null;
+    private currentFile: File | null = null;
+
+    constructor() {
+      this.modal = document.getElementById('crop-modal') as HTMLElement;
+      this.cropImage = document.getElementById('crop-image') as HTMLImageElement;
+      this.titleEl = document.getElementById('crop-modal-title') as HTMLElement;
+      this.saveBtn = document.getElementById('crop-modal-save-btn') as HTMLButtonElement;
+      this.skipBtn = document.getElementById('crop-modal-skip-btn') as HTMLButtonElement;
+      this.closeBtn = document.getElementById('crop-modal-close-btn') as HTMLButtonElement;
+      this.ratioButtons = document.querySelectorAll('.crop-ratio-btn');
+
+      this.initEvents();
+    }
+
+    private initEvents() {
+      // Zoom / Rotate / Reset events
+      document.getElementById('crop-zoom-in')?.addEventListener('click', () => this.activeCropper?.zoom(0.1));
+      document.getElementById('crop-zoom-out')?.addEventListener('click', () => this.activeCropper?.zoom(-0.1));
+      document.getElementById('crop-rotate-left')?.addEventListener('click', () => this.activeCropper?.rotate(-90));
+      document.getElementById('crop-rotate-right')?.addEventListener('click', () => this.activeCropper?.rotate(90));
+      document.getElementById('crop-reset')?.addEventListener('click', () => this.activeCropper?.reset());
+
+      // Close/Skip events
+      this.closeBtn.addEventListener('click', () => this.resolve(null));
+      this.skipBtn.addEventListener('click', () => this.resolve(this.currentFile));
+      this.saveBtn.addEventListener('click', () => this.performCrop());
+
+      // Handle ratio button clicks
+      this.ratioButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const valStr = btn.getAttribute('data-ratio-val');
+          const val = valStr === 'NaN' ? NaN : parseFloat(valStr || '1');
+          this.activeAspectRatio = val;
+          if (this.activeCropper) {
+            this.activeCropper.setAspectRatio(val);
+          }
+          this.updateRatioButtonsUI();
+        });
+      });
+    }
+
+    public async crop(file: File, options: { aspectRatio?: number; title?: string } = {}): Promise<File | null> {
+      if (this.currentResolve) {
+        this.resolve(null);
+      }
+
+      this.currentFile = file;
+      this.activeAspectRatio = options.aspectRatio ?? NaN;
+      if (this.titleEl) {
+        this.titleEl.textContent = options.title || `Crop Image: ${file.name}`;
+      }
+
+      return new Promise<File | null>((resolve) => {
+        this.currentResolve = resolve;
+
+        const reader = new FileReader();
+        reader.onload = (e: any) => {
+          // Show the modal first to ensure it's unhidden (display: flex) and ready for dimension calculation
+          this.showModal();
+
+          this.cropImage.onload = () => {
+            if (this.activeCropper) {
+              this.activeCropper.destroy();
+            }
+
+            const CropperClass = (window as any).Cropper;
+            if (!CropperClass) {
+              console.error('Cropper.js is not loaded yet.');
+              this.resolve(file);
+              return;
+            }
+
+            // A small delay to let browser layout settle and compute dimensions correctly
+            setTimeout(() => {
+              this.activeCropper = new CropperClass(this.cropImage, {
+                aspectRatio: this.activeAspectRatio,
+                viewMode: 1,
+                autoCropArea: 0.9,
+                responsive: true,
+                restore: false,
+                guides: true,
+                center: true,
+                highlight: false,
+                cropBoxMovable: true,
+                cropBoxResizable: true,
+                toggleDragModeOnDblclick: false,
+              });
+              this.updateRatioButtonsUI();
+            }, 50);
+
+            this.cropImage.onload = null;
+          };
+
+          this.cropImage.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    private resolve(result: File | null) {
+      if (this.currentResolve) {
+        this.currentResolve(result);
+        this.currentResolve = null;
+      }
+      this.hideModal();
+    }
+
+    private showModal() {
+      this.modal.classList.remove('hidden');
+      this.modal.offsetHeight;
+      this.modal.classList.remove('opacity-0');
+      const innerBox = this.modal.querySelector('.transform') as HTMLElement;
+      innerBox.classList.remove('scale-95');
+      innerBox.classList.add('scale-100');
+    }
+
+    private hideModal() {
+      this.modal.classList.add('opacity-0');
+      const innerBox = this.modal.querySelector('.transform') as HTMLElement;
+      innerBox.classList.add('scale-95');
+      innerBox.classList.remove('scale-100');
+      setTimeout(() => {
+        this.modal.classList.add('hidden');
+        if (this.activeCropper) {
+          this.activeCropper.destroy();
+          this.activeCropper = null;
+        }
+        this.cropImage.src = '';
+      }, 300);
+    }
+
+    private updateRatioButtonsUI() {
+      this.ratioButtons.forEach(btn => {
+        const valStr = btn.getAttribute('data-ratio-val');
+        const val = valStr === 'NaN' ? NaN : parseFloat(valStr || '1');
+        const isActive = (isNaN(this.activeAspectRatio) && isNaN(val)) || (this.activeAspectRatio === val);
+        if (isActive) {
+          btn.classList.remove('border-neutral-200', 'text-neutral-700', 'hover:bg-neutral-50');
+          btn.classList.add('bg-primary', 'text-white', 'border-primary');
+        } else {
+          btn.classList.remove('bg-primary', 'text-white', 'border-primary');
+          btn.classList.add('border-neutral-200', 'text-neutral-700', 'hover:bg-neutral-50');
+        }
+      });
+    }
+
+    private performCrop() {
+      if (!this.activeCropper || !this.currentFile) return;
+
+      this.saveBtn.disabled = true;
+      this.saveBtn.textContent = 'Cropping...';
+
+      const canvas = this.activeCropper.getCroppedCanvas({
+        maxWidth: 2048,
+        maxHeight: 2048,
+        imageSmoothingEnabled: true,
+        imageSmoothingQuality: 'high',
+      });
+
+      if (!canvas) {
+        this.saveBtn.disabled = false;
+        this.saveBtn.textContent = 'Crop & Done';
+        this.resolve(this.currentFile);
+        return;
+      }
+
+      canvas.toBlob((blob: any) => {
+        this.saveBtn.disabled = false;
+        this.saveBtn.textContent = 'Crop & Done';
+
+        if (blob) {
+          const croppedFile = new File([blob], this.currentFile!.name, {
+            type: this.currentFile!.type || 'image/jpeg',
+            lastModified: Date.now()
+          });
+          this.resolve(croppedFile);
+        } else {
+          this.resolve(this.currentFile);
+        }
+      }, this.currentFile.type || 'image/jpeg', 0.9);
+    }
+  }
+
+  (window as any).cropModalInstance = new CropModalController();
+</script>

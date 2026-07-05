@@ -1,19 +1,21 @@
 import { createHash } from 'crypto';
+import { getPublicIdFromUrl } from './cloudinary';
 
 export async function deleteCloudinaryAsset(
   publicId: string | null | undefined,
   resourceType: 'image' | 'video' = 'image'
 ): Promise<{ success: boolean; result?: string; error?: string }> {
   if (!publicId) return { success: false, error: 'No publicId provided' };
+
+  let cleanPublicId = publicId;
   if (publicId.startsWith('http') || publicId.startsWith('/')) {
-    return { success: false, error: 'Not a Cloudinary asset (URL)' };
+    cleanPublicId = getPublicIdFromUrl(publicId);
   }
 
   // Strip extension if any (especially for videos, e.g. "path.mp4" -> "path")
-  let cleanPublicId = publicId;
-  const lastDotIndex = publicId.lastIndexOf('.');
-  if (lastDotIndex !== -1 && lastDotIndex > publicId.lastIndexOf('/')) {
-    cleanPublicId = publicId.substring(0, lastDotIndex);
+  const lastDotIndex = cleanPublicId.lastIndexOf('.');
+  if (lastDotIndex !== -1 && lastDotIndex > cleanPublicId.lastIndexOf('/')) {
+    cleanPublicId = cleanPublicId.substring(0, lastDotIndex);
   }
 
   try {

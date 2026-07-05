@@ -492,14 +492,43 @@ const t = {
       </div>
     )}
   </Container>
+
+  <div
+    id="cart-data"
+    class="hidden"
+    data-user-credits={currentUser?.credits || 0}
+    data-success-order-id={successOrderId}
+    data-locale={locale}
+    data-bundle-rules-list={JSON.stringify(bundleRulesList)}
+    data-bundle-products-list={JSON.stringify(bundleProductsList)}
+    data-max-redemption-points={parseInt(rawSettings.max_redemption_points || '0', 10)}
+  ></div>
 </BaseLayout>
 
-<script is:inline define:vars={{ userCredits: currentUser?.credits || 0, successOrderId, locale, cloudName: cloudinaryConfig.cloudName, bundleRulesList, bundleProductsList, maxRedemptionPoints: parseInt(rawSettings.max_redemption_points || '0', 10) }}>
+<script>
+  import { buildCloudinaryUrl } from '../../lib/cloudinary';
+
+  const cartDataEl = document.getElementById('cart-data');
+  const userCredits = parseInt(cartDataEl?.getAttribute('data-user-credits') || '0', 10);
+  const successOrderId = cartDataEl?.getAttribute('data-success-order-id') || '';
+  const locale = cartDataEl?.getAttribute('data-locale') || 'gu';
+  const bundleRulesList = JSON.parse(cartDataEl?.getAttribute('data-bundle-rules-list') || '[]');
+  const bundleProductsList = JSON.parse(cartDataEl?.getAttribute('data-bundle-products-list') || '[]');
+  const maxRedemptionPoints = parseInt(cartDataEl?.getAttribute('data-max-redemption-points') || '0', 10);
   // Manage client side cart
   const CART_KEY = 'ye_cart';
-  let activeCoupon = null; // Holds { code, discountType, discountValue }
+  let activeCoupon: any = null; // Holds { code, discountType, discountValue }
 
-  function getCart() {
+  interface CartItem {
+    id: string;
+    name: string;
+    price: number;
+    image: string;
+    eligibleForBundle: boolean;
+    quantity: number;
+  }
+
+  function getCart(): CartItem[] {
     try {
       return JSON.parse(localStorage.getItem(CART_KEY) || '[]');
     } catch (e) {
@@ -507,7 +536,7 @@ const t = {
     }
   }
 
-  function saveCart(cart) {
+  function saveCart(cart: CartItem[]) {
     localStorage.setItem(CART_KEY, JSON.stringify(cart));
     window.dispatchEvent(new CustomEvent('cart-updated'));
   }
@@ -528,7 +557,7 @@ const t = {
       const organizerContainer = document.getElementById('bundle-organizer-container');
       if (organizerContainer) organizerContainer.classList.add('hidden');
       if (checkoutForm) {
-        const submitBtn = document.getElementById('checkout-submit-btn');
+        const submitBtn = document.getElementById('checkout-submit-btn') as HTMLButtonElement | null;
         if (submitBtn) submitBtn.disabled = true;
       }
       return;
@@ -537,10 +566,8 @@ const t = {
     if (emptyEl) emptyEl.classList.add('hidden');
     if (!containerEl) return;
 
-    function buildImageUrl(imagePath) {
-      if (!imagePath) return '/images/placeholder-product.svg';
-      if (imagePath.startsWith('/') || imagePath.startsWith('http')) return imagePath;
-      return `https://res.cloudinary.com/${cloudName}/image/upload/${imagePath}`;
+    function buildImageUrl(imagePath: string) {
+      return buildCloudinaryUrl(imagePath);
     }
 
     // Render items
@@ -579,7 +606,7 @@ const t = {
     recalculateTotals();
   }
 
-  window.updateQty = function (productId, delta) {
+  function updateQty(productId: string, delta: number) {
     let cart = getCart();
     const item = cart.find(i => i.id === productId);
     if (item) {
@@ -587,17 +614,17 @@ const t = {
       saveCart(cart);
       renderCart();
     }
-  };
+  }
 
-  window.removeItem = function (productId) {
+  function removeItem(productId: string) {
     let cart = getCart();
     cart = cart.filter(i => i.id !== productId);
     saveCart(cart);
     renderCart();
-  };
+  }
 
-  window.applyCouponCode = async function () {
-    const field = document.getElementById('coupon-code-field');
+  async function applyCouponCode() {
+    const field = document.getElementById('coupon-code-field') as HTMLInputElement | null;
     const errEl = document.getElementById('coupon-error');
     const succEl = document.getElementById('coupon-success');
     
@@ -644,10 +671,10 @@ const t = {
     }
 
     recalculateTotals();
-  };
+  }
 
-  window.addEligibleProductToCart = function (productId) {
-    const product = bundleProductsList.find(p => p.id === productId);
+  function addEligibleProductToCart(productId: string) {
+    const product = bundleProductsList.find((p: any) => p.id === productId);
     if (!product) return;
 
     let cart = getCart();
@@ -670,12 +697,12 @@ const t = {
     saveCart(cart);
     renderCart();
     
-    if (window.showToast) {
-      window.showToast(locale === 'en' ? 'Product added to cart!' : 'પ્રોડક્ટ કાર્ટમાં ઉમેરવામાં આવી!');
+    if ((window as any).showToast) {
+      (window as any).showToast(locale === 'en' ? 'Product added to cart!' : 'પ્રોડક્ટ કાર્ટમાં ઉમેરવામાં આવી!');
     }
-  };
+  }
 
-  function renderBundleOrganizer(cart, eligibleQty, subtotal) {
+  function renderBundleOrganizer(cart: CartItem[], eligibleQty: number, subtotal: number) {
     const organizerContainer = document.getElementById('bundle-organizer-container');
     if (!organizerContainer) return;
 
@@ -686,14 +713,11 @@ const t = {
 
     organizerContainer.classList.remove('hidden');
 
-    // Sort rules ascending by minQuantity
     const sortedRules = [...bundleRulesList].sort((a, b) => a.minQuantity - b.minQuantity);
     const maxRuleQty = sortedRules.length > 0 ? sortedRules[sortedRules.length - 1].minQuantity : 1;
 
-    // Progress bar percentage
     const progressPercentage = Math.min(100, (eligibleQty / maxRuleQty) * 100);
 
-    // Determine next locked rule or highest unlocked rule message
     let progressTip = '';
     const nextLockedRule = sortedRules.find(r => eligibleQty < r.minQuantity);
     const highestUnlockedRule = [...sortedRules].reverse().find(r => eligibleQty >= r.minQuantity);
@@ -713,7 +737,6 @@ const t = {
         : `બંડલ ડિસ્કાઉન્ટ મેળવવા માટે લાયક પ્રોડક્ટ્સ ઉમેરો!`;
     }
 
-    // Render milestones / rules list
     const rulesListHtml = sortedRules.map(r => {
       const isUnlocked = eligibleQty >= r.minQuantity;
       return `
@@ -732,18 +755,15 @@ const t = {
       `;
     }).join('');
 
-    // Filter products to show: bundle eligible and NOT already in cart
     const cartIds = new Set(cart.map(item => item.id));
-    let itemsToShow = bundleProductsList.filter(p => !cartIds.has(p.id)).slice(0, 3);
+    let itemsToShow = bundleProductsList.filter((p: any) => !cartIds.has(p.id)).slice(0, 3);
     if (itemsToShow.length === 0) {
       itemsToShow = bundleProductsList.slice(0, 3);
     }
 
-    const productsHtml = itemsToShow.map(p => {
+    const productsHtml = itemsToShow.map((p: any) => {
       const price = p.offerPrice > 0 ? p.offerPrice : p.mrp;
-      const imageUrl = p.images && p.images[0]
-        ? (p.images[0].startsWith('/') || p.images[0].startsWith('http') ? p.images[0] : `https://res.cloudinary.com/${cloudName}/image/upload/w_150,h_150,c_fill,f_auto,q_auto/${p.images[0]}`)
-        : '/images/placeholder-product.svg';
+      const imageUrl = buildCloudinaryUrl(p.images?.[0], { width: 150, height: 150, crop: 'fill' });
       
       return `
         <div class="bg-neutral-50 border border-neutral-200 rounded-xl p-3 flex flex-col justify-between hover:shadow-sm transition-all group">
@@ -814,7 +834,7 @@ const t = {
     `;
   }
 
-  window.recalculateTotals = function () {
+  function recalculateTotals() {
     const cart = getCart();
     const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
     
@@ -823,7 +843,7 @@ const t = {
     const couponRow = document.getElementById('coupon-discount-row');
     const couponLabel = document.getElementById('applied-coupon-label');
     const couponVal = document.getElementById('coupon-discount-value');
-    const couponHiddenInput = document.getElementById('coupon-code-input');
+    const couponHiddenInput = document.getElementById('coupon-code-input') as HTMLInputElement | null;
 
     if (activeCoupon) {
       if (activeCoupon.minOrderValue && subtotal < activeCoupon.minOrderValue) {
@@ -888,9 +908,9 @@ const t = {
     const bundleLabel = document.getElementById('applied-bundle-label');
     const bundleVal = document.getElementById('bundle-discount-value');
     const bundleDesc = document.getElementById('bundle-reward-desc');
-    const bundleRuleInput = document.getElementById('bundle-rule-input');
-    const bundleDiscountInput = document.getElementById('bundle-discount-input');
-    const bundleRewardInput = document.getElementById('bundle-reward-input');
+    const bundleRuleInput = document.getElementById('bundle-rule-input') as HTMLInputElement | null;
+    const bundleDiscountInput = document.getElementById('bundle-discount-input') as HTMLInputElement | null;
+    const bundleRewardInput = document.getElementById('bundle-reward-input') as HTMLInputElement | null;
 
     if (eligibleQty > 0 && bundleRulesList && bundleRulesList.length > 0) {
       const sortedRules = [...bundleRulesList].sort((a, b) => b.minQuantity - a.minQuantity);
@@ -927,7 +947,7 @@ const t = {
     if (bundleRewardInput) bundleRewardInput.value = appliedBundleRewardGiven;
 
     // 3. Calculate points discount
-    const pointsField = document.getElementById('points-redeem-field');
+    const pointsField = document.getElementById('points-redeem-field') as HTMLInputElement | null;
     let pointsToRedeem = pointsField ? parseInt(pointsField.value, 10) : 0;
     if (isNaN(pointsToRedeem) || pointsToRedeem < 0) pointsToRedeem = 0;
 
@@ -938,12 +958,12 @@ const t = {
     
     if (pointsToRedeem > maxUsablePoints) {
       pointsToRedeem = maxUsablePoints;
-      if (pointsField) pointsField.value = pointsToRedeem;
+      if (pointsField) pointsField.value = pointsToRedeem.toString();
     }
 
     const pointsRow = document.getElementById('points-discount-row');
     const pointsVal = document.getElementById('points-discount-value');
-    const pointsHiddenInput = document.getElementById('redeem-points-input');
+    const pointsHiddenInput = document.getElementById('redeem-points-input') as HTMLInputElement | null;
 
     if (pointsToRedeem > 0) {
       if (pointsVal) pointsVal.textContent = `-₹` + pointsToRedeem.toLocaleString('en-IN');
@@ -964,12 +984,19 @@ const t = {
     if (totalEl) totalEl.textContent = '₹' + finalTotal.toLocaleString('en-IN');
 
     // Populate checkout form hidden value for items
-    const itemsInput = document.getElementById('cart-items-input');
+    const itemsInput = document.getElementById('cart-items-input') as HTMLInputElement | null;
     if (itemsInput) itemsInput.value = JSON.stringify(cart);
 
     // Render bundle deal organizer progress and product recommendations
     renderBundleOrganizer(cart, eligibleQty, subtotal);
-  };
+  }
+
+  // Register on window
+  (window as any).updateQty = updateQty;
+  (window as any).removeItem = removeItem;
+  (window as any).applyCouponCode = applyCouponCode;
+  (window as any).addEligibleProductToCart = addEligibleProductToCart;
+  (window as any).recalculateTotals = recalculateTotals;
 
   // Render on mount
   renderCart();

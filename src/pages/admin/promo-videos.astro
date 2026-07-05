@@ -1,10 +1,12 @@
 ---
 import AdminLayout from '../../layouts/AdminLayout.astro';
+import CropModal from '../../components/admin/CropModal.astro';
 import { db } from '../../db';
 import { promoVideos } from '../../db/schema';
 import { getSessionUser, generateId } from '../../lib/auth';
 import { eq, asc } from 'drizzle-orm';
 import { deleteCloudinaryAsset } from '../../lib/cloudinary-server';
+import { buildCloudinaryUrl } from '../../lib/cloudinary';
 
 export const prerender = false;
 Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -118,7 +120,7 @@ const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME;
   {showForm && (
     <div class="bg-white border border-neutral-200 rounded-lg p-5 shadow-sm mb-6">
       <h2 class="text-base font-bold text-neutral-900 mb-4">{editVideo ? 'Edit Promo Video' : 'Add Promo Video'}</h2>
-      <form method="post" class="grid gap-4 sm:grid-cols-2">
+      <form id="promo-form" method="post" data-deferred-upload-form class="grid gap-4 sm:grid-cols-2">
         <input type="hidden" name="_action" value="save" />
         {editVideo && <input type="hidden" name="id" value={editVideo.id} />}
 
@@ -163,7 +165,17 @@ const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME;
           <div id="video-preview" class="mb-3 hidden max-w-xs"></div>
 
           <div class="relative border border-dashed border-neutral-300 rounded-lg p-4 hover:border-primary hover:bg-neutral-50/50 transition-colors cursor-pointer text-center" id="video-upload-zone">
-            <input type="file" id="video-file-picker" accept="video/*" class="absolute inset-0 opacity-0 cursor-pointer" />
+            <input type="file" id="video-file-picker" accept="video/*"
+                   data-deferred-upload-picker
+                   data-hidden-input="videoUrl"
+                   data-previews-container="video-preview"
+                   data-folder="yash-electronics/promo-videos"
+                   data-aspect-ratio="NaN"
+                   data-video-supported="true"
+                   data-progress-bar="video-progress-bar"
+                   data-progress-container="video-progress"
+                   data-progress-percent="video-percent"
+                   class="absolute inset-0 opacity-0 cursor-pointer" />
             <div class="space-y-1">
               <p class="text-xs font-semibold text-neutral-600">🎥 Click or drag to upload Reel Video</p>
               <p class="text-[10px] text-neutral-400">Supports MP4, WebM up to 50MB</p>
@@ -189,7 +201,16 @@ const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME;
           <div id="thumbnail-preview" class="mb-3 hidden"></div>
 
           <div class="relative border border-dashed border-neutral-300 rounded-lg p-4 hover:border-primary hover:bg-neutral-50/50 transition-colors cursor-pointer text-center" id="thumbnail-upload-zone">
-            <input type="file" id="thumbnail-file-picker" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer" />
+            <input type="file" id="thumbnail-file-picker" accept="image/*"
+                   data-deferred-upload-picker
+                   data-hidden-input="thumbnailUrl"
+                   data-previews-container="thumbnail-preview"
+                   data-folder="yash-electronics/promo-videos"
+                   data-aspect-ratio="0.5625"
+                   data-progress-bar="thumbnail-progress-bar"
+                   data-progress-container="thumbnail-progress"
+                   data-progress-percent="thumbnail-percent"
+                   class="absolute inset-0 opacity-0 cursor-pointer" />
             <div class="space-y-1">
               <p class="text-xs font-semibold text-neutral-600">🖼️ Click or drag to upload Cover Image</p>
               <p class="text-[10px] text-neutral-400">Supports PNG, JPG, WebP</p>
@@ -209,220 +230,10 @@ const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME;
 
         <div class="sm:col-span-2 flex gap-2 border-t border-neutral-100 pt-4 mt-2">
           <button type="submit" class="btn-primary text-xs">{editVideo ? 'Update' : 'Add Video'}</button>
-          <a href="/admin/promo-videos" class="btn-outline text-xs">Cancel</a>
+          <a href="/admin/promo-videos" class="btn-outline text-xs flex items-center justify-center">Cancel</a>
         </div>
       </form>
-
-      <script>
-        const videoInput = document.getElementById('videoUrl') as HTMLInputElement;
-        const videoPreview = document.getElementById('video-preview');
-        const videoPicker = document.getElementById('video-file-picker') as HTMLInputElement;
-        const videoProgress = document.getElementById('video-progress');
-        const videoBar = document.getElementById('video-progress-bar');
-        const videoPct = document.getElementById('video-percent');
-
-        const thumbInput = document.getElementById('thumbnailUrl') as HTMLInputElement;
-        const thumbPreview = document.getElementById('thumbnail-preview');
-        const thumbPicker = document.getElementById('thumbnail-file-picker') as HTMLInputElement;
-        const thumbProgress = document.getElementById('thumbnail-progress');
-        const thumbBar = document.getElementById('thumbnail-progress-bar');
-        const thumbPct = document.getElementById('thumbnail-percent');
-
-        import { buildCloudinaryUrl } from '../../lib/cloudinary';
-
-        async function deleteAssetClient(publicId: string, resourceType: 'image' | 'video') {
-          if (!publicId || publicId.startsWith('http') || publicId.startsWith('/')) return;
-          try {
-            await fetch('/api/admin/delete-asset', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ publicId, resourceType })
-            });
-          } catch (e) {
-            console.error('[Client delete error]', e);
-          }
-        }
-
-        function renderVideoPreview() {
-          if (!videoPreview) return;
-          videoPreview.innerHTML = '';
-          const url = videoInput.value.trim();
-          if (!url) {
-            videoPreview.classList.add('hidden');
-            return;
-          }
-
-          videoPreview.classList.remove('hidden');
-          const displayUrl = buildCloudinaryUrl(url);
-
-          videoPreview.innerHTML = `
-            <div class="relative group aspect-[9/16] w-36 border border-neutral-250 rounded-lg overflow-hidden bg-black shadow-sm">
-              <video src="${displayUrl}" class="w-full h-full object-cover" muted controls></video>
-              <button type="button" class="absolute top-2 right-2 bg-black/65 hover:bg-black/85 text-white w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-bold">✕</button>
-            </div>
-          `;
-          
-          videoPreview.querySelector('button')?.addEventListener('click', async () => {
-            const oldVal = videoInput.value.trim();
-            if (oldVal) {
-              await deleteAssetClient(oldVal, 'video');
-            }
-            videoInput.value = '';
-            renderVideoPreview();
-          });
-        }
-
-        function renderThumbPreview() {
-          if (!thumbPreview) return;
-          thumbPreview.innerHTML = '';
-          const url = thumbInput.value.trim();
-          if (!url) {
-            thumbPreview.classList.add('hidden');
-            return;
-          }
-
-          thumbPreview.classList.remove('hidden');
-          const displayUrl = buildCloudinaryUrl(url, { width: 200 });
-
-          thumbPreview.innerHTML = `
-            <div class="relative group w-24 h-24 border border-neutral-200 rounded-md overflow-hidden bg-neutral-50 shadow-sm">
-              <img src="${displayUrl}" class="w-full h-full object-cover" />
-              <button type="button" class="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold">Remove</button>
-            </div>
-          `;
-
-          thumbPreview.querySelector('button')?.addEventListener('click', async () => {
-            const oldVal = thumbInput.value.trim();
-            if (oldVal) {
-              await deleteAssetClient(oldVal, 'image');
-            }
-            thumbInput.value = '';
-            renderThumbPreview();
-          });
-        }
-
-        // Setup Video Upload listener
-        videoPicker?.addEventListener('change', async () => {
-          const files = videoPicker.files;
-          if (!files || files.length === 0) return;
-
-          const file = files[0];
-          videoProgress?.classList.remove('hidden');
-
-          try {
-            const resVal = await new Promise<string>((resolve, reject) => {
-              const xhr = new XMLHttpRequest();
-              xhr.open('POST', '/api/upload', true);
-              
-              xhr.upload.onprogress = (e) => {
-                if (e.lengthComputable) {
-                  const pct = Math.round((e.loaded / e.total) * 100);
-                  videoBar!.style.width = `${pct}%`;
-                  videoPct!.textContent = `${pct}%`;
-                }
-              };
-
-              xhr.onload = () => {
-                if (xhr.status === 200) {
-                  try {
-                    const res = JSON.parse(xhr.responseText);
-                    resolve(res.public_id || res.url);
-                  } catch(e) {
-                    reject('Invalid response');
-                  }
-                } else {
-                  reject('Status ' + xhr.status);
-                }
-              };
-
-              xhr.onerror = () => reject('Network error');
-
-              const formData = new FormData();
-              formData.append('file', file);
-              xhr.send(formData);
-            });
-
-            if (resVal) {
-              const oldVal = videoInput.value.trim();
-              if (oldVal && oldVal !== resVal) {
-                await deleteAssetClient(oldVal, 'video');
-              }
-              videoInput.value = resVal;
-              renderVideoPreview();
-            }
-          } catch (err) {
-            alert('Video upload failed: ' + err);
-          } finally {
-            videoProgress?.classList.add('hidden');
-            videoPicker.value = '';
-          }
-        });
-
-        // Setup Thumbnail Upload listener
-        thumbPicker?.addEventListener('change', async () => {
-          const files = thumbPicker.files;
-          if (!files || files.length === 0) return;
-
-          const file = files[0];
-          thumbProgress?.classList.remove('hidden');
-
-          try {
-            const resVal = await new Promise<string>((resolve, reject) => {
-              const xhr = new XMLHttpRequest();
-              xhr.open('POST', '/api/upload', true);
-              
-              xhr.upload.onprogress = (e) => {
-                if (e.lengthComputable) {
-                  const pct = Math.round((e.loaded / e.total) * 100);
-                  thumbBar!.style.width = `${pct}%`;
-                  thumbPct!.textContent = `${pct}%`;
-                }
-              };
-
-              xhr.onload = () => {
-                if (xhr.status === 200) {
-                  try {
-                    const res = JSON.parse(xhr.responseText);
-                    resolve(res.public_id || res.url);
-                  } catch(e) {
-                    reject('Invalid response');
-                  }
-                } else {
-                  reject('Status ' + xhr.status);
-                }
-              };
-
-              xhr.onerror = () => reject('Network error');
-
-              const formData = new FormData();
-              formData.append('file', file);
-              xhr.send(formData);
-            });
-
-            if (resVal) {
-              const oldVal = thumbInput.value.trim();
-              if (oldVal && oldVal !== resVal) {
-                await deleteAssetClient(oldVal, 'image');
-              }
-              thumbInput.value = resVal;
-              renderThumbPreview();
-            }
-          } catch (err) {
-            alert('Thumbnail upload failed: ' + err);
-          } finally {
-            thumbProgress?.classList.add('hidden');
-            thumbPicker.value = '';
-          }
-        });
-
-        // Bind URL inputs changes to previews
-        videoInput?.addEventListener('input', renderVideoPreview);
-        thumbInput?.addEventListener('input', renderThumbPreview);
-
-        // Run previews initially
-        renderVideoPreview();
-        renderThumbPreview();
-      </script>
+      <CropModal />
     </div>
   )}
 
@@ -449,7 +260,7 @@ const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME;
             <td class="px-4 py-3">
               <div class="flex items-center gap-3">
                 {video.thumbnailUrl ? (
-                  <img src={video.thumbnailUrl.startsWith('http') ? video.thumbnailUrl : `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_100,h_100,c_fill/${video.thumbnailUrl}`} class="h-10 w-10 object-cover rounded-md border border-neutral-200" />
+                  <img src={buildCloudinaryUrl(video.thumbnailUrl, { width: 100, height: 100 })} class="h-10 w-10 object-cover rounded-md border border-neutral-200" />
                 ) : (
                   <div class="h-10 w-10 flex items-center justify-center bg-neutral-100 text-lg rounded-md border border-neutral-200">🎥</div>
                 )}
@@ -492,7 +303,7 @@ const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME;
       <div class="bg-white border border-neutral-200 rounded-lg p-4 shadow-sm relative pr-20">
         <div class="flex items-center gap-3">
           {video.thumbnailUrl ? (
-            <img src={video.thumbnailUrl.startsWith('http') ? video.thumbnailUrl : `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/w_100,h_100,c_fill/${video.thumbnailUrl}`} class="h-12 w-12 object-cover rounded-md border border-neutral-200" />
+            <img src={buildCloudinaryUrl(video.thumbnailUrl, { width: 100, height: 100 })} class="h-12 w-12 object-cover rounded-md border border-neutral-200" />
           ) : (
             <div class="h-12 w-12 flex items-center justify-center bg-neutral-100 text-xl rounded-md border border-neutral-200">🎥</div>
           )}

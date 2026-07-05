@@ -78,7 +78,7 @@ const showForm = isAdding || editBank;
     {showForm && (
       <div class="bg-white border border-neutral-200 rounded-lg p-5 shadow-sm mb-6">
         <h2 class="text-base font-bold text-neutral-900 mb-4">{editBank ? 'Edit Bank Details' : 'Add Bank Details'}</h2>
-        <form method="post" class="grid gap-4 sm:grid-cols-2">
+        <form id="bank-form" method="post" class="grid gap-4 sm:grid-cols-2">
           <input type="hidden" name="_action" value="save" />
           {editBank && <input type="hidden" name="id" value={editBank.id} />}
           <div>
@@ -144,23 +144,34 @@ const showForm = isAdding || editBank;
         </form>
 
         <script>
+          import { fileManager } from '../../lib/file-manager';
           import { buildCloudinaryUrl } from '../../lib/cloudinary';
 
-          function setupUploader(inputId: string, filePickerId: string, previewId: string, progressContainerId: string, progressBarId: string, percentId: string) {
+          const bankForm = document.getElementById('bank-form') as HTMLFormElement;
+
+          function setupField(inputId: string, pickerId: string, previewId: string, progressContainerId: string, progressBarId: string, percentId: string, folderName: string, title: string) {
             const input = document.getElementById(inputId) as HTMLInputElement;
+            const picker = document.getElementById(pickerId) as HTMLInputElement;
             const preview = document.getElementById(previewId);
-            const picker = document.getElementById(filePickerId) as HTMLInputElement;
             const progressContainer = document.getElementById(progressContainerId);
             const progressBar = document.getElementById(progressBarId);
             const percent = document.getElementById(percentId);
 
+            let selectedFile: File | null = null;
+            let removedPublicId: string | null = null;
+
             function render() {
               if (!preview) return;
               preview.innerHTML = '';
-              const val = input.value.trim();
-              if (!val) return;
 
-              const displayUrl = buildCloudinaryUrl(val, { width: 200, height: 200 });
+              let displayUrl = '';
+              if (selectedFile) {
+                displayUrl = URL.createObjectURL(selectedFile);
+              } else {
+                const val = input.value.trim();
+                if (!val) return;
+                displayUrl = buildCloudinaryUrl(val, { width: 200, height: 200 });
+              }
 
               const div = document.createElement('div');
               div.className = 'relative group w-24 h-24 border border-neutral-200 rounded-md overflow-hidden bg-neutral-50 shadow-sm';
@@ -169,93 +180,101 @@ const showForm = isAdding || editBank;
                 <button type="button" class="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold font-mono">Remove</button>
               `;
 
-              div.querySelector('button')?.addEventListener('click', async () => {
-                const oldVal = input.value.trim();
-                if (oldVal) {
-                  await deleteAssetClient(oldVal, 'image');
+              div.querySelector('button')?.addEventListener('click', () => {
+                if (selectedFile) {
+                  selectedFile = null;
+                  picker.value = '';
+                } else {
+                  const oldVal = input.value.trim();
+                  if (oldVal) {
+                    removedPublicId = oldVal;
+                  }
+                  input.value = '';
                 }
-                input.value = '';
                 render();
               });
 
               preview.appendChild(div);
             }
 
-            async function deleteAssetClient(publicId: string, resourceType: 'image' | 'video' = 'image') {
-              if (!publicId || publicId.startsWith('http') || publicId.startsWith('/')) return;
-              try {
-                await fetch('/api/admin/delete-asset', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ publicId, resourceType })
-                });
-              } catch (e) {
-                console.error('[Client delete error]', e);
-              }
-            }
-
             picker?.addEventListener('change', async () => {
               const files = picker.files;
               if (!files || files.length === 0) return;
 
-              const file = files[0];
-              progressContainer?.classList.remove('hidden');
-
-              try {
-                const resVal = await new Promise<string>((resolve, reject) => {
-                  const xhr = new XMLHttpRequest();
-                  xhr.open('POST', '/api/upload', true);
-                  
-                  xhr.upload.onprogress = (e) => {
-                    if (e.lengthComputable) {
-                      const pct = Math.round((e.loaded / e.total) * 100);
-                      progressBar!.style.width = `${pct}%`;
-                      percent!.textContent = `${pct}%`;
-                    }
-                  };
-
-                  xhr.onload = () => {
-                    if (xhr.status === 200) {
-                      try {
-                        const res = JSON.parse(xhr.responseText);
-                        resolve(res.public_id || res.url);
-                      } catch(e) {
-                        reject('Invalid response');
-                      }
-                    } else {
-                      reject('Server returned status ' + xhr.status);
-                    }
-                  };
-
-                  xhr.onerror = () => reject('Network error');
-
-                  const formData = new FormData();
-                  formData.append('file', file);
-                  xhr.send(formData);
-                });
-
-                if (resVal) {
-                  const oldVal = input.value.trim();
-                  if (oldVal && oldVal !== resVal) {
-                    await deleteAssetClient(oldVal, 'image');
-                  }
-                  input.value = resVal;
-                  render();
+              let file = files[0];
+              if (file.type.startsWith('image/')) {
+                const cropped = await (window as any).cropImage(file, { aspectRatio: 1, title });
+                if (cropped === null) {
+                  picker.value = '';
+                  return;
                 }
-              } catch (err) {
-                alert('Upload failed: ' + err);
-              } finally {
-                progressContainer?.classList.add('hidden');
-                picker.value = '';
+                file = cropped;
               }
+
+              selectedFile = file;
+              render();
             });
 
             render();
+
+            return {
+              hasChanges: () => selectedFile !== null || removedPublicId !== null,
+              upload: async () => {
+                if (selectedFile) {
+                  if (progressContainer) progressContainer.classList.remove('hidden');
+                  if (progressBar) progressBar.style.width = '50%';
+                  if (percent) percent.textContent = '50%';
+                  
+                  const uploadedId = await fileManager.upload(selectedFile, folderName);
+                  input.value = uploadedId;
+
+                  if (progressBar) progressBar.style.width = '100%';
+                  if (percent) percent.textContent = '100%';
+                }
+              },
+              remove: async () => {
+                if (removedPublicId) {
+                  await fileManager.remove(removedPublicId);
+                  removedPublicId = null;
+                }
+              },
+              hideProgress: () => {
+                if (progressContainer) progressContainer.classList.add('hidden');
+              }
+            };
           }
 
-          // Setup both uploaders
-          setupUploader('upiQrCode', 'upi-file-picker', 'upi-preview', 'upi-upload-progress', 'upi-upload-progress-bar', 'upi-upload-percent');
-          setupUploader('bankQrCode', 'bank-file-picker', 'bank-preview', 'bank-upload-progress', 'bank-upload-progress-bar', 'bank-upload-percent');
+          const upiUploader = setupField('upiQrCode', 'upi-file-picker', 'upi-preview', 'upi-upload-progress', 'upi-upload-progress-bar', 'upi-upload-percent', 'yash-electronics/bank', 'Crop UPI QR Code');
+          const bankUploader = setupField('bankQrCode', 'bank-file-picker', 'bank-preview', 'bank-upload-progress', 'bank-upload-progress-bar', 'bank-upload-percent', 'yash-electronics/bank', 'Crop Bank QR Code');
+
+          bankForm?.addEventListener('submit', async (e) => {
+            if (!upiUploader.hasChanges() && !bankUploader.hasChanges()) {
+              return; // Normal submit
+            }
+
+            e.preventDefault();
+
+            try {
+              // Upload new QRs if selected
+              await Promise.all([
+                upiUploader.upload(),
+                bankUploader.upload()
+              ]);
+
+              // Delete removed QRs
+              await Promise.all([
+                upiUploader.remove(),
+                bankUploader.remove()
+              ]);
+
+              // Submit form
+              bankForm.submit();
+            } catch (err: any) {
+              alert('Error saving bank details: ' + err.message);
+              upiUploader.hideProgress();
+              bankUploader.hideProgress();
+            }
+          });
         </script>
       </div>
     )}

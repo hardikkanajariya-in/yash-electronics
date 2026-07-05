@@ -883,3 +883,10 @@ const drawerNavItems = [
     background: #525252;
   }
 </style>
+
+<script>
+  import { initAllDeferredUploadForms } from '../lib/admin-form';
+  document.addEventListener('DOMContentLoaded', () => {
+    initAllDeferredUploadForms();
+  });
+</script>
