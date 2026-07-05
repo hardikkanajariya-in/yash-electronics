@@ -70,7 +70,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com data:",
     "connect-src 'self' https://*.cloudinary.com",
-    "frame-src 'self'",
+    "frame-src 'self' https://www.google.com https://maps.google.com",
     "object-src 'none'",
   ].join('; ');
   

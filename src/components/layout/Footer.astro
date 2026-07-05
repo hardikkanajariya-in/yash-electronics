@@ -33,6 +33,29 @@ const year = new Date().getFullYear();
           {settings.address}<br />
           {settings.city}, {settings.state} - {settings.pincode}
         </p>
+        <div class="mt-4 overflow-hidden rounded-lg border border-neutral-800 shadow-sm h-32 w-full bg-neutral-800 relative group">
+          <iframe 
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2909.917727789059!2d69.6535241!3d22.2054469!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3956fd744aa61b5f%3A0x43393887f7fc9b14!2sYash%20Electronics%20-%20Samsung%2520Exclusive!5e1!3m2!1sen!2sin!4v1782389161261!5m2!1sen!2sin" 
+            width="100%" 
+            height="100%" 
+            style="border:0;" 
+            allowfullscreen="" 
+            loading="lazy" 
+            referrerpolicy="strict-origin-when-cross-origin" 
+            class="w-full h-full opacity-70 group-hover:opacity-100 transition-opacity duration-300"
+          ></iframe>
+          {settings.googleMapsUrl && (
+            <a 
+              href={settings.googleMapsUrl} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              class="absolute bottom-2 right-2 bg-neutral-900/85 hover:bg-primary text-white text-[10px] font-bold px-2 py-1 rounded transition-colors flex items-center gap-1 backdrop-blur-sm shadow-sm select-none"
+            >
+              <span>{locale === 'gu' ? 'નકશો જુઓ' : 'View Map'}</span>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-3 h-3"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+            </a>
+          )}
+        </div>
       </div>
 
       <div>
