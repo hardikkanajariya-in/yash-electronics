@@ -67,7 +67,12 @@ export async function getCmsData(): Promise<CmsData> {
         logo: b.logo ?? '',
       })),
       products: dbProducts,
-      offers: dbOffers as CmsData['offers'],
+      offers: dbOffers.map((o) => ({
+        ...o,
+        detailImage: o.detailImage ?? '',
+        detailDescription: o.detailDescription ?? '',
+        detailDescriptionGu: o.detailDescriptionGu ?? '',
+      })) as CmsData['offers'],
     };
     cachedData = data;
     return data;

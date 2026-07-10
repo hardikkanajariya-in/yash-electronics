@@ -46,6 +46,7 @@ export interface Offer {
   type: 'combo' | 'bundle' | 'weekly' | 'festival';
   description: string;
   image: string;
+  detailImage?: string | null;
   discountText: string;
   validUntil: string;
   isActive: boolean;
@@ -55,6 +56,8 @@ export interface Offer {
   discountValue?: number | null;
   minOrderValue?: number | null;
   discountCap?: number | null;
+  detailDescription?: string | null;
+  detailDescriptionGu?: string | null;
 }
 
 export interface SiteSettings {

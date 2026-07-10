@@ -194,6 +194,20 @@ try {
           minute: '2-digit',
         });
 
+        const whatsappText = `*🔧 SERVICE REQUEST DETAILS*\n` +
+          `*Customer:* ${sr.user?.name || sr.customerName || 'Guest'}\n` +
+          `*Phone:* ${sr.user?.phone || sr.customerPhone || 'N/A'}\n` +
+          `*Date:* ${dateStr}\n` +
+          `*Category:* ${sr.productCategory || 'N/A'}\n` +
+          `*Brand:* ${sr.brandName || 'N/A'}\n` +
+          `*Model:* ${sr.modelNumber || 'N/A'}\n` +
+          `*Fault:* ${sr.fault || sr.complaintDetails || 'N/A'}\n` +
+          `*Address:* ${sr.address || 'N/A'}${sr.village ? `, ${sr.village}` : ''}${sr.pincode ? ` (${sr.pincode})` : ''}\n` +
+          `*Current Status:* ${sr.status.replace('_', ' ').toUpperCase()}\n` +
+          `*Latest Updates:* ${sr.trackingInfo || 'No updates yet'}`;
+
+        const whatsappShareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(whatsappText)}`;
+
         return (
           <div data-status={sr.status} class="sr-card bg-white border border-neutral-200 rounded-lg shadow-sm p-4 sm:p-5 hover:shadow-md transition-shadow">
             <div class="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-100 pb-3 mb-3">
@@ -280,17 +294,33 @@ try {
 
               {/* Actions Footer */}
               <div class="flex flex-wrap items-center justify-between gap-3 border-t border-neutral-100 pt-3 mt-3">
-                <form method="post" class="inline">
-                  <input type="hidden" name="formAction" value="delete" />
-                  <input type="hidden" name="srId" value={sr.id} />
-                  <button 
-                    type="button" 
-                    onclick="window.confirmDelete(this, 'Delete Request', 'Are you sure you want to delete this service request?')"
-                    class="text-xs text-red-600 font-semibold hover:underline bg-none border-none cursor-pointer focus:outline-none"
+                <div class="flex items-center gap-3">
+                  <form method="post" class="inline">
+                    <input type="hidden" name="formAction" value="delete" />
+                    <input type="hidden" name="srId" value={sr.id} />
+                    <button 
+                      type="button" 
+                      onclick="window.confirmDelete(this, 'Delete Request', 'Are you sure you want to delete this service request?')"
+                      class="text-xs text-red-600 font-semibold hover:underline bg-none border-none cursor-pointer focus:outline-none"
+                    >
+                      Delete Request
+                    </button>
+                  </form>
+
+                  <span class="text-neutral-300">|</span>
+
+                  <a
+                    href={whatsappShareUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 hover:text-emerald-700 hover:underline"
                   >
-                    Delete Request
-                  </button>
-                </form>
+                    <svg class="h-3.5 w-3.5 fill-current text-[#25D366]" viewBox="0 0 24 24">
+                      <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.625 1.451 5.403.002 9.803-4.394 9.806-9.799.002-2.618-1.01-5.078-2.856-6.927C16.378 2.03 13.932.997 12.002.997c-5.408 0-9.813 4.394-9.816 9.801-.001 1.87.526 3.69 1.523 5.253L2.7 20.8l4.037-1.059.043-.027-.133-.56zm11.233-5.062c-.295-.148-1.746-.862-2.019-.962-.272-.1-.471-.148-.669.148-.198.295-.767.962-.94 1.16-.173.199-.347.223-.642.074-.295-.148-1.246-.459-2.373-1.464-.877-.782-1.47-1.747-1.642-2.043-.173-.295-.018-.454.13-.601.134-.133.295-.347.444-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.74-.71 1.988-1.396.248-.687.248-1.277.173-1.396-.074-.12-.272-.198-.57-.347z"/>
+                    </svg>
+                    <span>Forward details</span>
+                  </a>
+                </div>
 
                 <form method="post" class="flex items-center gap-2">
                   <input type="hidden" name="formAction" value="update_status" />

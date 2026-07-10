@@ -80,6 +80,7 @@ export const offers = pgTable('offers', {
   description: text('description'),
   descriptionGu: text('description_gu'),
   image: text('image'),
+  detailImage: text('detail_image'),
   discountText: text('discount_text'),
   discountTextGu: text('discount_text_gu'),
   validUntil: text('valid_until'),
@@ -90,6 +91,8 @@ export const offers = pgTable('offers', {
   discountValue: integer('discount_value').default(0),
   minOrderValue: integer('min_order_value').default(0),
   discountCap: integer('discount_cap'),
+  detailDescription: text('detail_description'),
+  detailDescriptionGu: text('detail_description_gu'),
 });
 
 export const users = pgTable('users', {

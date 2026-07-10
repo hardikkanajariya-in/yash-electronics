@@ -1,0 +1,170 @@
+---
+import CloudinaryImage from '../common/CloudinaryImage.astro';
+import { t } from '../../lib/translations';
+
+const locale = Astro.currentLocale || 'gu';
+---
+
+<div
+  id="offer-detail-modal"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md opacity-0 pointer-events-none transition-all duration-300 px-4"
+>
+  <div
+    id="offer-detail-content"
+    class="relative bg-white border border-neutral-100 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl scale-95 transition-transform duration-300 flex flex-col"
+  >
+    <!-- Header -->
+    <div class="sticky top-0 bg-white/90 backdrop-blur-md px-6 py-4 border-b border-neutral-100 flex items-center justify-between z-10">
+      <div>
+        <span id="modal-offer-badge" class="bg-secondary text-white text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded">
+          {locale === 'gu' ? 'આજની ખાસ ઓફર' : 'SPECIAL OFFER'}
+        </span>
+        <h3 id="modal-offer-title" class="text-base sm:text-lg font-bold text-neutral-800 mt-1 leading-tight"></h3>
+      </div>
+      <button
+        type="button"
+        id="close-offer-modal"
+        class="text-neutral-400 hover:text-neutral-700 w-8 h-8 rounded-full bg-neutral-50 hover:bg-neutral-100 flex items-center justify-center font-bold text-lg transition-colors cursor-pointer focus:outline-none"
+      >
+        ✕
+      </button>
+    </div>
+
+    <!-- Content Body -->
+    <div class="p-6 space-y-6 flex-1">
+      <!-- Image Display -->
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div class="space-y-1">
+          <span class="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block">Cover Preview</span>
+          <div class="aspect-[16/10] bg-neutral-50 border border-neutral-100 rounded-xl overflow-hidden shadow-inner relative flex items-center justify-center">
+            <img id="modal-cover-image" src="" alt="Cover" class="w-full h-full object-cover" />
+          </div>
+        </div>
+        <div id="modal-detail-image-wrapper" class="space-y-1">
+          <span class="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block">Offer Image</span>
+          <div class="aspect-[16/10] bg-neutral-50 border border-neutral-100 rounded-xl overflow-hidden shadow-inner relative flex items-center justify-center">
+            <img id="modal-detail-image" src="" alt="Detail" class="w-full h-full object-cover" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Information -->
+      <div class="space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-100 pb-3">
+          <div>
+            <span class="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block">Deal Discount</span>
+            <p id="modal-offer-discount" class="text-lg font-black text-accent mt-0.5"></p>
+          </div>
+          <div class="text-right">
+            <span class="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block">Validity</span>
+            <p id="modal-offer-valid" class="text-xs font-semibold text-neutral-600 mt-0.5"></p>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <span class="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block">Offer Description</span>
+          <p id="modal-offer-description" class="text-xs sm:text-sm text-neutral-600 leading-relaxed whitespace-pre-line bg-neutral-50/50 p-4 border border-neutral-100 rounded-xl"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer Action -->
+    <div class="p-6 border-t border-neutral-100 bg-neutral-50/50 flex flex-col sm:flex-row gap-3 items-center justify-between">
+      <span class="text-[11px] text-neutral-400 font-medium">
+        {locale === 'gu' ? '*વધુ માહિતી માટે વોટ્સએપ પર પૂછપરછ કરો.' : '*For more details, enquire on WhatsApp.'}
+      </span>
+      <a
+        id="modal-whatsapp-btn"
+        href=""
+        target="_blank"
+        rel="noopener noreferrer"
+        class="btn-whatsapp w-full sm:w-auto text-sm py-2.5 px-6 flex items-center justify-center gap-2 font-bold shadow-md cursor-pointer"
+      >
+        <svg class="h-4 w-4 fill-current" viewBox="0 0 24 24">
+          <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.625 1.451 5.403.002 9.803-4.394 9.806-9.799.002-2.618-1.01-5.078-2.856-6.927C16.378 2.03 13.932.997 12.002.997c-5.408 0-9.813 4.394-9.816 9.801-.001 1.87.526 3.69 1.523 5.253L2.7 20.8l4.037-1.059.043-.027-.133-.56zm11.233-5.062c-.295-.148-1.746-.862-2.019-.962-.272-.1-.471-.148-.669.148-.198.295-.767.962-.94 1.16-.173.199-.347.223-.642.074-.295-.148-1.246-.459-2.373-1.464-.877-.782-1.47-1.747-1.642-2.043-.173-.295-.018-.454.13-.601.134-.133.295-.347.444-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.74-.71 1.988-1.396.248-.687.248-1.277.173-1.396-.074-.12-.272-.198-.57-.347z"/>
+        </svg>
+        <span>{locale === 'gu' ? 'વોટ્સએપ પૂછપરછ' : 'Enquire on WhatsApp'}</span>
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { buildCloudinaryUrl } from '../../lib/cloudinary';
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const modal = document.getElementById('offer-detail-modal');
+    const content = document.getElementById('offer-detail-content');
+    const closeBtn = document.getElementById('close-offer-modal');
+    
+    const titleEl = document.getElementById('modal-offer-title');
+    const descEl = document.getElementById('modal-offer-description');
+    const discountEl = document.getElementById('modal-offer-discount');
+    const validEl = document.getElementById('modal-offer-valid');
+    const whatsappBtn = document.getElementById('modal-whatsapp-btn') as HTMLAnchorElement;
+    
+    const coverImg = document.getElementById('modal-cover-image') as HTMLImageElement;
+    const detailImg = document.getElementById('modal-detail-image') as HTMLImageElement;
+    const detailImgWrapper = document.getElementById('modal-detail-image-wrapper');
+
+    function openModal(btn: HTMLElement) {
+      if (!modal || !content) return;
+
+      const title = btn.getAttribute('data-title') || '';
+      const description = btn.getAttribute('data-description') || '';
+      const detailDescription = btn.getAttribute('data-detail-description') || description;
+      const image = btn.getAttribute('data-image') || '';
+      const detailImage = btn.getAttribute('data-detail-image') || '';
+      const discount = btn.getAttribute('data-discount') || '';
+      const valid = btn.getAttribute('data-valid') || '';
+      const whatsapp = btn.getAttribute('data-whatsapp') || '';
+
+      if (titleEl) titleEl.textContent = title;
+      if (descEl) descEl.textContent = detailDescription;
+      if (discountEl) discountEl.textContent = discount;
+      if (validEl) validEl.textContent = valid;
+      if (whatsappBtn) whatsappBtn.href = whatsapp;
+
+      if (coverImg) {
+        coverImg.src = image ? buildCloudinaryUrl(image, { width: 500 }) : '/images/placeholder-product.svg';
+      }
+
+      if (detailImg && detailImgWrapper) {
+        if (detailImage && detailImage !== image) {
+          detailImg.src = buildCloudinaryUrl(detailImage, { width: 500 });
+          detailImgWrapper.classList.remove('hidden');
+        } else {
+          detailImgWrapper.classList.add('hidden');
+        }
+      }
+
+      modal.classList.remove('opacity-0', 'pointer-events-none');
+      content.classList.remove('scale-95');
+      content.classList.add('scale-100');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+      if (!modal || !content) return;
+      modal.classList.add('opacity-0', 'pointer-events-none');
+      content.classList.remove('scale-100');
+      content.classList.add('scale-95');
+      document.body.style.overflow = '';
+    }
+
+    // Attach click listeners to all view buttons dynamically (delegated listener)
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      const btn = target.closest('.view-offer-btn') as HTMLElement;
+      if (btn) {
+        e.preventDefault();
+        openModal(btn);
+      }
+    });
+
+    closeBtn?.addEventListener('click', closeModal);
+    modal?.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal();
+    });
+  });
+</script>

@@ -36,6 +36,9 @@ if (Astro.request.method === 'POST') {
       if (existing?.image) {
         await deleteCloudinaryAsset(existing.image);
       }
+      if (existing?.detailImage) {
+        await deleteCloudinaryAsset(existing.detailImage);
+      }
       await db.delete(offers).where(eq(offers.id, idToDelete));
       clearCmsCache();
       redirectUrl = '/admin/offers?success=' + encodeURIComponent('Offer deleted successfully!');
@@ -52,6 +55,9 @@ if (Astro.request.method === 'POST') {
       const description = formData.get('description')?.toString() || '';
       const descriptionGu = formData.get('descriptionGu')?.toString().trim() || null;
       const image = formData.get('image')?.toString() || '';
+      const detailImage = formData.get('detailImage')?.toString() || '';
+      const detailDescription = formData.get('detailDescription')?.toString() || '';
+      const detailDescriptionGu = formData.get('detailDescriptionGu')?.toString().trim() || null;
       const discountText = formData.get('discountText')?.toString() || '';
       const discountTextGu = formData.get('discountTextGu')?.toString().trim() || null;
       const validUntil = formData.get('validUntil')?.toString() || '';
@@ -75,6 +81,9 @@ if (Astro.request.method === 'POST') {
         if (existing?.image && existing.image !== image) {
           await deleteCloudinaryAsset(existing.image);
         }
+        if (existing?.detailImage && existing.detailImage !== detailImage) {
+          await deleteCloudinaryAsset(existing.detailImage);
+        }
         await db.update(offers).set({
           title,
           titleGu,
@@ -83,6 +92,9 @@ if (Astro.request.method === 'POST') {
           description,
           descriptionGu,
           image,
+          detailImage,
+          detailDescription,
+          detailDescriptionGu,
           discountText,
           discountTextGu,
           validUntil,
@@ -108,6 +120,9 @@ if (Astro.request.method === 'POST') {
           description,
           descriptionGu,
           image,
+          detailImage,
+          detailDescription,
+          detailDescriptionGu,
           discountText,
           discountTextGu,
           validUntil,
@@ -598,27 +613,43 @@ function getOfferImageUrl(img: string) {
             </div>
           </div>
 
-          <div>
-            <label class="block text-sm font-semibold text-neutral-700 mb-1">Offer Image</label>
-            <input type="hidden" id="image" name="image" value={editOffer?.image || ''} />
-            
-            <div id="image-preview" class="mb-2"></div>
-            
-            <div class="relative border border-dashed border-neutral-300 rounded p-4 hover:border-primary hover:bg-neutral-50/50 transition-colors cursor-pointer group text-center" id="upload-dropzone">
-              <input type="file" id="file-picker" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer" />
-              <div class="space-y-1">
-                <p class="text-xs font-semibold text-neutral-600">Choose Image</p>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label class="block text-sm font-semibold text-neutral-700 mb-1">Cover Image *</label>
+              <input type="hidden" id="image" name="image" value={editOffer?.image || ''} />
+              
+              <div id="image-preview" class="mb-2"></div>
+              
+              <div class="relative border border-dashed border-neutral-300 rounded p-4 hover:border-primary hover:bg-neutral-50/50 transition-colors cursor-pointer group text-center" id="upload-dropzone">
+                <input type="file" id="file-picker" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer" />
+                <div class="space-y-1">
+                  <p class="text-xs font-semibold text-neutral-600">Choose Cover Image</p>
+                </div>
               </div>
             </div>
 
-            <div id="upload-progress-container" class="hidden mt-2 space-y-1">
-              <div class="flex justify-between text-[10px] font-semibold text-neutral-500">
-                <span id="upload-status">Uploading...</span>
-                <span id="upload-percent">0%</span>
+            <div>
+              <label class="block text-sm font-semibold text-neutral-700 mb-1">Detail Image (shows in pop-up)</label>
+              <input type="hidden" id="detailImage" name="detailImage" value={editOffer?.detailImage || ''} />
+              
+              <div id="detail-image-preview" class="mb-2"></div>
+              
+              <div class="relative border border-dashed border-neutral-300 rounded p-4 hover:border-primary hover:bg-neutral-50/50 transition-colors cursor-pointer group text-center" id="detail-upload-dropzone">
+                <input type="file" id="detail-file-picker" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer" />
+                <div class="space-y-1">
+                  <p class="text-xs font-semibold text-neutral-600">Choose Detail Image</p>
+                </div>
               </div>
-              <div class="w-full bg-neutral-200 rounded-full h-1 overflow-hidden">
-                <div id="upload-progress-bar" class="bg-primary h-full w-0 transition-all duration-150"></div>
-              </div>
+            </div>
+          </div>
+
+          <div id="upload-progress-container" class="hidden mt-2 space-y-1">
+            <div class="flex justify-between text-[10px] font-semibold text-neutral-500">
+              <span id="upload-status">Uploading...</span>
+              <span id="upload-percent">0%</span>
+            </div>
+            <div class="w-full bg-neutral-200 rounded-full h-1 overflow-hidden">
+              <div id="upload-progress-bar" class="bg-primary h-full w-0 transition-all duration-150"></div>
             </div>
           </div>
 
@@ -692,24 +723,47 @@ function getOfferImageUrl(img: string) {
 
           <div class="grid gap-4 sm:grid-cols-2">
             <div>
-              <label for="description" class="block text-sm font-semibold text-neutral-700 mb-1">Description (English)</label>
+              <label for="description" class="block text-sm font-semibold text-neutral-700 mb-1">Brief Description (English)</label>
               <textarea
                 id="description"
                 name="description"
-                rows="3"
-                placeholder="Enter offer details..."
+                rows="2"
+                placeholder="Enter brief offer details..."
                 class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none"
               >{editOffer?.description || ''}</textarea>
             </div>
             <div>
-              <label for="descriptionGu" class="block text-sm font-semibold text-neutral-700 mb-1">Description (Gujarati)</label>
+              <label for="descriptionGu" class="block text-sm font-semibold text-neutral-700 mb-1">Brief Description (Gujarati)</label>
               <textarea
                 id="descriptionGu"
                 name="descriptionGu"
-                rows="3"
-                placeholder="ઓફરની ગુજરાતીમાં વિગતો..."
+                rows="2"
+                placeholder="ઓફરની ગુજરાતીમાં ટૂંકી વિગતો..."
                 class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none"
               >{editOffer?.descriptionGu || ''}</textarea>
+            </div>
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label for="detailDescription" class="block text-sm font-semibold text-neutral-700 mb-1">Detailed Description (English - shows in pop-up)</label>
+              <textarea
+                id="detailDescription"
+                name="detailDescription"
+                rows="3"
+                placeholder="Enter detailed description for popup..."
+                class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              >{editOffer?.detailDescription || ''}</textarea>
+            </div>
+            <div>
+              <label for="detailDescriptionGu" class="block text-sm font-semibold text-neutral-700 mb-1">Detailed Description (Gujarati - shows in pop-up)</label>
+              <textarea
+                id="detailDescriptionGu"
+                name="detailDescriptionGu"
+                rows="3"
+                placeholder="ઓફરની ગુજરાતીમાં વિગતવાર વિગતો..."
+                class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              >{editOffer?.detailDescriptionGu || ''}</textarea>
             </div>
           </div>
 
@@ -749,12 +803,18 @@ function getOfferImageUrl(img: string) {
           const imageInput = document.getElementById('image') as HTMLInputElement;
           const previewContainer = document.getElementById('image-preview');
           const filePicker = document.getElementById('file-picker') as HTMLInputElement;
+
+          const detailImageInput = document.getElementById('detailImage') as HTMLInputElement;
+          const detailPreviewContainer = document.getElementById('detail-image-preview');
+          const detailFilePicker = document.getElementById('detail-file-picker') as HTMLInputElement;
+
           const progressContainer = document.getElementById('upload-progress-container');
           const progressBar = document.getElementById('upload-progress-bar');
           const progressPercent = document.getElementById('upload-percent');
           const progressStatus = document.getElementById('upload-status');
 
           let selectedFile: File | null = null;
+          let detailSelectedFile: File | null = null;
           let removedPublicIds: string[] = [];
 
           function renderPreview() {
@@ -794,6 +854,43 @@ function getOfferImageUrl(img: string) {
             previewContainer.appendChild(div);
           }
 
+          function renderDetailPreview() {
+            if (!detailPreviewContainer) return;
+            detailPreviewContainer.innerHTML = '';
+            
+            let displayUrl = '';
+            if (detailSelectedFile) {
+              displayUrl = URL.createObjectURL(detailSelectedFile);
+            } else {
+              const imgVal = detailImageInput.value.trim();
+              if (!imgVal) return;
+              displayUrl = buildCloudinaryUrl(imgVal, { width: 100, height: 100 });
+            }
+
+            const div = document.createElement('div');
+            div.className = 'relative group w-24 h-24 border border-neutral-200 rounded-md overflow-hidden bg-neutral-50 shadow-sm';
+            div.innerHTML = `
+              <img src="${displayUrl}" class="w-full h-full object-cover" />
+              <button type="button" class="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold font-mono">Remove</button>
+            `;
+
+            div.querySelector('button')?.addEventListener('click', () => {
+              if (detailSelectedFile) {
+                detailSelectedFile = null;
+                detailFilePicker.value = '';
+              } else {
+                const oldVal = detailImageInput.value.trim();
+                if (oldVal) {
+                  removedPublicIds.push(oldVal);
+                }
+                detailImageInput.value = '';
+              }
+              renderDetailPreview();
+            });
+
+            detailPreviewContainer.appendChild(div);
+          }
+
           filePicker?.addEventListener('change', async () => {
             const files = filePicker.files;
             if (!files || files.length === 0) return;
@@ -801,7 +898,7 @@ function getOfferImageUrl(img: string) {
             let file = files[0];
             if (file.type.startsWith('image/')) {
               // Free cropping aspect ratio for offers since they can vary
-              const cropped = await (window as any).cropImage(file, { aspectRatio: NaN, title: 'Crop Offer Image' });
+              const cropped = await (window as any).cropImage(file, { aspectRatio: NaN, title: 'Crop Cover Image' });
               if (cropped === null) {
                 filePicker.value = '';
                 return;
@@ -813,8 +910,27 @@ function getOfferImageUrl(img: string) {
             renderPreview();
           });
 
+          detailFilePicker?.addEventListener('change', async () => {
+            const files = detailFilePicker.files;
+            if (!files || files.length === 0) return;
+
+            let file = files[0];
+            if (file.type.startsWith('image/')) {
+              // Free cropping aspect ratio for offers since they can vary
+              const cropped = await (window as any).cropImage(file, { aspectRatio: NaN, title: 'Crop Detail Image' });
+              if (cropped === null) {
+                detailFilePicker.value = '';
+                return;
+              }
+              file = cropped;
+            }
+
+            detailSelectedFile = file;
+            renderDetailPreview();
+          });
+
           offerForm?.addEventListener('submit', async (e) => {
-            if (!selectedFile && removedPublicIds.length === 0) {
+            if (!selectedFile && !detailSelectedFile && removedPublicIds.length === 0) {
               return; // Normal submit
             }
 
@@ -823,26 +939,36 @@ function getOfferImageUrl(img: string) {
             if (progressContainer) {
               progressContainer.classList.remove('hidden');
               if (progressStatus) progressStatus.textContent = 'Saving offer...';
-              if (progressBar) progressBar.style.width = '20%';
-              if (progressPercent) progressPercent.textContent = '20%';
+              if (progressBar) progressBar.style.width = '10%';
+              if (progressPercent) progressPercent.textContent = '10%';
             }
 
             try {
-              // 1. Upload new image if selected
+              // 1. Upload new cover image if selected
               if (selectedFile) {
-                if (progressStatus) progressStatus.textContent = 'Uploading image...';
-                if (progressBar) progressBar.style.width = '50%';
-                if (progressPercent) progressPercent.textContent = '50%';
+                if (progressStatus) progressStatus.textContent = 'Uploading cover image...';
+                if (progressBar) progressBar.style.width = '40%';
+                if (progressPercent) progressPercent.textContent = '40%';
                 
                 const uploadedId = await fileManager.upload(selectedFile, 'yash-electronics/offers');
                 imageInput.value = uploadedId;
               }
 
-              // 2. Delete removed images
+              // 2. Upload new detail image if selected
+              if (detailSelectedFile) {
+                if (progressStatus) progressStatus.textContent = 'Uploading detail image...';
+                if (progressBar) progressBar.style.width = '70%';
+                if (progressPercent) progressPercent.textContent = '70%';
+                
+                const uploadedId = await fileManager.upload(detailSelectedFile, 'yash-electronics/offers');
+                detailImageInput.value = uploadedId;
+              }
+
+              // 3. Delete removed images
               if (removedPublicIds.length > 0) {
-                if (progressStatus) progressStatus.textContent = 'Removing old image...';
-                if (progressBar) progressBar.style.width = '80%';
-                if (progressPercent) progressPercent.textContent = '80%';
+                if (progressStatus) progressStatus.textContent = 'Removing old images...';
+                if (progressBar) progressBar.style.width = '90%';
+                if (progressPercent) progressPercent.textContent = '90%';
                 
                 await Promise.all(removedPublicIds.map(id => fileManager.remove(id)));
                 removedPublicIds = [];
@@ -854,12 +980,13 @@ function getOfferImageUrl(img: string) {
               // Submit form
               offerForm.submit();
             } catch (err: any) {
-              alert('Error saving offer image: ' + err.message);
+              alert('Error saving offer images: ' + err.message);
               if (progressContainer) progressContainer.classList.add('hidden');
             }
           });
 
           renderPreview();
+          renderDetailPreview();
         </script>
       </div>
     )}

@@ -7,6 +7,8 @@ import SpecialOfferZone from '../components/home/SpecialOfferZone.astro';
 import PromoVideos from '../components/home/PromoVideos.astro';
 import WhyChooseUs from '../components/home/WhyChooseUs.astro';
 import ContactSection from '../components/home/ContactSection.astro';
+import TodayOfferBanner from '../components/home/TodayOfferBanner.astro';
+import OfferModal from '../components/offer/OfferModal.astro';
 import {
   getSettings,
   getCategories,
@@ -37,12 +39,14 @@ const offers = translateObject(rawOffers, locale);
 const videos = translateObject(rawVideos, locale);
 
 const featuredProducts = getFeaturedProducts(products).slice(0, 8);
+const todayOffer = offers[0] || null;
 ---
 
 <BaseLayout
   title={settings.businessName}
   description={settings.tagline}
 >
+  {todayOffer && <TodayOfferBanner offer={todayOffer} settings={settings} />}
   <ShopByCategory categories={categories} />
   <FeaturedProducts products={featuredProducts} />
   <TopBrands brands={brands} />
@@ -50,4 +54,5 @@ const featuredProducts = getFeaturedProducts(products).slice(0, 8);
   <PromoVideos videos={videos} />
   <WhyChooseUs />
   <ContactSection settings={settings} />
+  <OfferModal />
 </BaseLayout>

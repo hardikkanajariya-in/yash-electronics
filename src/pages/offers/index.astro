@@ -3,6 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import Container from '../../components/ui/Container.astro';
 import SectionHeading from '../../components/ui/SectionHeading.astro';
 import OfferCard from '../../components/offer/OfferCard.astro';
+import OfferModal from '../../components/offer/OfferModal.astro';
 import { getOffers, getSettings } from '../../services/cms';
 import type { Offer } from '../../types';
 import { translateObject, t } from '../../lib/translations';
@@ -60,4 +61,5 @@ const offerTypeLabels: Record<string, string> = {
       </p>
     )}
   </Container>
+  <OfferModal />
 </BaseLayout>

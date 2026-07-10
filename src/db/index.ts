@@ -15,7 +15,7 @@ const isLocal = connectionString.includes('localhost') || connectionString.inclu
 export const pool = new pg.Pool({
   connectionString,
   ssl: isLocal ? false : { rejectUnauthorized: false },
-  max: isLocal ? 10 : 1,
+  max: isLocal ? 10 : 5,
   idleTimeoutMillis: 10_000,
   connectionTimeoutMillis: 10_000,
 });
@@ -84,6 +84,10 @@ pool.query(`
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TEXT NOT NULL
   );
+
+  ALTER TABLE offers ADD COLUMN IF NOT EXISTS detail_image TEXT;
+  ALTER TABLE offers ADD COLUMN IF NOT EXISTS detail_description TEXT;
+  ALTER TABLE offers ADD COLUMN IF NOT EXISTS detail_description_gu TEXT;
 `).then(async () => {
   await autoSeedEmptyProductReviews(pool);
 }).catch(err => {

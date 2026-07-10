@@ -820,7 +820,30 @@ const drawerNavItems = [
 
       initPermissionBanner();
       fetchNotifications();
-      setInterval(fetchNotifications, 15000);
+      
+      let pollInterval = null;
+      function startPolling() {
+        if (!pollInterval) {
+          pollInterval = setInterval(fetchNotifications, 15000);
+        }
+      }
+      function stopPolling() {
+        if (pollInterval) {
+          clearInterval(pollInterval);
+          pollInterval = null;
+        }
+      }
+      
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          stopPolling();
+        } else {
+          fetchNotifications();
+          startPolling();
+        }
+      });
+      
+      startPolling();
     });
   })();
 </script>
