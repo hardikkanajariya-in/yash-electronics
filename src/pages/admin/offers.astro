@@ -7,6 +7,8 @@ import { getSessionUser, generateId } from '../../lib/auth';
 import { clearCmsCache } from '../../services/cms';
 import { buildCloudinaryUrl } from '../../lib/cloudinary';
 import { deleteCloudinaryAsset } from '../../lib/cloudinary-server';
+import CropModal from '../../components/admin/CropModal.astro';
+
 
 export const prerender = false;
 
@@ -898,12 +900,15 @@ function getOfferImageUrl(img: string) {
             let file = files[0];
             if (file.type.startsWith('image/')) {
               // Free cropping aspect ratio for offers since they can vary
-              const cropped = await (window as any).cropImage(file, { aspectRatio: NaN, title: 'Crop Cover Image' });
-              if (cropped === null) {
-                filePicker.value = '';
-                return;
+              const cropModal = (window as any).cropModalInstance;
+              if (cropModal) {
+                const cropped = await cropModal.crop(file, { aspectRatio: NaN, title: 'Crop Cover Image' });
+                if (cropped === null) {
+                  filePicker.value = '';
+                  return;
+                }
+                file = cropped;
               }
-              file = cropped;
             }
 
             selectedFile = file;
@@ -917,12 +922,15 @@ function getOfferImageUrl(img: string) {
             let file = files[0];
             if (file.type.startsWith('image/')) {
               // Free cropping aspect ratio for offers since they can vary
-              const cropped = await (window as any).cropImage(file, { aspectRatio: NaN, title: 'Crop Detail Image' });
-              if (cropped === null) {
-                detailFilePicker.value = '';
-                return;
+              const cropModal = (window as any).cropModalInstance;
+              if (cropModal) {
+                const cropped = await cropModal.crop(file, { aspectRatio: NaN, title: 'Crop Detail Image' });
+                if (cropped === null) {
+                  detailFilePicker.value = '';
+                  return;
+                }
+                file = cropped;
               }
-              file = cropped;
             }
 
             detailSelectedFile = file;
@@ -988,6 +996,7 @@ function getOfferImageUrl(img: string) {
           renderPreview();
           renderDetailPreview();
         </script>
+        <CropModal />
       </div>
     )}
 </AdminLayout>
