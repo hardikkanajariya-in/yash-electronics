@@ -250,7 +250,16 @@ export async function importProductsFromCsv(csvText: string) {
       const mrp = mrpIdx !== -1 ? Math.round(Number(row[mrpIdx]) || 0) : 0;
       const offerPrice = offerPriceIdx !== -1 ? Math.round(Number(row[offerPriceIdx]) || 0) : 0;
       
-      const images: string[] = [];
+      let images: string[] = [];
+      if (imagesIdx !== -1) {
+        const rawImages = row[imagesIdx]?.trim() || '';
+        if (rawImages) {
+          images = rawImages
+            .split(/[;,]/)
+            .map(img => img.trim())
+            .filter(img => img.length > 0);
+        }
+      }
 
       const valBool = (val: string | undefined, defaultVal: boolean) => {
         if (!val) return defaultVal;
@@ -267,7 +276,7 @@ export async function importProductsFromCsv(csvText: string) {
       const now = new Date().toISOString();
 
       if (existingProduct) {
-        await db.update(products).set({
+        const updateData: any = {
           name,
           nameGu,
           brandId,
@@ -279,12 +288,17 @@ export async function importProductsFromCsv(csvText: string) {
           specificationsGu,
           mrp,
           offerPrice,
-          // We do NOT update images from CSV, keeping existing ones
           isFeatured,
           eligibleForBundle,
           isActive,
           updatedAt: now,
-        }).where(eq(products.id, existingProduct.id));
+        };
+
+        if (imagesIdx !== -1) {
+          updateData.images = images;
+        }
+
+        await db.update(products).set(updateData).where(eq(products.id, existingProduct.id));
       } else {
         const newId = generateId();
         await db.insert(products).values({
@@ -301,7 +315,7 @@ export async function importProductsFromCsv(csvText: string) {
           specificationsGu,
           mrp,
           offerPrice,
-          images: [], // New products get empty image lists
+          images: imagesIdx !== -1 ? images : [],
           isFeatured,
           eligibleForBundle,
           isActive,
@@ -339,6 +353,7 @@ export async function exportProductsToCsv(): Promise<string> {
     'Model Number',
     'MRP',
     'Offer Price',
+    'Images',
     'Featured',
     'Eligible for Bundle',
     'Active',
@@ -381,6 +396,7 @@ export async function exportProductsToCsv(): Promise<string> {
       'Model Number': p.modelNumber || '',
       'MRP': p.mrp,
       'Offer Price': p.offerPrice,
+      'Images': p.images ? p.images.join('; ') : '',
       'Featured': p.isFeatured ? 'true' : 'false',
       'Eligible for Bundle': p.eligibleForBundle ? 'true' : 'false',
       'Active': p.isActive ? 'true' : 'false',
