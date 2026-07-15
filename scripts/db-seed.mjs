@@ -26,9 +26,10 @@ if (!connectionString) {
 }
 
 const isLocal = connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
+const hasDisableSSL = connectionString.includes('sslmode=disable');
 const client = new pg.Client({
   connectionString,
-  ssl: isLocal ? false : { rejectUnauthorized: false },
+  ssl: (isLocal || hasDisableSSL) ? false : { rejectUnauthorized: false },
 });
 
 // Mock Seed Data for Yash Electronics - Electronics & Power Solutions

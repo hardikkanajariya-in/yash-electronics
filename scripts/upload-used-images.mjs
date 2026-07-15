@@ -280,9 +280,10 @@ async function deleteFromCloudinary(publicId, resourceType) {
 async function runSync() {
   console.log(`Connecting to database...`);
   const isLocal = dbUrl.includes('localhost') || dbUrl.includes('127.0.0.1');
+  const hasDisableSSL = dbUrl.includes('sslmode=disable');
   const client = new pg.Client({
     connectionString: dbUrl,
-    ssl: isLocal ? false : { rejectUnauthorized: false },
+    ssl: (isLocal || hasDisableSSL) ? false : { rejectUnauthorized: false },
   });
   await client.connect();
   console.log(`${COLORS.green}✓ Connected to database.${COLORS.reset}\n`);

@@ -11,10 +11,11 @@ if (!connectionString) {
 }
 
 const isLocal = connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
+const hasDisableSSL = connectionString.includes('sslmode=disable');
 
 export const pool = new pg.Pool({
   connectionString,
-  ssl: isLocal ? false : { rejectUnauthorized: false },
+  ssl: (isLocal || hasDisableSSL) ? false : { rejectUnauthorized: false },
   max: isLocal ? 10 : 5,
   idleTimeoutMillis: 10_000,
   connectionTimeoutMillis: 10_000,
