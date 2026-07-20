@@ -2,7 +2,13 @@ import { defineMiddleware } from 'astro:middleware';
 import { isRateLimited, getClientIp } from './lib/rate-limiter';
 
 export const onRequest = defineMiddleware(async (context, next) => {
-  const { request, url, clientAddress } = context;
+  const { request, url } = context;
+  let clientAddress: string | undefined;
+  try {
+    clientAddress = context.clientAddress;
+  } catch {
+    // Client address not available during static prerendering
+  }
   
   // Rate Limiting for sensitive POST routes
   if (request.method === 'POST') {
