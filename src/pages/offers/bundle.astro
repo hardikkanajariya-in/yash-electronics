@@ -13,6 +13,11 @@ export const prerender = false;
 
 const locale = Astro.currentLocale || 'gu';
 
+Astro.response.headers.set(
+  'Cache-Control',
+  'public, max-age=0, s-maxage=600, stale-while-revalidate=600'
+);
+
 // Fetch active bundle rules
 const rawRules = await db
   .select()

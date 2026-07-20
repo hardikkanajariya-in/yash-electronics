@@ -16,7 +16,11 @@ const isVercelBuild = process.env.VERCEL === '1';
 export default defineConfig({
   site,
   adapter: isVercelBuild
-    ? vercel()
+    ? vercel({
+        isr: {
+          expiration: 600,
+        },
+      })
     : node({ mode: 'standalone' }),
   output: 'server',
   i18n: {

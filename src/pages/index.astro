@@ -22,6 +22,11 @@ import { translateObject } from '../lib/translations';
 
 const locale = Astro.currentLocale || 'gu';
 
+Astro.response.headers.set(
+  'Cache-Control',
+  'public, max-age=0, s-maxage=600, stale-while-revalidate=600'
+);
+
 const [rawSettings, rawCategories, rawBrands, rawProducts, rawOffers, rawVideos] = await Promise.all([
   getSettings(),
   getCategories(),
