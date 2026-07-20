@@ -1367,6 +1367,25 @@ async function seed() {
       );
     }
 
+    console.log('[Seed] Auto-seeding empty product reviews...');
+    const NAMES = ['Rajesh Patel', 'Amit Shah', 'Hardik Kanajariya', 'Priya Sharma', 'Vikram Rathod', 'Ramesh Jadeja', 'Jayesh Savaliya', 'Neha Vyas', 'Jignesh Mewada', 'Mansukhbhai Patel'];
+    const COMMENTS = ["Excellent product! Built quality is superior.", "Very happy with this purchase. Super fast delivery.", "Highly recommended. Authentic product.", "Value for money. Using it daily.", "Great customer service by the store team."];
+    for (const p of products) {
+      const revCount = 3;
+      for (let i = 0; i < revCount; i++) {
+        const revId = `rev-${crypto.randomBytes(8).toString('hex')}`;
+        const name = NAMES[i % NAMES.length];
+        const rating = 5;
+        const comment = COMMENTS[i % COMMENTS.length];
+        const createdAt = new Date().toISOString().split('T')[0];
+        await client.query(
+          `INSERT INTO reviews (id, product_id, user_id, user_name, rating, comment, purchase_source, created_at)
+           VALUES ($1, $2, NULL, $3, $4, $5, $6, $7) ON CONFLICT DO NOTHING`,
+          [revId, p.id, name, rating, comment, 'online', createdAt]
+        );
+      }
+    }
+
     await client.query('COMMIT');
     console.log('[Seed] Database seeding completed successfully!');
   } catch (error) {

@@ -6,6 +6,8 @@ import { getSessionUser, generateId } from '../../lib/auth';
 import { eq } from 'drizzle-orm';
 import { deleteCloudinaryAsset } from '../../lib/cloudinary-server';
 
+import { clearCmsCache } from '../../services/cms';
+
 export const prerender = false;
 Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
 
@@ -29,6 +31,7 @@ if (Astro.request.method === 'POST') {
           if (existing.bankQrCode) await deleteCloudinaryAsset(existing.bankQrCode);
         }
         await db.delete(bankDetails).where(eq(bankDetails.id, deleteId));
+        clearCmsCache();
         return Astro.redirect('/admin/bank-details?message=' + encodeURIComponent('Bank detail deleted.'));
       }
     } else if (formAction === 'save') {
@@ -50,9 +53,11 @@ if (Astro.request.method === 'POST') {
           if (existing.bankQrCode && existing.bankQrCode !== bankQrCode) await deleteCloudinaryAsset(existing.bankQrCode);
         }
         await db.update(bankDetails).set({ bankName, accountHolderName, accountNumber, ifscCode, branchName, upiQrCode, bankQrCode }).where(eq(bankDetails.id, id));
+        clearCmsCache();
         return Astro.redirect('/admin/bank-details?message=' + encodeURIComponent('Bank details updated.'));
       } else {
         await db.insert(bankDetails).values({ id: generateId(), bankName, accountHolderName, accountNumber, ifscCode, branchName, upiQrCode, bankQrCode, isActive: true });
+        clearCmsCache();
         return Astro.redirect('/admin/bank-details?message=' + encodeURIComponent('Bank details added.'));
       }
     }

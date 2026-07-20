@@ -35,7 +35,7 @@ export default defineConfig({
     }),
   ],
   prefetch: {
-    defaultStrategy: 'hover',
+    defaultStrategy: 'tap',
   },
   image: {
     domains: ['res.cloudinary.com'],

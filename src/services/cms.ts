@@ -4,82 +4,90 @@ import { settings, categories, brands, offers, teamMembers, services, aboutInfo,
 import { eq, asc } from 'drizzle-orm';
 
 let cachedData: CmsData | null = null;
+let cmsDataPromise: Promise<CmsData> | null = null;
 
 export async function getCmsData(): Promise<CmsData> {
   if (cachedData) return cachedData;
+  if (cmsDataPromise) return cmsDataPromise;
 
-  try {
-    const dbSettingsList = await db.select().from(settings);
-    const dbSettingsObj: any = {};
-    dbSettingsList.forEach(s => {
-      dbSettingsObj[s.key] = s.value;
-    });
+  cmsDataPromise = (async () => {
+    try {
+      const dbSettingsList = await db.select().from(settings);
+      const dbSettingsObj: any = {};
+      dbSettingsList.forEach(s => {
+        dbSettingsObj[s.key] = s.value;
+      });
 
-    const dbCategories = await db.select().from(categories);
-    const dbBrands = await db.select().from(brands);
-    
-    const dbProductsRaw = await db.query.products.findMany({
-      with: {
-        brand: true,
-        category: true,
-      },
-      orderBy: (products: any, { desc }: any) => [desc(products.createdAt)],
-    });
+      const dbCategories = await db.select().from(categories);
+      const dbBrands = await db.select().from(brands);
+      
+      const dbProductsRaw = await db.query.products.findMany({
+        with: {
+          brand: true,
+          category: true,
+        },
+        orderBy: (products: any, { desc }: any) => [desc(products.createdAt)],
+      });
 
-    const dbProducts = dbProductsRaw.map((p: any) => ({
-      id: p.id,
-      name: p.name,
-      nameGu: p.nameGu || '',
-      slug: p.slug,
-      brand: p.brand?.name || '',
-      brandGu: p.brand?.nameGu || '',
-      brandSlug: p.brand?.slug || '',
-      category: p.category?.name || '',
-      categoryGu: p.category?.nameGu || '',
-      categorySlug: p.category?.slug || '',
-      modelNumber: p.modelNumber || '',
-      description: p.description || '',
-      descriptionGu: p.descriptionGu || '',
-      specifications: p.specifications || '{}',
-      specificationsGu: p.specificationsGu || '',
-      mrp: p.mrp,
-      offerPrice: p.offerPrice,
-      images: p.images || [],
-      isFeatured: p.isFeatured,
-      eligibleForBundle: p.eligibleForBundle,
-      isActive: p.isActive,
-      createdAt: p.createdAt,
-      updatedAt: p.updatedAt,
-    }));
+      const dbProducts = dbProductsRaw.map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        nameGu: p.nameGu || '',
+        slug: p.slug,
+        brand: p.brand?.name || '',
+        brandGu: p.brand?.nameGu || '',
+        brandSlug: p.brand?.slug || '',
+        category: p.category?.name || '',
+        categoryGu: p.category?.nameGu || '',
+        categorySlug: p.category?.slug || '',
+        modelNumber: p.modelNumber || '',
+        description: p.description || '',
+        descriptionGu: p.descriptionGu || '',
+        specifications: p.specifications || '{}',
+        specificationsGu: p.specificationsGu || '',
+        mrp: p.mrp,
+        offerPrice: p.offerPrice,
+        images: p.images || [],
+        isFeatured: p.isFeatured,
+        eligibleForBundle: p.eligibleForBundle,
+        isActive: p.isActive,
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
+      }));
 
-    const dbOffers = await db.select().from(offers);
+      const dbOffers = await db.select().from(offers);
 
-    const data: CmsData = {
-      settings: dbSettingsObj,
-      categories: dbCategories.map((c) => ({
-        ...c,
-        description: c.description ?? '',
-        icon: c.icon ?? '',
-        image: c.image ?? '',
-      })),
-      brands: dbBrands.map((b) => ({
-        ...b,
-        logo: b.logo ?? '',
-      })),
-      products: dbProducts,
-      offers: dbOffers.map((o) => ({
-        ...o,
-        detailImage: o.detailImage ?? '',
-        detailDescription: o.detailDescription ?? '',
-        detailDescriptionGu: o.detailDescriptionGu ?? '',
-      })) as CmsData['offers'],
-    };
-    cachedData = data;
-    return data;
-  } catch (e) {
-    console.error('[CMS] Database load error:', e);
-    throw e;
-  }
+      const data: CmsData = {
+        settings: dbSettingsObj,
+        categories: dbCategories.map((c) => ({
+          ...c,
+          description: c.description ?? '',
+          icon: c.icon ?? '',
+          image: c.image ?? '',
+        })),
+        brands: dbBrands.map((b) => ({
+          ...b,
+          logo: b.logo ?? '',
+        })),
+        products: dbProducts,
+        offers: dbOffers.map((o) => ({
+          ...o,
+          detailImage: o.detailImage ?? '',
+          detailDescription: o.detailDescription ?? '',
+          detailDescriptionGu: o.detailDescriptionGu ?? '',
+        })) as CmsData['offers'],
+      };
+      cachedData = data;
+      return data;
+    } catch (e) {
+      console.error('[CMS] Database load error:', e);
+      throw e;
+    } finally {
+      cmsDataPromise = null;
+    }
+  })();
+
+  return cmsDataPromise;
 }
 
 export async function getSettings() {
@@ -238,6 +246,7 @@ export async function getReferralHistory(userId: string) {
 
 export function clearCmsCache() {
   cachedData = null;
+  cmsDataPromise = null;
 }
 
 export async function getBundleRules() {

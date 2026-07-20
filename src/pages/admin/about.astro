@@ -7,6 +7,8 @@ import { eq } from 'drizzle-orm';
 import { deleteCloudinaryAsset } from '../../lib/cloudinary-server';
 import { buildCloudinaryUrl } from '../../lib/cloudinary';
 
+import { clearCmsCache } from '../../services/cms';
+
 export const prerender = false;
 Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
 
@@ -29,6 +31,7 @@ if (Astro.request.method === 'POST') {
           await deleteCloudinaryAsset(existing.photo);
         }
         await db.delete(aboutInfo).where(eq(aboutInfo.id, deleteId));
+        clearCmsCache();
         return Astro.redirect('/admin/about?message=' + encodeURIComponent('Entry deleted.'));
       }
     } else if (formAction === 'save') {
@@ -47,9 +50,11 @@ if (Astro.request.method === 'POST') {
           await deleteCloudinaryAsset(existing.photo);
         }
         await db.update(aboutInfo).set({ name, role, photo, description, sortOrder }).where(eq(aboutInfo.id, id));
+        clearCmsCache();
         return Astro.redirect('/admin/about?message=' + encodeURIComponent('Entry updated.'));
       } else {
         await db.insert(aboutInfo).values({ id: generateId(), name, role, photo, description, sortOrder });
+        clearCmsCache();
         return Astro.redirect('/admin/about?message=' + encodeURIComponent('Entry added.'));
       }
     }

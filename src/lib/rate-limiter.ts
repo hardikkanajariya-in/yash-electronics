@@ -23,6 +23,16 @@ export function isRateLimited(
   }
   
   const routeLimiters = limiters.get(route)!;
+
+  // Perform lazy cleanup for expired records if map gets large
+  if (routeLimiters.size > 50) {
+    for (const [recordIp, rec] of routeLimiters.entries()) {
+      if (now > rec.resetTime) {
+        routeLimiters.delete(recordIp);
+      }
+    }
+  }
+
   const record = routeLimiters.get(ip);
   
   if (!record) {
@@ -65,15 +75,3 @@ export function getClientIp(request: Request, clientAddress?: string): string {
   
   return clientAddress || '127.0.0.1';
 }
-
-// Clean up expired entries every 10 minutes to avoid memory leaks
-setInterval(() => {
-  const now = Date.now();
-  for (const [_, routeLimiters] of limiters.entries()) {
-    for (const [ip, record] of routeLimiters.entries()) {
-      if (now > record.resetTime) {
-        routeLimiters.delete(ip);
-      }
-    }
-  }
-}, 10 * 60 * 1000);
