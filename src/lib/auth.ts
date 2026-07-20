@@ -67,7 +67,7 @@ export function redirectWithSession(
 ): Response {
   setSessionUser(cookies, userId, requestUrl);
   return new Response(null, {
-    status: 303,
+    status: 302,
     headers: {
       Location: location,
       'Cache-Control': 'no-cache, no-store, must-revalidate',

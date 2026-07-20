@@ -116,13 +116,7 @@ if (Astro.request.method === 'POST') {
           ? redirectParam 
           : (user.role === 'admin' ? '/admin' : (locale === 'en' ? '/en/account' : '/account'));
         setSessionUser(Astro.cookies, user.id, Astro.url);
-        return new Response(null, {
-          status: 303,
-          headers: {
-            Location: destination,
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-          },
-        });
+        return Astro.redirect(destination);
       } else {
         error = t.errInvalid;
       }
@@ -207,13 +201,7 @@ if (Astro.request.method === 'POST') {
           Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
           const destination = redirectParam ? redirectParam : (locale === 'en' ? '/en/account' : '/account');
           setSessionUser(Astro.cookies, newUserId, Astro.url);
-          return new Response(null, {
-            status: 303,
-            headers: {
-              Location: destination,
-              'Cache-Control': 'no-cache, no-store, must-revalidate',
-            },
-          });
+          return Astro.redirect(destination);
         }
       }
     }
