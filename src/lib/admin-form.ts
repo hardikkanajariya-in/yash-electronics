@@ -49,9 +49,24 @@ export function setupDeferredUploadForm(options: FormManagerOptions) {
     }
   }
 
+  function syncHiddenInputFromItems() {
+    if (items.length === 0) {
+      hiddenInput.value = '';
+    } else {
+      const vals = items.map(it => (it.type === 'uploaded' ? (it.val as string) : (it.val as File).name));
+      hiddenInput.value = options.isMultiple ? vals.join(',') : vals[0];
+    }
+  }
+
   function renderPreviews() {
     if (!previewsContainer) return;
     previewsContainer.innerHTML = '';
+
+    if (items.length > 0) {
+      previewsContainer.classList.remove('hidden');
+    } else {
+      previewsContainer.classList.add('hidden');
+    }
 
     items.forEach((item, index) => {
       const isUploaded = item.type === 'uploaded';
@@ -94,6 +109,7 @@ export function setupDeferredUploadForm(options: FormManagerOptions) {
           removedPublicIds.push(item.val as string);
         }
         items.splice(index, 1);
+        syncHiddenInputFromItems();
         renderPreviews();
       });
 
@@ -142,7 +158,16 @@ export function setupDeferredUploadForm(options: FormManagerOptions) {
       }
     }
 
+    syncHiddenInputFromItems();
     renderPreviews();
+  });
+
+  hiddenInput.addEventListener('input', () => {
+    const hasLocal = items.some(it => it.type === 'local');
+    if (!hasLocal) {
+      initItems();
+      renderPreviews();
+    }
   });
 
   const processUploads = async () => {
