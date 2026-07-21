@@ -19,6 +19,7 @@ export default defineConfig({
     ? vercel({
         isr: {
           expiration: 600,
+          exclude: ['/admin/.*', '/admin.*', '/account/.*', '/account.*', '/api/.*', '/api.*'],
         },
       })
     : node({ mode: 'standalone' }),

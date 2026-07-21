@@ -6,6 +6,7 @@ import { eq, and, desc, asc, sql } from 'drizzle-orm';
 import { getSessionUser } from '../../lib/auth';
 
 export const prerender = false;
+export const isr = false;
 
 // Authenticate Admin
 Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');

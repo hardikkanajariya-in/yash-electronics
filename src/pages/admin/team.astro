@@ -7,6 +7,7 @@ import { eq } from 'drizzle-orm';
 import { deleteCloudinaryAsset } from '../../lib/cloudinary-server';
 
 export const prerender = false;
+export const isr = false;
 Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
 
 const currentUser = await getSessionUser(Astro.cookies);
