@@ -3,26 +3,13 @@ import { defineConfig } from 'astro/config';
 import tailwind from '@astrojs/tailwind';
 import sitemap from '@astrojs/sitemap';
 import vercel from '@astrojs/vercel';
-import node from '@astrojs/node';
 
 const site = process.env.PUBLIC_SITE_URL || 'https://yashelectronics.in';
-
-// Vercel sets VERCEL=1 during deploy builds. Use the Vercel adapter there.
-// On Windows locally, @astrojs/vercel symlinks pnpm deps and fails with EPERM
-// unless Developer Mode is enabled — use the Node adapter for local builds instead.
-const isVercelBuild = process.env.VERCEL === '1';
 
 // https://astro.build/config
 export default defineConfig({
   site,
-  adapter: isVercelBuild
-    ? vercel({
-        isr: {
-          expiration: 600,
-          exclude: ['/admin/.*', '/admin.*', '/account/.*', '/account.*', '/api/.*', '/api.*'],
-        },
-      })
-    : node({ mode: 'standalone' }),
+  adapter: vercel(),
   output: 'server',
   i18n: {
     defaultLocale: 'gu',

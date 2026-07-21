@@ -1,35 +1,37 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import Container from '../../components/ui/Container.astro';
-import { db } from '../../db';
-import { orders, serviceRequests } from '../../db/schema';
-import { eq, desc, or } from 'drizzle-orm';
-import { getSessionUser, clearSessionUser } from '../../lib/auth';
-import { getLocalizedPath } from '../../lib/translations';
-import { getSettings } from '../../services/cms';
-import { translateObject } from '../../lib/translations';
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Container from "../../components/ui/Container.astro";
+import { db } from "../../db";
+import { orders, serviceRequests } from "../../db/schema";
+import { eq, desc, or } from "drizzle-orm";
+import { getSessionUser, clearSessionUser } from "../../lib/auth";
+import { getLocalizedPath } from "../../lib/translations";
+import { getSettings } from "../../services/cms";
+import { translateObject } from "../../lib/translations";
 
 export const prerender = false;
-export const isr = false;
 
-const locale = Astro.currentLocale || 'gu';
+const locale = Astro.currentLocale || "gu";
 const rawSettings = await getSettings();
 const settings = translateObject(rawSettings, locale);
 
 // Authenticate user
-Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+Astro.response.headers.set(
+  "Cache-Control",
+  "no-cache, no-store, must-revalidate",
+);
 const currentUser = await getSessionUser(Astro.cookies);
-if (currentUser && currentUser.role === 'admin') {
-  return Astro.redirect('/admin');
+if (currentUser && currentUser.role === "admin") {
+  return Astro.redirect("/admin");
 }
-if (!currentUser || currentUser.role !== 'customer') {
-  return Astro.redirect(getLocalizedPath('/account/login', locale));
+if (!currentUser || currentUser.role !== "customer") {
+  return Astro.redirect(getLocalizedPath("/account/login", locale));
 }
 
 // Handle logout
-if (Astro.url.searchParams.get('action') === 'logout') {
+if (Astro.url.searchParams.get("action") === "logout") {
   clearSessionUser(Astro.cookies, Astro.url);
-  return Astro.redirect(getLocalizedPath('/account/login', locale));
+  return Astro.redirect(getLocalizedPath("/account/login", locale));
 }
 
 // Fetch user orders with items
@@ -47,7 +49,7 @@ try {
     },
   });
 } catch (e) {
-  console.error('[User Account] Failed to fetch user orders:', e);
+  console.error("[User Account] Failed to fetch user orders:", e);
 }
 
 // Fetch user service requests
@@ -59,106 +61,125 @@ try {
     .where(
       or(
         eq(serviceRequests.userId, currentUser.id),
-        eq(serviceRequests.customerPhone, currentUser.phone)
-      )
+        eq(serviceRequests.customerPhone, currentUser.phone),
+      ),
     )
     .orderBy(desc(serviceRequests.createdAt));
 } catch (e) {
-  console.error('[User Account] Failed to fetch user service requests:', e);
+  console.error("[User Account] Failed to fetch user service requests:", e);
 }
 
 // Inline translations
 const translations = {
   gu: {
     title: `મારું ખાતું - ${settings.businessName}`,
-    welcome: 'સ્વાગત છે, {name}',
-    logout: 'સાઇન આઉટ',
-    creditsTitle: 'તમારી સ્ટોર ક્રેડિટ્સ',
-    creditsSubtitle: 'કાર્ટ પેજ પર આ ક્રેડિટ્સનો ઉપયોગ કરીને વધારાનું ડિસ્કાઉન્ટ મેળવી શકો છો.',
-    referTitle: 'મિત્રોને રેફર કરો અને ક્રેડિટ્સ કમાઓ!',
-    referDesc: 'જ્યારે તમારા કોડથી કોઈ નવું ખાતું બનાવે છે, ત્યારે તેમને ₹૫૦ ક્રેડિટ અને તમને ₹૧૦૦ ક્રેડિટ મળે છે!',
-    yourCode: 'તમારો રેફરલ કોડ:',
-    copyBtn: 'કોપી કરો',
-    copiedMsg: 'લિંક કોપી થઈ ગઈ છે!',
-    shareWa: 'વોટ્સએપ પર શેર કરો',
+    welcome: "સ્વાગત છે, {name}",
+    logout: "સાઇન આઉટ",
+    creditsTitle: "તમારી સ્ટોર ક્રેડિટ્સ",
+    creditsSubtitle:
+      "કાર્ટ પેજ પર આ ક્રેડિટ્સનો ઉપયોગ કરીને વધારાનું ડિસ્કાઉન્ટ મેળવી શકો છો.",
+    referTitle: "મિત્રોને રેફર કરો અને ક્રેડિટ્સ કમાઓ!",
+    referDesc:
+      "જ્યારે તમારા કોડથી કોઈ નવું ખાતું બનાવે છે, ત્યારે તેમને ₹૫૦ ક્રેડિટ અને તમને ₹૧૦૦ ક્રેડિટ મળે છે!",
+    yourCode: "તમારો રેફરલ કોડ:",
+    copyBtn: "કોપી કરો",
+    copiedMsg: "લિંક કોપી થઈ ગઈ છે!",
+    shareWa: "વોટ્સએપ પર શેર કરો",
     waText: `${settings.businessName} પર રજીસ્ટ્રેશન કરો અને તમારા પહેલા ઓર્ડર પર મેળવો ₹૫૦ નું ડિસ્કાઉન્ટ! મારો રેફરલ કોડ: {code}. સાઇન અપ લિંક: {link}`,
-    historyTitle: 'ઓર્ડર હિસ્ટ્રી',
-    noOrders: 'તમે હજી સુધી કોઈ ઓર્ડર કર્યો નથી.',
-    orderId: 'ઓર્ડર ID',
-    total: 'કુલ રકમ',
-    discount: 'ક્રેડિટ્સ ડિસ્કાઉન્ટ',
-    status: 'સ્થિતિ',
-    date: 'તારીખ',
-    srTitle: 'સર્વિસ રિક્વેસ્ટ (ફરિયાદો)',
-    newSrBtn: 'નવી ફરિયાદ નોંધાવો',
-    noSrs: 'તમારી કોઈ ફરિયાદ નથી.',
-    srProduct: 'પ્રોડક્ટ',
-    srStatus: 'સ્થિતિ',
-    srDetails: 'સમસ્યાની વિગત',
-    srTracking: 'ટ્રેકિંગ માહિતી / અપડેટ્સ',
-    srDate: 'તારીખ',
+    historyTitle: "ઓર્ડર હિસ્ટ્રી",
+    noOrders: "તમે હજી સુધી કોઈ ઓર્ડર કર્યો નથી.",
+    orderId: "ઓર્ડર ID",
+    total: "કુલ રકમ",
+    discount: "ક્રેડિટ્સ ડિસ્કાઉન્ટ",
+    status: "સ્થિતિ",
+    date: "તારીખ",
+    srTitle: "સર્વિસ રિક્વેસ્ટ (ફરિયાદો)",
+    newSrBtn: "નવી ફરિયાદ નોંધાવો",
+    noSrs: "તમારી કોઈ ફરિયાદ નથી.",
+    srProduct: "પ્રોડક્ટ",
+    srStatus: "સ્થિતિ",
+    srDetails: "સમસ્યાની વિગત",
+    srTracking: "ટ્રેકિંગ માહિતી / અપડેટ્સ",
+    srDate: "તારીખ",
   },
   en: {
     title: `My Account - ${settings.businessName}`,
-    welcome: 'Welcome, {name}',
-    logout: 'Sign Out',
-    creditsTitle: 'Your Store Credits',
-    creditsSubtitle: 'Use these credits at checkout to receive additional discounts on your order.',
-    referTitle: 'Refer Friends & Earn Credits!',
-    referDesc: 'When someone signs up using your code, they get ₹50 credits instantly and you receive ₹100 credits!',
-    yourCode: 'Your Referral Code:',
-    copyBtn: 'Copy Link',
-    copiedMsg: 'Link copied to clipboard!',
-    shareWa: 'Share on WhatsApp',
+    welcome: "Welcome, {name}",
+    logout: "Sign Out",
+    creditsTitle: "Your Store Credits",
+    creditsSubtitle:
+      "Use these credits at checkout to receive additional discounts on your order.",
+    referTitle: "Refer Friends & Earn Credits!",
+    referDesc:
+      "When someone signs up using your code, they get ₹50 credits instantly and you receive ₹100 credits!",
+    yourCode: "Your Referral Code:",
+    copyBtn: "Copy Link",
+    copiedMsg: "Link copied to clipboard!",
+    shareWa: "Share on WhatsApp",
     waText: `Sign up at ${settings.businessName} and get ₹50 off on your first order! My referral code: {code}. Sign up here: {link}`,
-    historyTitle: 'Order History',
-    noOrders: 'You have not placed any orders yet.',
-    orderId: 'Order ID',
-    total: 'Total',
-    discount: 'Credits Discount',
-    status: 'Status',
-    date: 'Date',
-    srTitle: 'Service Requests (Complaints)',
-    newSrBtn: 'Raise New Complaint',
-    noSrs: 'You have not raised any complaints yet.',
-    srProduct: 'Product',
-    srStatus: 'Status',
-    srDetails: 'Complaint Details',
-    srTracking: 'Tracking Info / Updates',
-    srDate: 'Date',
-  }
+    historyTitle: "Order History",
+    noOrders: "You have not placed any orders yet.",
+    orderId: "Order ID",
+    total: "Total",
+    discount: "Credits Discount",
+    status: "Status",
+    date: "Date",
+    srTitle: "Service Requests (Complaints)",
+    newSrBtn: "Raise New Complaint",
+    noSrs: "You have not raised any complaints yet.",
+    srProduct: "Product",
+    srStatus: "Status",
+    srDetails: "Complaint Details",
+    srTracking: "Tracking Info / Updates",
+    srDate: "Date",
+  },
 };
 
-const t = translations[locale === 'en' ? 'en' : 'gu'];
+const t = translations[locale === "en" ? "en" : "gu"];
 
 // Construct absolute referral URL
 const host = Astro.url.host;
 const protocol = Astro.url.protocol;
-const refLink = `${protocol}//${host}${getLocalizedPath('/account/login', locale)}?ref=${currentUser.referralCode}`;
+const refLink = `${protocol}//${host}${getLocalizedPath("/account/login", locale)}?ref=${currentUser.referralCode}`;
 const waShareUrl = `https://wa.me/?text=${encodeURIComponent(
-  t.waText.replace('{code}', currentUser.referralCode).replace('{link}', refLink)
+  t.waText
+    .replace("{code}", currentUser.referralCode)
+    .replace("{link}", refLink),
 )}`;
 ---
 
 <BaseLayout title={t.title} noindex={true}>
   <Container class="py-8 max-w-4xl">
     {/* Welcome Header */}
-    <div class="flex flex-wrap items-center justify-between gap-4 border-b border-neutral-200 pb-5 mb-6">
+    <div
+      class="flex flex-wrap items-center justify-between gap-4 border-b border-neutral-200 pb-5 mb-6"
+    >
       <div>
-        <h1 class="text-2xl font-bold text-neutral-900">{t.welcome.replace('{name}', currentUser.name)}</h1>
+        <h1 class="text-2xl font-bold text-neutral-900">
+          {t.welcome.replace("{name}", currentUser.name)}
+        </h1>
         <p class="text-xs text-neutral-500">📞 {currentUser.phone}</p>
       </div>
-      <a href="?action=logout" class="text-xs font-semibold text-red-600 border border-red-200 bg-red-50 hover:bg-red-100 rounded-md px-3 py-1.5 transition-colors">
+      <a
+        href="?action=logout"
+        class="text-xs font-semibold text-red-600 border border-red-200 bg-red-50 hover:bg-red-100 rounded-md px-3 py-1.5 transition-colors"
+      >
         {t.logout}
       </a>
     </div>
 
     <div class="grid gap-6 md:grid-cols-3 mb-8">
       {/* Credits Card */}
-      <div class="bg-gradient-to-br from-primary to-primary/90 rounded-lg p-5 text-white shadow-md flex flex-col justify-between md:col-span-1">
+      <div
+        class="bg-gradient-to-br from-primary to-primary/90 rounded-lg p-5 text-white shadow-md flex flex-col justify-between md:col-span-1"
+      >
         <div>
-          <h2 class="text-xs font-bold uppercase tracking-wider text-white/80">{t.creditsTitle}</h2>
-          <p class="text-4xl font-extrabold mt-2">₹{currentUser.credits.toLocaleString('en-IN')}</p>
+          <h2 class="text-xs font-bold uppercase tracking-wider text-white/80">
+            {t.creditsTitle}
+          </h2>
+          <p class="text-4xl font-extrabold mt-2">
+            ₹{currentUser.credits.toLocaleString("en-IN")}
+          </p>
         </div>
         <p class="text-[11px] text-white/95 leading-relaxed mt-4">
           {t.creditsSubtitle}
@@ -166,7 +187,9 @@ const waShareUrl = `https://wa.me/?text=${encodeURIComponent(
       </div>
 
       {/* Referral Program Card */}
-      <div class="bg-white border border-neutral-200 rounded-lg p-5 shadow-sm md:col-span-2 flex flex-col justify-between">
+      <div
+        class="bg-white border border-neutral-200 rounded-lg p-5 shadow-sm md:col-span-2 flex flex-col justify-between"
+      >
         <div>
           <h2 class="text-base font-bold text-neutral-900">{t.referTitle}</h2>
           <p class="text-xs text-neutral-500 mt-1 leading-relaxed">
@@ -174,11 +197,13 @@ const waShareUrl = `https://wa.me/?text=${encodeURIComponent(
           </p>
 
           <div class="mt-4 flex flex-wrap items-center gap-3">
-            <div class="bg-neutral-50 border border-neutral-200 rounded px-3 py-1.5 font-mono text-sm font-bold text-primary">
+            <div
+              class="bg-neutral-50 border border-neutral-200 rounded px-3 py-1.5 font-mono text-sm font-bold text-primary"
+            >
               {currentUser.referralCode}
             </div>
-            
-            <button 
+
+            <button
               id="copy-ref-btn"
               onclick={`navigator.clipboard.writeText('${refLink}'); window.showToast('${t.copiedMsg}')`}
               class="text-xs font-semibold text-neutral-700 bg-neutral-100 hover:bg-neutral-200 rounded px-3 py-2 transition-colors focus:outline-none"
@@ -189,13 +214,14 @@ const waShareUrl = `https://wa.me/?text=${encodeURIComponent(
         </div>
 
         <div class="mt-4 pt-4 border-t border-neutral-100">
-          <a 
-            href={waShareUrl} 
-            target="_blank" 
+          <a
+            href={waShareUrl}
+            target="_blank"
             rel="noopener noreferrer"
             class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white text-xs font-bold py-2 px-4 rounded-md transition-colors"
           >
-            <span>💬</span> {t.shareWa}
+            <span>💬</span>
+            {t.shareWa}
           </a>
         </div>
       </div>
@@ -203,257 +229,404 @@ const waShareUrl = `https://wa.me/?text=${encodeURIComponent(
 
     {/* Order History */}
     <div class="bg-white border border-neutral-200 rounded-lg p-5 shadow-sm">
-      <h2 class="text-lg font-bold text-neutral-900 border-b border-neutral-100 pb-3 mb-4">{t.historyTitle}</h2>
-      
+      <h2
+        class="text-lg font-bold text-neutral-900 border-b border-neutral-100 pb-3 mb-4"
+      >
+        {t.historyTitle}
+      </h2>
+
       <div class="space-y-4">
-        {userOrders.map((order) => {
-          const dateStr = new Date(order.createdAt).toLocaleDateString(locale === 'en' ? 'en-US' : 'en-IN', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
-          });
+        {
+          userOrders.map((order) => {
+            const dateStr = new Date(order.createdAt).toLocaleDateString(
+              locale === "en" ? "en-US" : "en-IN",
+              {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              },
+            );
 
-          return (
-            <div class="border border-neutral-150 rounded-md p-4 bg-neutral-50/20">
-              <div class="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-100 pb-2 mb-3">
-                <div>
-                  <span class="text-[10px] font-bold text-neutral-400 uppercase">{t.orderId}</span>
-                  <p class="text-xs font-mono font-bold text-neutral-700">#{order.id.slice(0, 8)}</p>
-                </div>
-                
-                <div class="text-right">
-                  <span class="text-[10px] text-neutral-400 block">{t.date}</span>
-                  <span class="text-xs text-neutral-600 font-medium">{dateStr}</span>
-                </div>
-
-                <div class="flex items-center gap-1.5 flex-wrap">
-                  {/* Payment Status Badge */}
-                  <span class={`inline-block rounded px-2 py-0.5 text-[10px] font-semibold uppercase border ${
-                    order.paymentStatus === 'received' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'
-                  }`}>
-                    💳 {order.paymentStatus === 'received' ? (locale === 'gu' ? 'ચુકવણી મળેલ' : 'Paid') : (locale === 'gu' ? 'બાકી ચુકવણી' : 'Unpaid')}
-                  </span>
-
-                  {/* Order Status Badge */}
-                  <span class={`inline-block rounded px-2 py-0.5 text-[10px] font-semibold uppercase border ${
-                    order.status === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                    order.status === 'processing' ? 'bg-sky-50 text-sky-700 border-sky-200' :
-                    order.status === 'shipped' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
-                    order.status === 'delivered' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                    order.status === 'cancelled' ? 'bg-rose-50 text-rose-700 border-rose-200' :
-                    'bg-neutral-50 text-neutral-700 border-neutral-200'
-                  }`}>
-                    📦 {order.status}
-                  </span>
-                </div>
-              </div>
-
-              {/* Items List */}
-              <div class="divide-y divide-neutral-100 mb-3">
-                {order.items?.map((item: any) => (
-                  <div class="py-1.5 flex justify-between text-xs gap-4">
-                    <span class="font-medium text-neutral-800 flex-1">{item.product?.name || 'Product'}</span>
-                    <span class="text-neutral-500 shrink-0">₹{item.price.toLocaleString('en-IN')} x {item.quantity}</span>
+            return (
+              <div class="border border-neutral-150 rounded-md p-4 bg-neutral-50/20">
+                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-100 pb-2 mb-3">
+                  <div>
+                    <span class="text-[10px] font-bold text-neutral-400 uppercase">
+                      {t.orderId}
+                    </span>
+                    <p class="text-xs font-mono font-bold text-neutral-700">
+                      #{order.id.slice(0, 8)}
+                    </p>
                   </div>
-                ))}
-              </div>
 
-              {/* Totals */}
-              <div class="flex flex-col items-end border-t border-neutral-100 pt-2 gap-0.5 text-xs mb-3.5">
-                {order.creditsUsed > 0 && (
-                  <span class="text-green-600 font-medium">
-                    {t.discount}: -₹{order.creditsUsed.toLocaleString('en-IN')}
-                  </span>
-                )}
-                <span class="font-semibold text-neutral-800">
-                  {t.total}: <span class="text-sm font-bold text-primary">₹{order.totalAmount.toLocaleString('en-IN')}</span>
-                </span>
-              </div>
+                  <div class="text-right">
+                    <span class="text-[10px] text-neutral-400 block">
+                      {t.date}
+                    </span>
+                    <span class="text-xs text-neutral-600 font-medium">
+                      {dateStr}
+                    </span>
+                  </div>
 
-              {/* Tracking Trail/Timeline */}
-              <div class="border-t border-neutral-100 pt-3.5 mt-3.5 relative z-0">
-                <span class="text-[9px] font-bold text-neutral-400 uppercase block mb-2">{locale === 'gu' ? 'ઓર્ડર ટ્રેકિંગ ટ્રેઇલ' : 'Order Tracking Trail'}</span>
-                <div class="flex items-center w-full justify-between text-[10px] text-neutral-500 font-medium relative select-none">
-                  {/* Line background */}
-                  <div class="absolute top-[8px] left-0 right-0 h-0.5 bg-neutral-200 -z-10"></div>
-                  {/* Shipped status progress highlight */}
-                  <div class={`absolute top-[8px] left-0 h-0.5 bg-primary -z-10 transition-all duration-300 ${
-                    order.status === 'pending' ? 'w-0' :
-                    order.status === 'processing' ? 'w-1/3' :
-                    order.status === 'shipped' ? 'w-2/3' :
-                    'w-full'
-                  }`}></div>
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    {/* Payment Status Badge */}
+                    <span
+                      class={`inline-block rounded px-2 py-0.5 text-[10px] font-semibold uppercase border ${
+                        order.paymentStatus === "received"
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                          : "bg-rose-50 text-rose-700 border-rose-200"
+                      }`}
+                    >
+                      💳{" "}
+                      {order.paymentStatus === "received"
+                        ? locale === "gu"
+                          ? "ચુકવણી મળેલ"
+                          : "Paid"
+                        : locale === "gu"
+                          ? "બાકી ચુકવણી"
+                          : "Unpaid"}
+                    </span>
 
-                  {/* Step 1: Placed */}
-                  <div class="flex flex-col items-center">
-                    <div class="w-[16px] h-[16px] rounded-full bg-primary text-white flex items-center justify-center text-[8px] font-bold shadow-sm">
-                      ✓
+                    {/* Order Status Badge */}
+                    <span
+                      class={`inline-block rounded px-2 py-0.5 text-[10px] font-semibold uppercase border ${
+                        order.status === "pending"
+                          ? "bg-amber-50 text-amber-700 border-amber-200"
+                          : order.status === "processing"
+                            ? "bg-sky-50 text-sky-700 border-sky-200"
+                            : order.status === "shipped"
+                              ? "bg-indigo-50 text-indigo-700 border-indigo-200"
+                              : order.status === "delivered"
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                : order.status === "cancelled"
+                                  ? "bg-rose-50 text-rose-700 border-rose-200"
+                                  : "bg-neutral-50 text-neutral-700 border-neutral-200"
+                      }`}
+                    >
+                      📦 {order.status}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Items List */}
+                <div class="divide-y divide-neutral-100 mb-3">
+                  {order.items?.map((item: any) => (
+                    <div class="py-1.5 flex justify-between text-xs gap-4">
+                      <span class="font-medium text-neutral-800 flex-1">
+                        {item.product?.name || "Product"}
+                      </span>
+                      <span class="text-neutral-500 shrink-0">
+                        ₹{item.price.toLocaleString("en-IN")} x {item.quantity}
+                      </span>
                     </div>
-                    <span class="mt-1 text-[9px] font-bold text-neutral-800">{locale === 'gu' ? 'ઓર્ડર મળ્યો' : 'Placed'}</span>
-                  </div>
+                  ))}
+                </div>
 
-                  {/* Step 2: Processing */}
-                  <div class="flex flex-col items-center">
-                    <div class={`w-[16px] h-[16px] rounded-full flex items-center justify-center text-[8px] font-bold shadow-sm ${
-                      ['processing', 'shipped', 'delivered'].includes(order.status)
-                        ? 'bg-primary text-white'
-                        : 'bg-neutral-200 text-neutral-400'
-                    }`}>
-                      {['processing', 'shipped', 'delivered'].includes(order.status) ? '✓' : '2'}
+                {/* Totals */}
+                <div class="flex flex-col items-end border-t border-neutral-100 pt-2 gap-0.5 text-xs mb-3.5">
+                  {order.creditsUsed > 0 && (
+                    <span class="text-green-600 font-medium">
+                      {t.discount}: -₹
+                      {order.creditsUsed.toLocaleString("en-IN")}
+                    </span>
+                  )}
+                  <span class="font-semibold text-neutral-800">
+                    {t.total}:{" "}
+                    <span class="text-sm font-bold text-primary">
+                      ₹{order.totalAmount.toLocaleString("en-IN")}
+                    </span>
+                  </span>
+                </div>
+
+                {/* Tracking Trail/Timeline */}
+                <div class="border-t border-neutral-100 pt-3.5 mt-3.5 relative z-0">
+                  <span class="text-[9px] font-bold text-neutral-400 uppercase block mb-2">
+                    {locale === "gu"
+                      ? "ઓર્ડર ટ્રેકિંગ ટ્રેઇલ"
+                      : "Order Tracking Trail"}
+                  </span>
+                  <div class="flex items-center w-full justify-between text-[10px] text-neutral-500 font-medium relative select-none">
+                    {/* Line background */}
+                    <div class="absolute top-[8px] left-0 right-0 h-0.5 bg-neutral-200 -z-10" />
+                    {/* Shipped status progress highlight */}
+                    <div
+                      class={`absolute top-[8px] left-0 h-0.5 bg-primary -z-10 transition-all duration-300 ${
+                        order.status === "pending"
+                          ? "w-0"
+                          : order.status === "processing"
+                            ? "w-1/3"
+                            : order.status === "shipped"
+                              ? "w-2/3"
+                              : "w-full"
+                      }`}
+                    />
+
+                    {/* Step 1: Placed */}
+                    <div class="flex flex-col items-center">
+                      <div class="w-[16px] h-[16px] rounded-full bg-primary text-white flex items-center justify-center text-[8px] font-bold shadow-sm">
+                        ✓
+                      </div>
+                      <span class="mt-1 text-[9px] font-bold text-neutral-800">
+                        {locale === "gu" ? "ઓર્ડર મળ્યો" : "Placed"}
+                      </span>
                     </div>
-                    <span class={`mt-1 text-[9px] ${
-                      ['processing', 'shipped', 'delivered'].includes(order.status) ? 'font-bold text-neutral-800' : 'text-neutral-450'
-                    }`}>{locale === 'gu' ? 'પ્રોસેસિંગ' : 'Processing'}</span>
-                  </div>
 
-                  {/* Step 3: Shipped */}
-                  <div class="flex flex-col items-center">
-                    <div class={`w-[16px] h-[16px] rounded-full flex items-center justify-center text-[8px] font-bold shadow-sm ${
-                      ['shipped', 'delivered'].includes(order.status)
-                        ? 'bg-primary text-white'
-                        : 'bg-neutral-200 text-neutral-400'
-                    }`}>
-                      {['shipped', 'delivered'].includes(order.status) ? '✓' : '3'}
+                    {/* Step 2: Processing */}
+                    <div class="flex flex-col items-center">
+                      <div
+                        class={`w-[16px] h-[16px] rounded-full flex items-center justify-center text-[8px] font-bold shadow-sm ${
+                          ["processing", "shipped", "delivered"].includes(
+                            order.status,
+                          )
+                            ? "bg-primary text-white"
+                            : "bg-neutral-200 text-neutral-400"
+                        }`}
+                      >
+                        {["processing", "shipped", "delivered"].includes(
+                          order.status,
+                        )
+                          ? "✓"
+                          : "2"}
+                      </div>
+                      <span
+                        class={`mt-1 text-[9px] ${
+                          ["processing", "shipped", "delivered"].includes(
+                            order.status,
+                          )
+                            ? "font-bold text-neutral-800"
+                            : "text-neutral-450"
+                        }`}
+                      >
+                        {locale === "gu" ? "પ્રોસેસિંગ" : "Processing"}
+                      </span>
                     </div>
-                    <span class={`mt-1 text-[9px] ${
-                      ['shipped', 'delivered'].includes(order.status) ? 'font-bold text-neutral-800' : 'text-neutral-450'
-                    }`}>{locale === 'gu' ? 'મોકલેલ' : 'Shipped'}</span>
-                  </div>
 
-                  {/* Step 4: Delivered / Cancelled / Returned */}
-                  <div class="flex flex-col items-center">
-                    {order.status === 'cancelled' ? (
-                      <>
-                        <div class="w-[16px] h-[16px] rounded-full bg-rose-500 text-white flex items-center justify-center text-[8px] font-bold shadow-sm">
-                          ✕
-                        </div>
-                        <span class="mt-1 text-[9px] font-bold text-rose-600">{locale === 'gu' ? 'રદ કરેલ' : 'Cancelled'}</span>
-                      </>
-                    ) : order.status === 'returned' ? (
-                      <>
-                        <div class="w-[16px] h-[16px] rounded-full bg-amber-500 text-white flex items-center justify-center text-[8px] font-bold shadow-sm">
-                          ⟲
-                        </div>
-                        <span class="mt-1 text-[9px] font-bold text-amber-600">{locale === 'gu' ? 'પરત કરેલ' : 'Returned'}</span>
-                      </>
-                    ) : (
-                      <>
-                        <div class={`w-[16px] h-[16px] rounded-full flex items-center justify-center text-[8px] font-bold shadow-sm ${
-                          order.status === 'delivered'
-                            ? 'bg-primary text-white'
-                            : 'bg-neutral-200 text-neutral-400'
-                        }`}>
-                          {order.status === 'delivered' ? '✓' : '4'}
-                        </div>
-                        <span class={`mt-1 text-[9px] ${
-                          order.status === 'delivered' ? 'font-bold text-neutral-800' : 'text-neutral-450'
-                        }`}>{locale === 'gu' ? 'મળેલ' : 'Delivered'}</span>
-                      </>
-                    )}
+                    {/* Step 3: Shipped */}
+                    <div class="flex flex-col items-center">
+                      <div
+                        class={`w-[16px] h-[16px] rounded-full flex items-center justify-center text-[8px] font-bold shadow-sm ${
+                          ["shipped", "delivered"].includes(order.status)
+                            ? "bg-primary text-white"
+                            : "bg-neutral-200 text-neutral-400"
+                        }`}
+                      >
+                        {["shipped", "delivered"].includes(order.status)
+                          ? "✓"
+                          : "3"}
+                      </div>
+                      <span
+                        class={`mt-1 text-[9px] ${
+                          ["shipped", "delivered"].includes(order.status)
+                            ? "font-bold text-neutral-800"
+                            : "text-neutral-450"
+                        }`}
+                      >
+                        {locale === "gu" ? "મોકલેલ" : "Shipped"}
+                      </span>
+                    </div>
+
+                    {/* Step 4: Delivered / Cancelled / Returned */}
+                    <div class="flex flex-col items-center">
+                      {order.status === "cancelled" ? (
+                        <>
+                          <div class="w-[16px] h-[16px] rounded-full bg-rose-500 text-white flex items-center justify-center text-[8px] font-bold shadow-sm">
+                            ✕
+                          </div>
+                          <span class="mt-1 text-[9px] font-bold text-rose-600">
+                            {locale === "gu" ? "રદ કરેલ" : "Cancelled"}
+                          </span>
+                        </>
+                      ) : order.status === "returned" ? (
+                        <>
+                          <div class="w-[16px] h-[16px] rounded-full bg-amber-500 text-white flex items-center justify-center text-[8px] font-bold shadow-sm">
+                            ⟲
+                          </div>
+                          <span class="mt-1 text-[9px] font-bold text-amber-600">
+                            {locale === "gu" ? "પરત કરેલ" : "Returned"}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <div
+                            class={`w-[16px] h-[16px] rounded-full flex items-center justify-center text-[8px] font-bold shadow-sm ${
+                              order.status === "delivered"
+                                ? "bg-primary text-white"
+                                : "bg-neutral-200 text-neutral-400"
+                            }`}
+                          >
+                            {order.status === "delivered" ? "✓" : "4"}
+                          </div>
+                          <span
+                            class={`mt-1 text-[9px] ${
+                              order.status === "delivered"
+                                ? "font-bold text-neutral-800"
+                                : "text-neutral-450"
+                            }`}
+                          >
+                            {locale === "gu" ? "મળેલ" : "Delivered"}
+                          </span>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })
+        }
 
-        {userOrders.length === 0 && (
-          <p class="text-sm text-neutral-500 py-4 text-center">
-            {t.noOrders}
-          </p>
-        )}
+        {
+          userOrders.length === 0 && (
+            <p class="text-sm text-neutral-500 py-4 text-center">
+              {t.noOrders}
+            </p>
+          )
+        }
       </div>
     </div>
 
     {/* Service Requests Section */}
-    <div class="bg-white border border-neutral-200 rounded-lg p-5 shadow-sm mt-6">
-      <div class="flex flex-wrap items-center justify-between gap-4 border-b border-neutral-100 pb-3 mb-4">
+    <div
+      class="bg-white border border-neutral-200 rounded-lg p-5 shadow-sm mt-6"
+    >
+      <div
+        class="flex flex-wrap items-center justify-between gap-4 border-b border-neutral-100 pb-3 mb-4"
+      >
         <h2 class="text-lg font-bold text-neutral-900">{t.srTitle}</h2>
-        <a href={getLocalizedPath('/service-request', locale)} class="text-xs font-bold bg-primary text-white hover:bg-primary/95 px-3 py-1.5 rounded-md transition-colors">
+        <a
+          href={getLocalizedPath("/service-request", locale)}
+          class="text-xs font-bold bg-primary text-white hover:bg-primary/95 px-3 py-1.5 rounded-md transition-colors"
+        >
           + {t.newSrBtn}
         </a>
       </div>
-      
+
       <div class="space-y-4">
-        {userServiceRequests.map((sr) => {
-          const dateStr = new Date(sr.createdAt).toLocaleDateString(locale === 'en' ? 'en-US' : 'en-IN', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
-          });
+        {
+          userServiceRequests.map((sr) => {
+            const dateStr = new Date(sr.createdAt).toLocaleDateString(
+              locale === "en" ? "en-US" : "en-IN",
+              {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              },
+            );
 
-          return (
-            <div class="border border-neutral-150 rounded-md p-4 bg-neutral-50/20">
-              <div class="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-100 pb-2 mb-3">
-                <div>
-                  <span class="text-[10px] font-bold text-neutral-400 uppercase">{t.srDate}</span>
-                  <p class="text-xs font-medium text-neutral-600">{dateStr}</p>
+            return (
+              <div class="border border-neutral-150 rounded-md p-4 bg-neutral-50/20">
+                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-100 pb-2 mb-3">
+                  <div>
+                    <span class="text-[10px] font-bold text-neutral-400 uppercase">
+                      {t.srDate}
+                    </span>
+                    <p class="text-xs font-medium text-neutral-600">
+                      {dateStr}
+                    </p>
+                  </div>
+
+                  <div>
+                    <span
+                      class={`inline-block rounded px-2 py-0.5 text-[10px] font-semibold uppercase border ${
+                        sr.status === "pending"
+                          ? "bg-amber-50 text-amber-700 border-amber-200"
+                          : sr.status === "in_progress"
+                            ? "bg-blue-50 text-blue-700 border-blue-200"
+                            : sr.status === "resolved"
+                              ? "bg-green-50 text-green-700 border-green-200"
+                              : "bg-neutral-50 text-neutral-700 border-neutral-200"
+                      }`}
+                    >
+                      {sr.status}
+                    </span>
+                  </div>
                 </div>
-                
-                <div>
-                  <span class={`inline-block rounded px-2 py-0.5 text-[10px] font-semibold uppercase border ${
-                    sr.status === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                    sr.status === 'in_progress' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                    sr.status === 'resolved' ? 'bg-green-50 text-green-700 border-green-200' :
-                    'bg-neutral-50 text-neutral-700 border-neutral-200'
-                  }`}>
-                    {sr.status}
-                  </span>
+
+                <div class="space-y-2.5">
+                  <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 bg-neutral-100/40 rounded p-3 text-xs text-neutral-700">
+                    <div>
+                      <span class="font-bold text-neutral-400 uppercase block text-[9px]">
+                        {locale === "en" ? "Category" : "કેટેગરી"}
+                      </span>
+                      <span class="font-semibold text-neutral-850">
+                        {sr.productCategory || "—"}
+                      </span>
+                    </div>
+                    <div>
+                      <span class="font-bold text-neutral-400 uppercase block text-[9px]">
+                        {locale === "en" ? "Brand" : "બ્રાન્ડ"}
+                      </span>
+                      <span class="font-semibold text-neutral-850">
+                        {sr.brandName || "—"}
+                      </span>
+                    </div>
+                    <div>
+                      <span class="font-bold text-neutral-400 uppercase block text-[9px]">
+                        {locale === "en" ? "Model No" : "મોડલ નંબર"}
+                      </span>
+                      <span class="font-semibold text-neutral-850">
+                        {sr.modelNumber || "—"}
+                      </span>
+                    </div>
+                    <div>
+                      <span class="font-bold text-neutral-400 uppercase block text-[9px]">
+                        {locale === "en" ? "Village / City" : "ગામ / શહેર"}
+                      </span>
+                      <span class="font-semibold text-neutral-850">
+                        {sr.village || "—"}
+                      </span>
+                    </div>
+                    <div>
+                      <span class="font-bold text-neutral-400 uppercase block text-[9px]">
+                        {locale === "en" ? "Pincode" : "પિનકોડ"}
+                      </span>
+                      <span class="font-semibold text-neutral-850 font-mono">
+                        {sr.pincode || "—"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {sr.address && (
+                    <div class="text-xs bg-neutral-100/40 rounded p-3 text-neutral-700">
+                      <span class="font-bold text-neutral-400 uppercase block text-[9px]">
+                        {locale === "en" ? "Address" : "સરનામું"}
+                      </span>
+                      <span class="font-medium text-neutral-850">
+                        {sr.address}
+                      </span>
+                    </div>
+                  )}
+
+                  <div>
+                    <h3 class="text-xs font-bold text-neutral-400 uppercase">
+                      {locale === "en" ? "Fault / Issue" : "સમસ્યાની વિગત"}
+                    </h3>
+                    <p class="text-xs text-neutral-600 whitespace-pre-line leading-relaxed">
+                      {sr.fault || sr.complaintDetails}
+                    </p>
+                  </div>
+
+                  {sr.trackingInfo && (
+                    <div class="bg-neutral-100/60 rounded p-3 border border-neutral-200/50">
+                      <h3 class="text-xs font-bold text-primary uppercase mb-1">
+                        {t.srTracking}
+                      </h3>
+                      <p class="text-xs text-neutral-700 whitespace-pre-line leading-relaxed">
+                        {sr.trackingInfo}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
+            );
+          })
+        }
 
-              <div class="space-y-2.5">
-                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 bg-neutral-100/40 rounded p-3 text-xs text-neutral-700">
-                  <div>
-                    <span class="font-bold text-neutral-400 uppercase block text-[9px]">{locale === 'en' ? 'Category' : 'કેટેગરી'}</span>
-                    <span class="font-semibold text-neutral-850">{sr.productCategory || '—'}</span>
-                  </div>
-                  <div>
-                    <span class="font-bold text-neutral-400 uppercase block text-[9px]">{locale === 'en' ? 'Brand' : 'બ્રાન્ડ'}</span>
-                    <span class="font-semibold text-neutral-850">{sr.brandName || '—'}</span>
-                  </div>
-                  <div>
-                    <span class="font-bold text-neutral-400 uppercase block text-[9px]">{locale === 'en' ? 'Model No' : 'મોડલ નંબર'}</span>
-                    <span class="font-semibold text-neutral-850">{sr.modelNumber || '—'}</span>
-                  </div>
-                  <div>
-                    <span class="font-bold text-neutral-400 uppercase block text-[9px]">{locale === 'en' ? 'Village / City' : 'ગામ / શહેર'}</span>
-                    <span class="font-semibold text-neutral-850">{sr.village || '—'}</span>
-                  </div>
-                  <div>
-                    <span class="font-bold text-neutral-400 uppercase block text-[9px]">{locale === 'en' ? 'Pincode' : 'પિનકોડ'}</span>
-                    <span class="font-semibold text-neutral-850 font-mono">{sr.pincode || '—'}</span>
-                  </div>
-                </div>
-
-                {sr.address && (
-                  <div class="text-xs bg-neutral-100/40 rounded p-3 text-neutral-700">
-                    <span class="font-bold text-neutral-400 uppercase block text-[9px]">{locale === 'en' ? 'Address' : 'સરનામું'}</span>
-                    <span class="font-medium text-neutral-850">{sr.address}</span>
-                  </div>
-                )}
-
-                <div>
-                  <h3 class="text-xs font-bold text-neutral-400 uppercase">{locale === 'en' ? 'Fault / Issue' : 'સમસ્યાની વિગત'}</h3>
-                  <p class="text-xs text-neutral-600 whitespace-pre-line leading-relaxed">{sr.fault || sr.complaintDetails}</p>
-                </div>
-
-                {sr.trackingInfo && (
-                  <div class="bg-neutral-100/60 rounded p-3 border border-neutral-200/50">
-                    <h3 class="text-xs font-bold text-primary uppercase mb-1">{t.srTracking}</h3>
-                    <p class="text-xs text-neutral-700 whitespace-pre-line leading-relaxed">{sr.trackingInfo}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
-
-        {userServiceRequests.length === 0 && (
-          <p class="text-sm text-neutral-500 py-4 text-center">
-            {t.noSrs}
-          </p>
-        )}
+        {
+          userServiceRequests.length === 0 && (
+            <p class="text-sm text-neutral-500 py-4 text-center">{t.noSrs}</p>
+          )
+        }
       </div>
     </div>
   </Container>

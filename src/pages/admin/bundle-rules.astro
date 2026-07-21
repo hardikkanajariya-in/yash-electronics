@@ -7,7 +7,7 @@ import { getSessionUser, generateId } from '../../lib/auth';
 import { clearCmsCache } from '../../services/cms';
 
 export const prerender = false;
-export const isr = false;
+
 
 // Authenticate Admin
 Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');

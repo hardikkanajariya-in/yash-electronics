@@ -1,129 +1,147 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import Container from '../../components/ui/Container.astro';
-import { db } from '../../db';
-import { users, referralHistory, settings } from '../../db/schema';
-import { eq, and } from 'drizzle-orm';
-import { hashPassword, setSessionUser, getSessionUser, generateId, generateReferralCode } from '../../lib/auth';
-import { getSettings } from '../../services/cms';
-import { translateObject } from '../../lib/translations';
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Container from "../../components/ui/Container.astro";
+import { db } from "../../db";
+import { users, referralHistory, settings } from "../../db/schema";
+import { eq, and } from "drizzle-orm";
+import {
+  hashPassword,
+  setSessionUser,
+  getSessionUser,
+  generateId,
+  generateReferralCode,
+} from "../../lib/auth";
+import { getSettings } from "../../services/cms";
+import { translateObject } from "../../lib/translations";
 
 export const prerender = false;
-export const isr = false;
 
-const locale = Astro.currentLocale || 'gu';
+const locale = Astro.currentLocale || "gu";
 
 // Fetch global referral reward settings
 let signupBonusPoints = 50;
 let referrerBonusPoints = 100;
 try {
-  const [signupSetting] = await db.select().from(settings).where(eq(settings.key, 'signup_bonus_points'));
+  const [signupSetting] = await db
+    .select()
+    .from(settings)
+    .where(eq(settings.key, "signup_bonus_points"));
   if (signupSetting) signupBonusPoints = parseInt(signupSetting.value, 10);
-  
-  const [referrerSetting] = await db.select().from(settings).where(eq(settings.key, 'referrer_bonus_points'));
-  if (referrerSetting) referrerBonusPoints = parseInt(referrerSetting.value, 10);
+
+  const [referrerSetting] = await db
+    .select()
+    .from(settings)
+    .where(eq(settings.key, "referrer_bonus_points"));
+  if (referrerSetting)
+    referrerBonusPoints = parseInt(referrerSetting.value, 10);
 } catch (e) {
-  console.error('[Login] Failed to load referral points config:', e);
+  console.error("[Login] Failed to load referral points config:", e);
 }
 
 const rawSettings = await getSettings();
 const settingsObj = translateObject(rawSettings, locale);
 
 // Read redirect query param
-const redirectParam = Astro.url.searchParams.get('redirect') || '';
+const redirectParam = Astro.url.searchParams.get("redirect") || "";
 
 // Redirect if already logged in as customer
 const currentUser = await getSessionUser(Astro.cookies);
 if (currentUser) {
-  Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-  if (currentUser.role === 'admin') {
-    return Astro.redirect('/admin');
+  Astro.response.headers.set(
+    "Cache-Control",
+    "no-cache, no-store, must-revalidate",
+  );
+  if (currentUser.role === "admin") {
+    return Astro.redirect("/admin");
   }
-  return Astro.redirect(locale === 'en' ? '/en/account' : '/account');
+  return Astro.redirect(locale === "en" ? "/en/account" : "/account");
 }
 
 // Read ref query param
-const refParam = Astro.url.searchParams.get('ref') || '';
+const refParam = Astro.url.searchParams.get("ref") || "";
 
 // Inline Translations
 const translations = {
   gu: {
     title: `${settingsObj.businessName} - ખાતું`,
-    loginTab: 'લોગિન',
-    registerTab: 'રજીસ્ટ્રેશન',
-    phoneLabel: 'ફોન નંબર',
-    passwordLabel: 'પાસવર્ડ',
-    nameLabel: 'પૂરું નામ',
-    refLabel: 'રેફરલ કોડ (વૈકલ્પિક)',
-    loginBtn: 'સાઇન ઇન કરો',
-    registerBtn: 'ખાતું બનાવો',
-    haveAccount: 'પહેલેથી જ ખાતું છે? લોગિન કરો',
-    noAccount: 'નવું ખાતું બનાવવું છે? રજીસ્ટ્રેશન કરો',
-    errInvalid: 'ખોટો ફોન નંબર અથવા પાસવર્ડ.',
-    errRefInvalid: 'દાખલ કરેલ રેફરલ કોડ અમાન્ય છે.',
-    errPhoneExists: 'આ ફોન નંબર પર પહેલેથી જ ખાતું બનેલું છે.',
-    errGeneric: 'કંઈક ખોટું થયું. કૃપા કરીને ફરી પ્રયાસ કરો.',
-    forgotPassword: 'પાસવર્ડ ભૂલી ગયા છો?',
+    loginTab: "લોગિન",
+    registerTab: "રજીસ્ટ્રેશન",
+    phoneLabel: "ફોન નંબર",
+    passwordLabel: "પાસવર્ડ",
+    nameLabel: "પૂરું નામ",
+    refLabel: "રેફરલ કોડ (વૈકલ્પિક)",
+    loginBtn: "સાઇન ઇન કરો",
+    registerBtn: "ખાતું બનાવો",
+    haveAccount: "પહેલેથી જ ખાતું છે? લોગિન કરો",
+    noAccount: "નવું ખાતું બનાવવું છે? રજીસ્ટ્રેશન કરો",
+    errInvalid: "ખોટો ફોન નંબર અથવા પાસવર્ડ.",
+    errRefInvalid: "દાખલ કરેલ રેફરલ કોડ અમાન્ય છે.",
+    errPhoneExists: "આ ફોન નંબર પર પહેલેથી જ ખાતું બનેલું છે.",
+    errGeneric: "કંઈક ખોટું થયું. કૃપા કરીને ફરી પ્રયાસ કરો.",
+    forgotPassword: "પાસવર્ડ ભૂલી ગયા છો?",
   },
   en: {
     title: `${settingsObj.businessName} - Account`,
-    loginTab: 'Login',
-    registerTab: 'Register',
-    phoneLabel: 'Phone Number',
-    passwordLabel: 'Password',
-    nameLabel: 'Full Name',
-    refLabel: 'Referral Code (Optional)',
-    loginBtn: 'Sign In',
-    registerBtn: 'Create Account',
-    haveAccount: 'Already have an account? Login',
-    noAccount: 'Need an account? Register',
-    errInvalid: 'Invalid phone number or password.',
-    errRefInvalid: 'The entered referral code is invalid.',
-    errPhoneExists: 'An account with this phone number already exists.',
-    errGeneric: 'Something went wrong. Please try again.',
-    forgotPassword: 'Forgot Password?',
-  }
+    loginTab: "Login",
+    registerTab: "Register",
+    phoneLabel: "Phone Number",
+    passwordLabel: "Password",
+    nameLabel: "Full Name",
+    refLabel: "Referral Code (Optional)",
+    loginBtn: "Sign In",
+    registerBtn: "Create Account",
+    haveAccount: "Already have an account? Login",
+    noAccount: "Need an account? Register",
+    errInvalid: "Invalid phone number or password.",
+    errRefInvalid: "The entered referral code is invalid.",
+    errPhoneExists: "An account with this phone number already exists.",
+    errGeneric: "Something went wrong. Please try again.",
+    forgotPassword: "Forgot Password?",
+  },
 };
 
-const t = translations[locale === 'en' ? 'en' : 'gu'];
+const t = translations[locale === "en" ? "en" : "gu"];
 
-let error = '';
-let activeTab = 'login'; // 'login' or 'register'
+let error = "";
+let activeTab = "login"; // 'login' or 'register'
 
-if (Astro.request.method === 'POST') {
+if (Astro.request.method === "POST") {
   try {
     const formData = await Astro.request.formData();
-    const formAction = formData.get('formAction')?.toString() || 'login';
+    const formAction = formData.get("formAction")?.toString() || "login";
     activeTab = formAction;
 
-    const phone = formData.get('phone')?.toString().trim() || '';
-    const password = formData.get('password')?.toString() || '';
+    const phone = formData.get("phone")?.toString().trim() || "";
+    const password = formData.get("password")?.toString() || "";
 
-    if (formAction === 'login') {
+    if (formAction === "login") {
       const hashedPassword = hashPassword(password);
       const [user] = await db
         .select()
         .from(users)
-        .where(
-          and(
-            eq(users.phone, phone),
-            eq(users.password, hashedPassword)
-          )
-        );
+        .where(and(eq(users.phone, phone), eq(users.password, hashedPassword)));
 
       if (user) {
-        Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-        const destination = redirectParam 
-          ? redirectParam 
-          : (user.role === 'admin' ? '/admin' : (locale === 'en' ? '/en/account' : '/account'));
+        Astro.response.headers.set(
+          "Cache-Control",
+          "no-cache, no-store, must-revalidate",
+        );
+        const destination = redirectParam
+          ? redirectParam
+          : user.role === "admin"
+            ? "/admin"
+            : locale === "en"
+              ? "/en/account"
+              : "/account";
         setSessionUser(Astro.cookies, user.id, Astro.url);
         return Astro.redirect(destination);
       } else {
         error = t.errInvalid;
       }
-    } else if (formAction === 'register') {
-      const name = formData.get('name')?.toString().trim() || '';
-      const refCode = formData.get('refCode')?.toString().trim().toUpperCase() || '';
+    } else if (formAction === "register") {
+      const name = formData.get("name")?.toString().trim() || "";
+      const refCode =
+        formData.get("refCode")?.toString().trim().toUpperCase() || "";
 
       // Check phone existence
       const [existingUser] = await db
@@ -155,7 +173,7 @@ if (Astro.request.method === 'POST') {
         if (!error) {
           const newUserId = generateId();
           const userRefCode = generateReferralCode();
-          
+
           // Referred user gets signup bonus points, normal user gets 0
           const initialCredits = referredById ? signupBonusPoints : 0;
 
@@ -164,7 +182,7 @@ if (Astro.request.method === 'POST') {
             name,
             phone,
             password: hashPassword(password),
-            role: 'customer',
+            role: "customer",
             referralCode: userRefCode,
             referredById,
             credits: initialCredits,
@@ -184,7 +202,7 @@ if (Astro.request.method === 'POST') {
               referrerId: referredById,
               referredUserId: newUserId,
               pointsEarned: signupBonusPoints,
-              type: 'signup_bonus',
+              type: "signup_bonus",
               createdAt: new Date().toISOString(),
             });
 
@@ -194,20 +212,27 @@ if (Astro.request.method === 'POST') {
               referrerId: referredById,
               referredUserId: newUserId,
               pointsEarned: referrerBonusPoints,
-              type: 'referrer_bonus',
+              type: "referrer_bonus",
               createdAt: new Date().toISOString(),
             });
           }
 
-          Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-          const destination = redirectParam ? redirectParam : (locale === 'en' ? '/en/account' : '/account');
+          Astro.response.headers.set(
+            "Cache-Control",
+            "no-cache, no-store, must-revalidate",
+          );
+          const destination = redirectParam
+            ? redirectParam
+            : locale === "en"
+              ? "/en/account"
+              : "/account";
           setSessionUser(Astro.cookies, newUserId, Astro.url);
           return Astro.redirect(destination);
         }
       }
     }
   } catch (e) {
-    console.error('[User Auth Error]:', e);
+    console.error("[User Auth Error]:", e);
     error = t.errGeneric;
   }
 }
@@ -216,37 +241,46 @@ if (Astro.request.method === 'POST') {
 <BaseLayout title={t.title} noindex={true}>
   <Container class="py-12 max-w-md">
     <div class="bg-white border border-neutral-200 rounded-lg p-6 shadow-md">
-      
       {/* Tab Selectors */}
       <div class="flex border-b border-neutral-200 mb-6 text-sm font-medium">
-        <button 
-          id="login-tab-btn" 
+        <button
+          id="login-tab-btn"
           onclick="switchTab('login')"
-          class={`flex-1 pb-3 text-center transition-colors border-b-2 ${activeTab === 'login' ? 'border-primary text-primary font-bold' : 'border-transparent text-neutral-500 hover:text-primary'}`}
+          class={`flex-1 pb-3 text-center transition-colors border-b-2 ${activeTab === "login" ? "border-primary text-primary font-bold" : "border-transparent text-neutral-500 hover:text-primary"}`}
         >
           {t.loginTab}
         </button>
-        <button 
-          id="register-tab-btn" 
+        <button
+          id="register-tab-btn"
           onclick="switchTab('register')"
-          class={`flex-1 pb-3 text-center transition-colors border-b-2 ${activeTab === 'register' ? 'border-primary text-primary font-bold' : 'border-transparent text-neutral-500 hover:text-primary'}`}
+          class={`flex-1 pb-3 text-center transition-colors border-b-2 ${activeTab === "register" ? "border-primary text-primary font-bold" : "border-transparent text-neutral-500 hover:text-primary"}`}
         >
           {t.registerTab}
         </button>
       </div>
 
-      {error && (
-        <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md p-3 mb-4">
-          {error}
-        </div>
-      )}
+      {
+        error && (
+          <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md p-3 mb-4">
+            {error}
+          </div>
+        )
+      }
 
       {/* LOGIN FORM */}
-      <form id="login-form" method="post" class={`space-y-4 ${activeTab === 'login' ? '' : 'hidden'}`}>
+      <form
+        id="login-form"
+        method="post"
+        class={`space-y-4 ${activeTab === "login" ? "" : "hidden"}`}
+      >
         <input type="hidden" name="formAction" value="login" />
 
         <div>
-          <label for="login-phone" class="block text-sm font-semibold text-neutral-700 mb-1">{t.phoneLabel}</label>
+          <label
+            for="login-phone"
+            class="block text-sm font-semibold text-neutral-700 mb-1"
+            >{t.phoneLabel}</label
+          >
           <input
             type="tel"
             id="login-phone"
@@ -258,7 +292,11 @@ if (Astro.request.method === 'POST') {
         </div>
 
         <div>
-          <label for="login-password" class="block text-sm font-semibold text-neutral-700 mb-1">{t.passwordLabel}</label>
+          <label
+            for="login-password"
+            class="block text-sm font-semibold text-neutral-700 mb-1"
+            >{t.passwordLabel}</label
+          >
           <input
             type="password"
             id="login-password"
@@ -268,29 +306,49 @@ if (Astro.request.method === 'POST') {
             class="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-primary focus:outline-none"
           />
           <div class="flex justify-end mt-1.5">
-            <a href={locale === 'en' ? '/en/account/forgot-password' : '/account/forgot-password'} class="text-xs text-primary hover:underline font-medium">
+            <a
+              href={locale === "en"
+                ? "/en/account/forgot-password"
+                : "/account/forgot-password"}
+              class="text-xs text-primary hover:underline font-medium"
+            >
               {t.forgotPassword}
             </a>
           </div>
         </div>
 
-        <button type="submit" class="w-full btn-primary py-2.5 text-sm font-semibold">
+        <button
+          type="submit"
+          class="w-full btn-primary py-2.5 text-sm font-semibold"
+        >
           {t.loginBtn}
         </button>
-        
+
         <p class="text-center text-xs text-neutral-500 mt-2">
-          <button type="button" onclick="switchTab('register')" class="text-primary hover:underline font-medium">
+          <button
+            type="button"
+            onclick="switchTab('register')"
+            class="text-primary hover:underline font-medium"
+          >
             {t.noAccount}
           </button>
         </p>
       </form>
 
       {/* REGISTER FORM */}
-      <form id="register-form" method="post" class={`space-y-4 ${activeTab === 'register' ? '' : 'hidden'}`}>
+      <form
+        id="register-form"
+        method="post"
+        class={`space-y-4 ${activeTab === "register" ? "" : "hidden"}`}
+      >
         <input type="hidden" name="formAction" value="register" />
 
         <div>
-          <label for="reg-name" class="block text-sm font-semibold text-neutral-700 mb-1">{t.nameLabel} *</label>
+          <label
+            for="reg-name"
+            class="block text-sm font-semibold text-neutral-700 mb-1"
+            >{t.nameLabel} *</label
+          >
           <input
             type="text"
             id="reg-name"
@@ -302,7 +360,11 @@ if (Astro.request.method === 'POST') {
         </div>
 
         <div>
-          <label for="reg-phone" class="block text-sm font-semibold text-neutral-700 mb-1">{t.phoneLabel} *</label>
+          <label
+            for="reg-phone"
+            class="block text-sm font-semibold text-neutral-700 mb-1"
+            >{t.phoneLabel} *</label
+          >
           <input
             type="tel"
             id="reg-phone"
@@ -314,7 +376,11 @@ if (Astro.request.method === 'POST') {
         </div>
 
         <div>
-          <label for="reg-password" class="block text-sm font-semibold text-neutral-700 mb-1">{t.passwordLabel} *</label>
+          <label
+            for="reg-password"
+            class="block text-sm font-semibold text-neutral-700 mb-1"
+            >{t.passwordLabel} *</label
+          >
           <input
             type="password"
             id="reg-password"
@@ -327,7 +393,11 @@ if (Astro.request.method === 'POST') {
         </div>
 
         <div>
-          <label for="reg-ref" class="block text-sm font-semibold text-neutral-700 mb-1">{t.refLabel}</label>
+          <label
+            for="reg-ref"
+            class="block text-sm font-semibold text-neutral-700 mb-1"
+            >{t.refLabel}</label
+          >
           <input
             type="text"
             id="reg-ref"
@@ -338,12 +408,19 @@ if (Astro.request.method === 'POST') {
           />
         </div>
 
-        <button type="submit" class="w-full btn-primary py-2.5 text-sm font-semibold">
+        <button
+          type="submit"
+          class="w-full btn-primary py-2.5 text-sm font-semibold"
+        >
           {t.registerBtn}
         </button>
 
         <p class="text-center text-xs text-neutral-500 mt-2">
-          <button type="button" onclick="switchTab('login')" class="text-primary hover:underline font-medium">
+          <button
+            type="button"
+            onclick="switchTab('login')"
+            class="text-primary hover:underline font-medium"
+          >
             {t.haveAccount}
           </button>
         </p>
@@ -354,25 +431,29 @@ if (Astro.request.method === 'POST') {
 
 <script is:inline>
   function switchTab(tab) {
-    const loginForm = document.getElementById('login-form');
-    const registerForm = document.getElementById('register-form');
-    const loginBtn = document.getElementById('login-tab-btn');
-    const registerBtn = document.getElementById('register-tab-btn');
+    const loginForm = document.getElementById("login-form");
+    const registerForm = document.getElementById("register-form");
+    const loginBtn = document.getElementById("login-tab-btn");
+    const registerBtn = document.getElementById("register-tab-btn");
 
-    if (tab === 'login') {
-      loginForm?.classList.remove('hidden');
-      registerForm?.classList.add('hidden');
-      loginBtn?.classList.add('border-primary', 'text-primary', 'font-bold');
-      loginBtn?.classList.remove('border-transparent', 'text-neutral-500');
-      registerBtn?.classList.remove('border-primary', 'text-primary', 'font-bold');
-      registerBtn?.classList.add('border-transparent', 'text-neutral-500');
+    if (tab === "login") {
+      loginForm?.classList.remove("hidden");
+      registerForm?.classList.add("hidden");
+      loginBtn?.classList.add("border-primary", "text-primary", "font-bold");
+      loginBtn?.classList.remove("border-transparent", "text-neutral-500");
+      registerBtn?.classList.remove(
+        "border-primary",
+        "text-primary",
+        "font-bold",
+      );
+      registerBtn?.classList.add("border-transparent", "text-neutral-500");
     } else {
-      registerForm?.classList.remove('hidden');
-      loginForm?.classList.add('hidden');
-      registerBtn?.classList.add('border-primary', 'text-primary', 'font-bold');
-      registerBtn?.classList.remove('border-transparent', 'text-neutral-500');
-      loginBtn?.classList.remove('border-primary', 'text-primary', 'font-bold');
-      loginBtn?.classList.add('border-transparent', 'text-neutral-500');
+      registerForm?.classList.remove("hidden");
+      loginForm?.classList.add("hidden");
+      registerBtn?.classList.add("border-primary", "text-primary", "font-bold");
+      registerBtn?.classList.remove("border-transparent", "text-neutral-500");
+      loginBtn?.classList.remove("border-primary", "text-primary", "font-bold");
+      loginBtn?.classList.add("border-transparent", "text-neutral-500");
     }
   }
 </script>

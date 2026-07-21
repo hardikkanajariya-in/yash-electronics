@@ -1,38 +1,57 @@
 ---
-import AdminLayout from '../../layouts/AdminLayout.astro';
-import { db } from '../../db';
-import { businessHours } from '../../db/schema';
-import { getSessionUser, generateId } from '../../lib/auth';
-import { eq } from 'drizzle-orm';
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import { db } from "../../db";
+import { businessHours } from "../../db/schema";
+import { getSessionUser, generateId } from "../../lib/auth";
+import { eq } from "drizzle-orm";
 
 export const prerender = false;
-export const isr = false;
-Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+
+Astro.response.headers.set(
+  "Cache-Control",
+  "no-cache, no-store, must-revalidate",
+);
 
 const currentUser = await getSessionUser(Astro.cookies);
-if (!currentUser || currentUser.role !== 'admin') return Astro.redirect('/account/login?redirect=' + encodeURIComponent(Astro.url.pathname));
+if (!currentUser || currentUser.role !== "admin")
+  return Astro.redirect(
+    "/account/login?redirect=" + encodeURIComponent(Astro.url.pathname),
+  );
 
-let message = Astro.url.searchParams.get('message') || '';
-let error = Astro.url.searchParams.get('error') || '';
+let message = Astro.url.searchParams.get("message") || "";
+let error = Astro.url.searchParams.get("error") || "";
 
-const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const dayNames = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
 
-if (Astro.request.method === 'POST') {
+if (Astro.request.method === "POST") {
   try {
     const formData = await Astro.request.formData();
-    const formAction = formData.get('_action')?.toString();
+    const formAction = formData.get("_action")?.toString();
 
-    if (formAction === 'save_all') {
+    if (formAction === "save_all") {
       // Save all 7 days at once
       for (let i = 0; i < 7; i++) {
         const existingId = formData.get(`id_${i}`)?.toString();
-        const openTime = formData.get(`openTime_${i}`)?.toString().trim() || null;
-        const closeTime = formData.get(`closeTime_${i}`)?.toString().trim() || null;
-        const isOpen = formData.get(`isOpen_${i}`) === 'on';
+        const openTime =
+          formData.get(`openTime_${i}`)?.toString().trim() || null;
+        const closeTime =
+          formData.get(`closeTime_${i}`)?.toString().trim() || null;
+        const isOpen = formData.get(`isOpen_${i}`) === "on";
         const note = formData.get(`note_${i}`)?.toString().trim() || null;
 
         if (existingId) {
-          await db.update(businessHours).set({ openTime, closeTime, isOpen, note }).where(eq(businessHours.id, existingId));
+          await db
+            .update(businessHours)
+            .set({ openTime, closeTime, isOpen, note })
+            .where(eq(businessHours.id, existingId));
         } else {
           await db.insert(businessHours).values({
             id: generateId(),
@@ -45,50 +64,105 @@ if (Astro.request.method === 'POST') {
           });
         }
       }
-      return Astro.redirect('/admin/business-hours?message=' + encodeURIComponent('Business hours saved successfully.'));
+      return Astro.redirect(
+        "/admin/business-hours?message=" +
+          encodeURIComponent("Business hours saved successfully."),
+      );
     }
   } catch (e: any) {
-    error = 'Save failed: ' + (e.message || 'Unknown error');
+    error = "Save failed: " + (e.message || "Unknown error");
   }
 }
 
 let allHours: any[] = [];
-try { allHours = await db.select().from(businessHours).orderBy(businessHours.dayOfWeek); } catch (e) { }
+try {
+  allHours = await db
+    .select()
+    .from(businessHours)
+    .orderBy(businessHours.dayOfWeek);
+} catch (e) {}
 
 // Create a map for quick lookup
 const hoursMap = new Map<number, any>();
-allHours.forEach(h => hoursMap.set(h.dayOfWeek, h));
+allHours.forEach((h) => hoursMap.set(h.dayOfWeek, h));
 ---
 
-<AdminLayout title="Business Hours" activeTab="hours" subtitle="Set opening and closing times for each day">
+<AdminLayout
+  title="Business Hours"
+  activeTab="hours"
+  subtitle="Set opening and closing times for each day"
+>
+  {
+    message && (
+      <div class="bg-green-50 border border-green-200 text-green-700 text-sm rounded-md p-3 mb-4">
+        {message}
+      </div>
+    )
+  }
+  {
+    error && (
+      <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md p-3 mb-4">
+        {error}
+      </div>
+    )
+  }
 
-    {message && <div class="bg-green-50 border border-green-200 text-green-700 text-sm rounded-md p-3 mb-4">{message}</div>}
-    {error && <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md p-3 mb-4">{error}</div>}
+  <form
+    method="post"
+    class="bg-white border border-neutral-200 rounded-lg shadow-sm overflow-hidden"
+  >
+    <input type="hidden" name="_action" value="save_all" />
 
-    <form method="post" class="bg-white border border-neutral-200 rounded-lg shadow-sm overflow-hidden">
-      <input type="hidden" name="_action" value="save_all" />
-      
-      <table class="w-full text-sm block md:table">
-        <thead class="hidden md:table-header-group bg-neutral-50 border-b border-neutral-200">
-          <tr>
-            <th class="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase w-28">Day</th>
-            <th class="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase w-16">Open?</th>
-            <th class="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase">Open Time</th>
-            <th class="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase">Close Time</th>
-            <th class="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase">Note</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-neutral-100 md:divide-y block md:table-row-group p-4 md:p-0 space-y-4 md:space-y-0">
-          {dayNames.map((dayName, i) => {
+    <table class="w-full text-sm block md:table">
+      <thead
+        class="hidden md:table-header-group bg-neutral-50 border-b border-neutral-200"
+      >
+        <tr>
+          <th
+            class="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase w-28"
+            >Day</th
+          >
+          <th
+            class="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase w-16"
+            >Open?</th
+          >
+          <th
+            class="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase"
+            >Open Time</th
+          >
+          <th
+            class="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase"
+            >Close Time</th
+          >
+          <th
+            class="text-left px-4 py-3 text-xs font-semibold text-neutral-500 uppercase"
+            >Note</th
+          >
+        </tr>
+      </thead>
+      <tbody
+        class="divide-y divide-neutral-100 md:divide-y block md:table-row-group p-4 md:p-0 space-y-4 md:space-y-0"
+      >
+        {
+          dayNames.map((dayName, i) => {
             const existing = hoursMap.get(i);
             const defaultOpen = i !== 0; // Closed Sunday by default
-            const defaultOpenTime = i === 0 ? '09:30' : '09:30';
-            const defaultCloseTime = i === 0 ? '14:00' : '21:00';
+            const defaultOpenTime = i === 0 ? "09:30" : "09:30";
+            const defaultCloseTime = i === 0 ? "14:00" : "21:00";
             return (
-              <tr class:list={['flex flex-col md:table-row hover:bg-neutral-50 transition-colors p-4 md:p-0 rounded-lg md:rounded-none border border-neutral-100 md:border-b md:border-neutral-100 space-y-3 md:space-y-0 bg-neutral-50/20 md:bg-transparent', i === 0 ? 'bg-yellow-50/20 md:bg-yellow-50/30' : '']}>
+              <tr
+                class:list={[
+                  "flex flex-col md:table-row hover:bg-neutral-50 transition-colors p-4 md:p-0 rounded-lg md:rounded-none border border-neutral-100 md:border-b md:border-neutral-100 space-y-3 md:space-y-0 bg-neutral-50/20 md:bg-transparent",
+                  i === 0 ? "bg-yellow-50/20 md:bg-yellow-50/30" : "",
+                ]}
+              >
                 <td class="block md:table-cell px-0 py-0 md:px-4 md:py-3">
-                  <span class="font-bold md:font-medium text-sm text-neutral-900">{dayName}</span>
-                  {existing && <input type="hidden" name={`id_${i}`} value={existing.id} />}
+                  <span class="font-bold md:font-medium text-sm text-neutral-900">
+                    {dayName}
+                  </span>
+                  {existing && (
+                    <input type="hidden" name={`id_${i}`} value={existing.id} />
+                  )}
                 </td>
                 <td class="block md:table-cell px-0 py-0 md:px-4 md:py-3">
                   <label class="flex items-center gap-1.5 cursor-pointer md:cursor-auto">
@@ -98,11 +172,15 @@ allHours.forEach(h => hoursMap.set(h.dayOfWeek, h));
                       checked={existing ? existing.isOpen : defaultOpen}
                       class="rounded border-neutral-300 text-primary focus:ring-primary"
                     />
-                    <span class="md:hidden text-xs font-semibold text-neutral-600">Open today</span>
+                    <span class="md:hidden text-xs font-semibold text-neutral-600">
+                      Open today
+                    </span>
                   </label>
                 </td>
                 <td class="block md:table-cell px-0 py-0 md:px-4 md:py-3">
-                  <span class="block md:hidden text-[10px] font-bold text-neutral-400 uppercase mb-1">Open Time</span>
+                  <span class="block md:hidden text-[10px] font-bold text-neutral-400 uppercase mb-1">
+                    Open Time
+                  </span>
                   <input
                     type="time"
                     name={`openTime_${i}`}
@@ -111,7 +189,9 @@ allHours.forEach(h => hoursMap.set(h.dayOfWeek, h));
                   />
                 </td>
                 <td class="block md:table-cell px-0 py-0 md:px-4 md:py-3">
-                  <span class="block md:hidden text-[10px] font-bold text-neutral-400 uppercase mb-1">Close Time</span>
+                  <span class="block md:hidden text-[10px] font-bold text-neutral-400 uppercase mb-1">
+                    Close Time
+                  </span>
                   <input
                     type="time"
                     name={`closeTime_${i}`}
@@ -120,23 +200,34 @@ allHours.forEach(h => hoursMap.set(h.dayOfWeek, h));
                   />
                 </td>
                 <td class="block md:table-cell px-0 py-0 md:px-4 md:py-3">
-                  <span class="block md:hidden text-[10px] font-bold text-neutral-400 uppercase mb-1">Note</span>
+                  <span class="block md:hidden text-[10px] font-bold text-neutral-400 uppercase mb-1">
+                    Note
+                  </span>
                   <input
                     type="text"
                     name={`note_${i}`}
-                    value={existing?.note || (i === 0 ? 'Occasionally Open' : '')}
+                    value={
+                      existing?.note || (i === 0 ? "Occasionally Open" : "")
+                    }
                     placeholder="e.g. Occasionally Open"
                     class="w-full rounded border border-neutral-300 px-2 py-1 text-xs focus:border-primary focus:outline-none"
                   />
                 </td>
               </tr>
             );
-          })}
-        </tbody>
-      </table>
+          })
+        }
+      </tbody>
+    </table>
 
-      <div class="px-4 py-4 bg-neutral-50 border-t border-neutral-200 flex justify-end">
-        <button type="submit" class="btn-primary text-xs w-full sm:w-auto text-center">Save All Hours</button>
-      </div>
-    </form>
+    <div
+      class="px-4 py-4 bg-neutral-50 border-t border-neutral-200 flex justify-end"
+    >
+      <button
+        type="submit"
+        class="btn-primary text-xs w-full sm:w-auto text-center"
+        >Save All Hours</button
+      >
+    </div>
+  </form>
 </AdminLayout>

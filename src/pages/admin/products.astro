@@ -12,7 +12,7 @@ import { buildCloudinaryUrl } from '../../lib/cloudinary';
 import { deleteCloudinaryAsset } from '../../lib/cloudinary-server';
 
 export const prerender = false;
-export const isr = false;
+
 const CLOUD_NAME = import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME;
 
 function getProductImageUrl(img: string) {

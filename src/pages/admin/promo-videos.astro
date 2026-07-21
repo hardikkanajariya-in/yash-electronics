@@ -9,7 +9,7 @@ import { deleteCloudinaryAsset } from '../../lib/cloudinary-server';
 import { buildCloudinaryUrl } from '../../lib/cloudinary';
 
 export const prerender = false;
-export const isr = false;
+
 Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
 
 const currentUser = await getSessionUser(Astro.cookies);

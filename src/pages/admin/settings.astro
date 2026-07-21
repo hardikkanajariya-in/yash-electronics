@@ -1,62 +1,83 @@
 ---
-import AdminLayout from '../../layouts/AdminLayout.astro';
-import CropModal from '../../components/admin/CropModal.astro';
-import { db } from '../../db';
-import { settings } from '../../db/schema';
-import { getSessionUser } from '../../lib/auth';
-import { eq } from 'drizzle-orm';
-import { clearCmsCache } from '../../services/cms';
-import { deleteCloudinaryAsset } from '../../lib/cloudinary-server';
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import CropModal from "../../components/admin/CropModal.astro";
+import { db } from "../../db";
+import { settings } from "../../db/schema";
+import { getSessionUser } from "../../lib/auth";
+import { eq } from "drizzle-orm";
+import { clearCmsCache } from "../../services/cms";
+import { deleteCloudinaryAsset } from "../../lib/cloudinary-server";
 
 export const prerender = false;
-export const isr = false;
-Astro.response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+
+Astro.response.headers.set(
+  "Cache-Control",
+  "no-cache, no-store, must-revalidate",
+);
 
 const currentUser = await getSessionUser(Astro.cookies);
-if (!currentUser || currentUser.role !== 'admin') {
-  return Astro.redirect('/account/login?redirect=' + encodeURIComponent(Astro.url.pathname));
+if (!currentUser || currentUser.role !== "admin") {
+  return Astro.redirect(
+    "/account/login?redirect=" + encodeURIComponent(Astro.url.pathname),
+  );
 }
 
-let message = Astro.url.searchParams.get('message') || '';
-let error = Astro.url.searchParams.get('error') || '';
+let message = Astro.url.searchParams.get("message") || "";
+let error = Astro.url.searchParams.get("error") || "";
 
 // Load current settings from database
 let dbSettingsList = await db.select().from(settings);
 const currentSettings: Record<string, string> = {};
-dbSettingsList.forEach(s => {
+dbSettingsList.forEach((s) => {
   currentSettings[s.key] = s.value;
 });
 
 // Handle form submission
-if (Astro.request.method === 'POST') {
+if (Astro.request.method === "POST") {
   try {
     const formData = await Astro.request.formData();
     const updatedSettings: Record<string, string> = {};
 
     const keys = [
-      'businessName', 'businessName_gu',
-      'tagline', 'tagline_gu',
-      'logoUrl',
-      'phone', 'whatsapp', 'email',
-      'address', 'address_gu',
-      'city', 'city_gu',
-      'state', 'state_gu',
-      'pincode', 'googleMapsUrl',
-      'workingHours', 'workingHours_gu',
-      'signup_bonus_points', 'referrer_bonus_points', 'max_redemption_points',
-      'facebookUrl', 'instagramUrl', 'youtubeUrl'
+      "businessName",
+      "businessName_gu",
+      "tagline",
+      "tagline_gu",
+      "logoUrl",
+      "phone",
+      "whatsapp",
+      "email",
+      "address",
+      "address_gu",
+      "city",
+      "city_gu",
+      "state",
+      "state_gu",
+      "pincode",
+      "googleMapsUrl",
+      "workingHours",
+      "workingHours_gu",
+      "signup_bonus_points",
+      "referrer_bonus_points",
+      "max_redemption_points",
+      "facebookUrl",
+      "instagramUrl",
+      "youtubeUrl",
     ];
 
     for (const key of keys) {
-      updatedSettings[key] = formData.get(key)?.toString().trim() || '';
+      updatedSettings[key] = formData.get(key)?.toString().trim() || "";
     }
 
     // Save/Update keys
 
     for (const [key, value] of Object.entries(updatedSettings)) {
-      const [existing] = await db.select().from(settings).where(eq(settings.key, key));
+      const [existing] = await db
+        .select()
+        .from(settings)
+        .where(eq(settings.key, key));
       if (existing) {
-        if (key === 'logoUrl' && existing.value && existing.value !== value) {
+        if (key === "logoUrl" && existing.value && existing.value !== value) {
           await deleteCloudinaryAsset(existing.value);
         }
         await db.update(settings).set({ value }).where(eq(settings.key, key));
@@ -67,191 +88,471 @@ if (Astro.request.method === 'POST') {
 
     // Reload settings
     dbSettingsList = await db.select().from(settings);
-    dbSettingsList.forEach(s => {
+    dbSettingsList.forEach((s) => {
       currentSettings[s.key] = s.value;
     });
 
     clearCmsCache();
-    return Astro.redirect('/admin/settings?message=' + encodeURIComponent('System settings updated successfully!'));
+    return Astro.redirect(
+      "/admin/settings?message=" +
+        encodeURIComponent("System settings updated successfully!"),
+    );
   } catch (e: any) {
-    error = 'Failed to update settings: ' + (e.message || 'Unknown error');
+    error = "Failed to update settings: " + (e.message || "Unknown error");
   }
 }
 ---
 
-<AdminLayout title="System Settings" activeTab="settings" subtitle="Manage store details, contact info, social links & global configurations">
+<AdminLayout
+  title="System Settings"
+  activeTab="settings"
+  subtitle="Manage store details, contact info, social links & global configurations"
+>
+  {
+    message && (
+      <div class="bg-green-50 border border-green-200 text-green-700 text-sm rounded-md p-3 mb-6">
+        {message}
+      </div>
+    )
+  }
+  {
+    error && (
+      <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md p-3 mb-6">
+        {error}
+      </div>
+    )
+  }
 
-  {message && <div class="bg-green-50 border border-green-200 text-green-700 text-sm rounded-md p-3 mb-6">{message}</div>}
-  {error && <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md p-3 mb-6">{error}</div>}
-
-  <form id="settings-form" method="post" data-deferred-upload-form class="space-y-6 max-w-4xl mx-auto pb-12">
+  <form
+    id="settings-form"
+    method="post"
+    data-deferred-upload-form
+    class="space-y-6 max-w-4xl mx-auto pb-12"
+  >
     <!-- Group 1: Store Branding -->
-    <div class="bg-white border border-neutral-200 rounded-lg p-5 shadow-sm space-y-4">
-      <h3 class="text-sm font-bold text-neutral-800 border-b border-neutral-100 pb-2 flex items-center gap-2">
+    <div
+      class="bg-white border border-neutral-200 rounded-lg p-5 shadow-sm space-y-4"
+    >
+      <h3
+        class="text-sm font-bold text-neutral-800 border-b border-neutral-100 pb-2 flex items-center gap-2"
+      >
         <span>🏪</span> Store Branding
       </h3>
-      
+
       <div class="grid gap-4 sm:grid-cols-2">
         <div>
-          <label for="businessName" class="block text-xs font-semibold text-neutral-700 mb-1">Store Name (English) *</label>
-          <input type="text" id="businessName" name="businessName" required value={currentSettings.businessName || ''} class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none" />
+          <label
+            for="businessName"
+            class="block text-xs font-semibold text-neutral-700 mb-1"
+            >Store Name (English) *</label
+          >
+          <input
+            type="text"
+            id="businessName"
+            name="businessName"
+            required
+            value={currentSettings.businessName || ""}
+            class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+          />
         </div>
         <div>
-          <label for="businessName_gu" class="block text-xs font-semibold text-neutral-700 mb-1">Store Name (Gujarati) *</label>
-          <input type="text" id="businessName_gu" name="businessName_gu" required value={currentSettings.businessName_gu || ''} class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none" />
+          <label
+            for="businessName_gu"
+            class="block text-xs font-semibold text-neutral-700 mb-1"
+            >Store Name (Gujarati) *</label
+          >
+          <input
+            type="text"
+            id="businessName_gu"
+            name="businessName_gu"
+            required
+            value={currentSettings.businessName_gu || ""}
+            class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+          />
         </div>
       </div>
 
       <div class="grid gap-4 sm:grid-cols-2">
         <div>
-          <label for="tagline" class="block text-xs font-semibold text-neutral-700 mb-1">Tagline (English)</label>
-          <input type="text" id="tagline" name="tagline" value={currentSettings.tagline || ''} class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none" />
+          <label
+            for="tagline"
+            class="block text-xs font-semibold text-neutral-700 mb-1"
+            >Tagline (English)</label
+          >
+          <input
+            type="text"
+            id="tagline"
+            name="tagline"
+            value={currentSettings.tagline || ""}
+            class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+          />
         </div>
         <div>
-          <label for="tagline_gu" class="block text-xs font-semibold text-neutral-700 mb-1">Tagline (Gujarati)</label>
-          <input type="text" id="tagline_gu" name="tagline_gu" value={currentSettings.tagline_gu || ''} class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none" />
+          <label
+            for="tagline_gu"
+            class="block text-xs font-semibold text-neutral-700 mb-1"
+            >Tagline (Gujarati)</label
+          >
+          <input
+            type="text"
+            id="tagline_gu"
+            name="tagline_gu"
+            value={currentSettings.tagline_gu || ""}
+            class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+          />
         </div>
       </div>
 
       <div>
-        <label class="block text-xs font-semibold text-neutral-700 mb-1">Store Logo</label>
-        <input type="hidden" id="logoUrl" name="logoUrl" value={currentSettings.logoUrl || ''} />
+        <label class="block text-xs font-semibold text-neutral-700 mb-1"
+          >Store Logo</label
+        >
+        <input
+          type="hidden"
+          id="logoUrl"
+          name="logoUrl"
+          value={currentSettings.logoUrl || ""}
+        />
         <div id="logo-preview" class="mb-2"></div>
-        <div class="relative border border-dashed border-neutral-300 rounded p-4 hover:border-primary hover:bg-neutral-50/50 transition-colors cursor-pointer text-center" id="logo-dropzone">
-          <input type="file" id="logo-file-picker" accept="image/*"
-                 data-deferred-upload-picker
-                 data-hidden-input="logoUrl"
-                 data-previews-container="logo-preview"
-                 data-folder="yash-electronics/settings"
-                 data-aspect-ratio="1"
-                 data-progress-bar="logo-upload-progress-bar"
-                 data-progress-container="logo-upload-progress"
-                 data-progress-percent="logo-upload-percent"
-                 class="absolute inset-0 opacity-0 cursor-pointer" />
+        <div
+          class="relative border border-dashed border-neutral-300 rounded p-4 hover:border-primary hover:bg-neutral-50/50 transition-colors cursor-pointer text-center"
+          id="logo-dropzone"
+        >
+          <input
+            type="file"
+            id="logo-file-picker"
+            accept="image/*"
+            data-deferred-upload-picker
+            data-hidden-input="logoUrl"
+            data-previews-container="logo-preview"
+            data-folder="yash-electronics/settings"
+            data-aspect-ratio="1"
+            data-progress-bar="logo-upload-progress-bar"
+            data-progress-container="logo-upload-progress"
+            data-progress-percent="logo-upload-percent"
+            class="absolute inset-0 opacity-0 cursor-pointer"
+          />
           <p class="text-xs font-semibold text-neutral-600">Choose Logo</p>
         </div>
         <div id="logo-upload-progress" class="hidden mt-2 space-y-1">
-          <div class="flex justify-between text-[10px] font-semibold text-neutral-500">
+          <div
+            class="flex justify-between text-[10px] font-semibold text-neutral-500"
+          >
             <span>Uploading...</span>
             <span id="logo-upload-percent">0%</span>
           </div>
           <div class="w-full bg-neutral-200 rounded-full h-1 overflow-hidden">
-            <div id="logo-upload-progress-bar" class="bg-primary h-full w-0 transition-all duration-150"></div>
+            <div
+              id="logo-upload-progress-bar"
+              class="bg-primary h-full w-0 transition-all duration-150"
+            >
+            </div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Group 2: Contact Information -->
-    <div class="bg-white border border-neutral-200 rounded-lg p-5 shadow-sm space-y-4">
-      <h3 class="text-sm font-bold text-neutral-800 border-b border-neutral-100 pb-2 flex items-center gap-2">
+    <div
+      class="bg-white border border-neutral-200 rounded-lg p-5 shadow-sm space-y-4"
+    >
+      <h3
+        class="text-sm font-bold text-neutral-800 border-b border-neutral-100 pb-2 flex items-center gap-2"
+      >
         <span>📞</span> Contact Information
       </h3>
 
       <div class="grid gap-4 sm:grid-cols-3">
         <div>
-          <label for="phone" class="block text-xs font-semibold text-neutral-700 mb-1">Phone Number</label>
-          <input type="text" id="phone" name="phone" value={currentSettings.phone || ''} class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none" />
+          <label
+            for="phone"
+            class="block text-xs font-semibold text-neutral-700 mb-1"
+            >Phone Number</label
+          >
+          <input
+            type="text"
+            id="phone"
+            name="phone"
+            value={currentSettings.phone || ""}
+            class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+          />
         </div>
         <div>
-          <label for="whatsapp" class="block text-xs font-semibold text-neutral-700 mb-1">WhatsApp Number (inc. country code)</label>
-          <input type="text" id="whatsapp" name="whatsapp" value={currentSettings.whatsapp || ''} class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none" />
+          <label
+            for="whatsapp"
+            class="block text-xs font-semibold text-neutral-700 mb-1"
+            >WhatsApp Number (inc. country code)</label
+          >
+          <input
+            type="text"
+            id="whatsapp"
+            name="whatsapp"
+            value={currentSettings.whatsapp || ""}
+            class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+          />
         </div>
         <div>
-          <label for="email" class="block text-xs font-semibold text-neutral-700 mb-1">Email Address</label>
-          <input type="email" id="email" name="email" value={currentSettings.email || ''} class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none" />
+          <label
+            for="email"
+            class="block text-xs font-semibold text-neutral-700 mb-1"
+            >Email Address</label
+          >
+          <input
+            type="email"
+            id="email"
+            name="email"
+            value={currentSettings.email || ""}
+            class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+          />
         </div>
       </div>
 
       <div class="grid gap-4 sm:grid-cols-2">
         <div>
-          <label for="address" class="block text-xs font-semibold text-neutral-700 mb-1">Address (English)</label>
-          <input type="text" id="address" name="address" value={currentSettings.address || ''} class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none" />
+          <label
+            for="address"
+            class="block text-xs font-semibold text-neutral-700 mb-1"
+            >Address (English)</label
+          >
+          <input
+            type="text"
+            id="address"
+            name="address"
+            value={currentSettings.address || ""}
+            class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+          />
         </div>
         <div>
-          <label for="address_gu" class="block text-xs font-semibold text-neutral-700 mb-1">Address (Gujarati)</label>
-          <input type="text" id="address_gu" name="address_gu" value={currentSettings.address_gu || ''} class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none" />
+          <label
+            for="address_gu"
+            class="block text-xs font-semibold text-neutral-700 mb-1"
+            >Address (Gujarati)</label
+          >
+          <input
+            type="text"
+            id="address_gu"
+            name="address_gu"
+            value={currentSettings.address_gu || ""}
+            class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+          />
         </div>
       </div>
 
       <div class="grid gap-4 sm:grid-cols-4">
         <div>
-          <label for="city" class="block text-xs font-semibold text-neutral-700 mb-1">City (English)</label>
-          <input type="text" id="city" name="city" value={currentSettings.city || ''} class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none" />
+          <label
+            for="city"
+            class="block text-xs font-semibold text-neutral-700 mb-1"
+            >City (English)</label
+          >
+          <input
+            type="text"
+            id="city"
+            name="city"
+            value={currentSettings.city || ""}
+            class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+          />
         </div>
         <div>
-          <label for="city_gu" class="block text-xs font-semibold text-neutral-700 mb-1">City (Gujarati)</label>
-          <input type="text" id="city_gu" name="city_gu" value={currentSettings.city_gu || ''} class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none" />
+          <label
+            for="city_gu"
+            class="block text-xs font-semibold text-neutral-700 mb-1"
+            >City (Gujarati)</label
+          >
+          <input
+            type="text"
+            id="city_gu"
+            name="city_gu"
+            value={currentSettings.city_gu || ""}
+            class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+          />
         </div>
         <div>
-          <label for="state" class="block text-xs font-semibold text-neutral-700 mb-1">State (English)</label>
-          <input type="text" id="state" name="state" value={currentSettings.state || ''} class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none" />
+          <label
+            for="state"
+            class="block text-xs font-semibold text-neutral-700 mb-1"
+            >State (English)</label
+          >
+          <input
+            type="text"
+            id="state"
+            name="state"
+            value={currentSettings.state || ""}
+            class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+          />
         </div>
         <div>
-          <label for="pincode" class="block text-xs font-semibold text-neutral-700 mb-1">Pincode</label>
-          <input type="text" id="pincode" name="pincode" value={currentSettings.pincode || ''} class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none" />
+          <label
+            for="pincode"
+            class="block text-xs font-semibold text-neutral-700 mb-1"
+            >Pincode</label
+          >
+          <input
+            type="text"
+            id="pincode"
+            name="pincode"
+            value={currentSettings.pincode || ""}
+            class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+          />
         </div>
       </div>
 
       <div>
-        <label for="googleMapsUrl" class="block text-xs font-semibold text-neutral-700 mb-1">Google Maps Location Link</label>
-        <input type="url" id="googleMapsUrl" name="googleMapsUrl" value={currentSettings.googleMapsUrl || ''} class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none" />
+        <label
+          for="googleMapsUrl"
+          class="block text-xs font-semibold text-neutral-700 mb-1"
+          >Google Maps Location Link</label
+        >
+        <input
+          type="url"
+          id="googleMapsUrl"
+          name="googleMapsUrl"
+          value={currentSettings.googleMapsUrl || ""}
+          class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+        />
       </div>
     </div>
 
-
-
     <!-- Group 4: Operating Hours & System Constants -->
-    <div class="bg-white border border-neutral-200 rounded-lg p-5 shadow-sm space-y-4">
-      <h3 class="text-sm font-bold text-neutral-800 border-b border-neutral-100 pb-2 flex items-center gap-2">
+    <div
+      class="bg-white border border-neutral-200 rounded-lg p-5 shadow-sm space-y-4"
+    >
+      <h3
+        class="text-sm font-bold text-neutral-800 border-b border-neutral-100 pb-2 flex items-center gap-2"
+      >
         <span>⏰</span> System Configurations
       </h3>
 
       <div class="grid gap-4 sm:grid-cols-2">
         <div>
-          <label for="workingHours" class="block text-xs font-semibold text-neutral-700 mb-1">Working Hours (English)</label>
-          <input type="text" id="workingHours" name="workingHours" value={currentSettings.workingHours || ''} class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none" />
+          <label
+            for="workingHours"
+            class="block text-xs font-semibold text-neutral-700 mb-1"
+            >Working Hours (English)</label
+          >
+          <input
+            type="text"
+            id="workingHours"
+            name="workingHours"
+            value={currentSettings.workingHours || ""}
+            class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+          />
         </div>
         <div>
-          <label for="workingHours_gu" class="block text-xs font-semibold text-neutral-700 mb-1">Working Hours (Gujarati)</label>
-          <input type="text" id="workingHours_gu" name="workingHours_gu" value={currentSettings.workingHours_gu || ''} class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none" />
+          <label
+            for="workingHours_gu"
+            class="block text-xs font-semibold text-neutral-700 mb-1"
+            >Working Hours (Gujarati)</label
+          >
+          <input
+            type="text"
+            id="workingHours_gu"
+            name="workingHours_gu"
+            value={currentSettings.workingHours_gu || ""}
+            class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+          />
         </div>
       </div>
 
       <div class="grid gap-4 sm:grid-cols-3">
         <div>
-          <label for="signup_bonus_points" class="block text-xs font-semibold text-neutral-700 mb-1">Signup Reward (Credits/Points)</label>
-          <input type="number" id="signup_bonus_points" name="signup_bonus_points" value={currentSettings.signup_bonus_points || '0'} class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none" />
+          <label
+            for="signup_bonus_points"
+            class="block text-xs font-semibold text-neutral-700 mb-1"
+            >Signup Reward (Credits/Points)</label
+          >
+          <input
+            type="number"
+            id="signup_bonus_points"
+            name="signup_bonus_points"
+            value={currentSettings.signup_bonus_points || "0"}
+            class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+          />
         </div>
         <div>
-          <label for="referrer_bonus_points" class="block text-xs font-semibold text-neutral-700 mb-1">Referral Reward (Credits/Points)</label>
-          <input type="number" id="referrer_bonus_points" name="referrer_bonus_points" value={currentSettings.referrer_bonus_points || '0'} class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none" />
+          <label
+            for="referrer_bonus_points"
+            class="block text-xs font-semibold text-neutral-700 mb-1"
+            >Referral Reward (Credits/Points)</label
+          >
+          <input
+            type="number"
+            id="referrer_bonus_points"
+            name="referrer_bonus_points"
+            value={currentSettings.referrer_bonus_points || "0"}
+            class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+          />
         </div>
         <div>
-          <label for="max_redemption_points" class="block text-xs font-semibold text-neutral-700 mb-1">Max Redemption per Order</label>
-          <input type="number" id="max_redemption_points" name="max_redemption_points" value={currentSettings.max_redemption_points || '0'} class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none" placeholder="e.g. 1000 (0 for unlimited)" />
+          <label
+            for="max_redemption_points"
+            class="block text-xs font-semibold text-neutral-700 mb-1"
+            >Max Redemption per Order</label
+          >
+          <input
+            type="number"
+            id="max_redemption_points"
+            name="max_redemption_points"
+            value={currentSettings.max_redemption_points || "0"}
+            class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+            placeholder="e.g. 1000 (0 for unlimited)"
+          />
         </div>
       </div>
     </div>
 
     <!-- Group 5: Social Media Links -->
-    <div class="bg-white border border-neutral-200 rounded-lg p-5 shadow-sm space-y-4">
-      <h3 class="text-sm font-bold text-neutral-800 border-b border-neutral-100 pb-2 flex items-center gap-2">
+    <div
+      class="bg-white border border-neutral-200 rounded-lg p-5 shadow-sm space-y-4"
+    >
+      <h3
+        class="text-sm font-bold text-neutral-800 border-b border-neutral-100 pb-2 flex items-center gap-2"
+      >
         <span>🌐</span> Social Media Links
       </h3>
 
       <div class="grid gap-4 sm:grid-cols-3">
         <div>
-          <label for="facebookUrl" class="block text-xs font-semibold text-neutral-700 mb-1">Facebook URL</label>
-          <input type="url" id="facebookUrl" name="facebookUrl" value={currentSettings.facebookUrl || ''} class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none" />
+          <label
+            for="facebookUrl"
+            class="block text-xs font-semibold text-neutral-700 mb-1"
+            >Facebook URL</label
+          >
+          <input
+            type="url"
+            id="facebookUrl"
+            name="facebookUrl"
+            value={currentSettings.facebookUrl || ""}
+            class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+          />
         </div>
         <div>
-          <label for="instagramUrl" class="block text-xs font-semibold text-neutral-700 mb-1">Instagram URL</label>
-          <input type="url" id="instagramUrl" name="instagramUrl" value={currentSettings.instagramUrl || ''} class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none" />
+          <label
+            for="instagramUrl"
+            class="block text-xs font-semibold text-neutral-700 mb-1"
+            >Instagram URL</label
+          >
+          <input
+            type="url"
+            id="instagramUrl"
+            name="instagramUrl"
+            value={currentSettings.instagramUrl || ""}
+            class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+          />
         </div>
         <div>
-          <label for="youtubeUrl" class="block text-xs font-semibold text-neutral-700 mb-1">YouTube URL</label>
-          <input type="url" id="youtubeUrl" name="youtubeUrl" value={currentSettings.youtubeUrl || ''} class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none" />
+          <label
+            for="youtubeUrl"
+            class="block text-xs font-semibold text-neutral-700 mb-1"
+            >YouTube URL</label
+          >
+          <input
+            type="url"
+            id="youtubeUrl"
+            name="youtubeUrl"
+            value={currentSettings.youtubeUrl || ""}
+            class="w-full rounded border border-neutral-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+          />
         </div>
       </div>
     </div>
@@ -262,7 +563,6 @@ if (Astro.request.method === 'POST') {
       </button>
     </div>
   </form>
-
 
   <CropModal />
 </AdminLayout>
