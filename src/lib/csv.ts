@@ -15,8 +15,18 @@ export function slugify(text: string): string {
     .replace(/\-\-+/g, '-'); // Replace multiple - with single -
 }
 
+// Helper to detect if a Gujarati text field was destroyed by non-UTF8 Excel saving into question marks '???'
+function isCorruptedQuestionMarks(val: string | null | undefined): boolean {
+  if (!val) return false;
+  const trimmed = val.trim();
+  return trimmed.length > 0 && trimmed.includes('?') && /^[?\s:;"',.\-\(\)]+$/.test(trimmed);
+}
+
 // Robust CSV Parser
 export function parseCsv(text: string): string[][] {
+  if (text.charCodeAt(0) === 0xFEFF || text.startsWith('\uFEFF')) {
+    text = text.slice(1);
+  }
   const result: string[][] = [];
   let row: string[] = [];
   let inQuotes = false;
@@ -80,7 +90,7 @@ export async function importProductsFromCsv(csvText: string) {
     return { success: 0, errors: ['CSV file is empty or only contains header.'] };
   }
 
-  const headerRow = parsed[0].map(h => h.toLowerCase().replace(/[\s_-]/g, ''));
+  const headerRow = parsed[0].map(h => h.toLowerCase().replace(/[\s_\-\uFEFF\uFFFD]/g, ''));
   
   const nameIdx = headerRow.indexOf('name');
   const nameGuIdx = headerRow.indexOf('name(gujarati)') !== -1 ? headerRow.indexOf('name(gujarati)') : headerRow.indexOf('namegu');
@@ -123,6 +133,24 @@ export async function importProductsFromCsv(csvText: string) {
     const name = row[nameIdx]?.trim() || '';
     if (!name) {
       errors.push(`Row ${i + 1}: Name is empty. Skipping.`);
+      continue;
+    }
+
+    // Check for corrupted Gujarati fields (e.g. converted to '????' by non-UTF8 CSV saving)
+    const rawNameGu = nameGuIdx !== -1 ? row[nameGuIdx]?.trim() : '';
+    const rawBrandGu = brandGuIdx !== -1 ? row[brandGuIdx]?.trim() : '';
+    const rawCategoryGu = categoryGuIdx !== -1 ? row[categoryGuIdx]?.trim() : '';
+    const rawDescGu = descriptionGuIdx !== -1 ? row[descriptionGuIdx]?.trim() : '';
+    const rawSpecsGu = specsGuIdx !== -1 ? row[specsGuIdx]?.trim() : '';
+
+    if (
+      isCorruptedQuestionMarks(rawNameGu) ||
+      isCorruptedQuestionMarks(rawBrandGu) ||
+      isCorruptedQuestionMarks(rawCategoryGu) ||
+      isCorruptedQuestionMarks(rawDescGu) ||
+      isCorruptedQuestionMarks(rawSpecsGu)
+    ) {
+      errors.push(`Row ${i + 1} (${name}): Gujarati font/encoding issue detected (text converted to '????'). Please re-save your CSV file in Excel using 'CSV UTF-8 (Comma delimited) (*.csv)' format and try again.`);
       continue;
     }
 
