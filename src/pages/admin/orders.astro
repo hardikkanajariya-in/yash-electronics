@@ -37,7 +37,7 @@ if (Astro.request.method === 'POST') {
 
     if (action === 'update_payment_status' && orderId) {
       const newPaymentStatus = formData.get('paymentStatus')?.toString() as any;
-      if (['pending', 'received'].includes(newPaymentStatus)) {
+      if (['pending', 'received', 'refunded'].includes(newPaymentStatus)) {
         await db.update(orders).set({ paymentStatus: newPaymentStatus }).where(eq(orders.id, orderId));
         return Astro.redirect('/admin/orders?success=' + encodeURIComponent(`Payment status updated to ${newPaymentStatus} successfully!`));
       } else {
@@ -150,9 +150,11 @@ const counts = {
               <div class="flex items-center gap-2">
                 <!-- Payment Status Badge -->
                 <span class={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase border ${
-                  order.paymentStatus === 'received' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'
+                  order.paymentStatus === 'received' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                  order.paymentStatus === 'refunded' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                  'bg-rose-50 text-rose-700 border-rose-200'
                 }`}>
-                  💳 {order.paymentStatus === 'received' ? 'Paid' : 'Unpaid'}
+                  💳 {order.paymentStatus === 'received' ? 'Paid' : order.paymentStatus === 'refunded' ? 'Refunded' : 'Unpaid'}
                 </span>
 
                 <!-- Order Status Badge -->
@@ -338,6 +340,7 @@ const counts = {
                   >
                     <option value="pending" selected={order.paymentStatus === 'pending'}>Unpaid</option>
                     <option value="received" selected={order.paymentStatus === 'received'}>Paid</option>
+                    <option value="refunded" selected={order.paymentStatus === 'refunded'}>Refunded</option>
                   </select>
                 </form>
 

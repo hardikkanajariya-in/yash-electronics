@@ -18,6 +18,43 @@ export function generateId(): string {
   return crypto.randomBytes(16).toString('hex');
 }
 
+/**
+ * Normalizes and validates Indian mobile numbers.
+ * Strips country codes (+91, 91), leading zeros (0, 0091), spaces, hyphens, and special characters.
+ * Converts Gujarati (૦-૯) and Devanagari (०-९) digits to standard ASCII (0-9).
+ * Enforces strictly 10 digits starting with 6, 7, 8, or 9.
+ */
+export function normalizeIndianPhone(input: string): { isValid: boolean; phone: string } {
+  if (!input) return { isValid: false, phone: '' };
+
+  let cleaned = input.trim();
+  // Convert Gujarati Unicode digits (૦-૯) to standard digits (0-9)
+  cleaned = cleaned.replace(/[૦-૯]/g, (d) => (d.charCodeAt(0) - 2406).toString());
+  // Convert Devanagari Unicode digits (०-९) to standard digits (0-9)
+  cleaned = cleaned.replace(/[०-९]/g, (d) => (d.charCodeAt(0) - 2400).toString());
+
+  // Extract digits only
+  let digits = cleaned.replace(/\D/g, '');
+
+  // Strip international / trunk prefixes if present
+  if (digits.length === 12 && digits.startsWith('91')) {
+    digits = digits.slice(2);
+  } else if (digits.length === 11 && digits.startsWith('0')) {
+    digits = digits.slice(1);
+  } else if (digits.length === 13 && digits.startsWith('091')) {
+    digits = digits.slice(3);
+  } else if (digits.length === 14 && digits.startsWith('0091')) {
+    digits = digits.slice(4);
+  }
+
+  const isValid = /^[6-9]\d{9}$/.test(digits);
+  return {
+    isValid,
+    phone: digits,
+  };
+}
+
+
 // Session Helpers
 const SESSION_COOKIE_NAME = 'ye_session_id';
 const SESSION_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
@@ -38,6 +75,9 @@ export async function getSessionUser(cookies: any) {
 
   try {
     const [user] = await db.select().from(users).where(eq(users.id, sessionId));
+    if (user && user.isSuspended) {
+      return null;
+    }
     return user || null;
   } catch (e) {
     if (import.meta.env.DEV) {

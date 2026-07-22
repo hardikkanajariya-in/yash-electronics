@@ -195,9 +195,11 @@ const waShareUrl = `https://wa.me/?text=${encodeURIComponent(
                 <div class="flex items-center gap-1.5 flex-wrap">
                   <!-- Payment Status Badge -->
                   <span class={`inline-block rounded px-2 py-0.5 text-[10px] font-semibold uppercase border ${
-                    order.paymentStatus === 'received' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'
+                    order.paymentStatus === 'received' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                    order.paymentStatus === 'refunded' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                    'bg-rose-50 text-rose-700 border-rose-200'
                   }`}>
-                    💳 {order.paymentStatus === 'received' ? 'Paid' : 'Unpaid'}
+                    💳 {order.paymentStatus === 'received' ? 'Paid' : order.paymentStatus === 'refunded' ? 'Refunded' : 'Unpaid'}
                   </span>
 
                   <!-- Order Status Badge -->

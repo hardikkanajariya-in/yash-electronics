@@ -105,6 +105,7 @@ export const users = pgTable('users', {
   referralCode: text('referral_code').notNull().unique(),
   referredById: varchar('referred_by_id', { length: 255 }),
   credits: integer('credits').notNull().default(0),
+  isSuspended: boolean('is_suspended').notNull().default(false),
   createdAt: text('created_at').notNull(),
 });
 
@@ -124,7 +125,7 @@ export const orders = pgTable('orders', {
   creditsUsed: integer('credits_used').notNull().default(0),
   totalAmount: integer('total_amount').notNull().default(0),
   status: text('status').$type<'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'returned'>().notNull().default('pending'),
-  paymentStatus: text('payment_status').$type<'pending' | 'received'>().notNull().default('pending'),
+  paymentStatus: text('payment_status').$type<'pending' | 'received' | 'refunded'>().notNull().default('pending'),
   createdAt: text('created_at').notNull(),
   couponCode: text('coupon_code'),
   discountApplied: integer('discount_applied').default(0),

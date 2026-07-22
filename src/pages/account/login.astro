@@ -3,13 +3,14 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import Container from "../../components/ui/Container.astro";
 import { db } from "../../db";
 import { users, referralHistory, settings } from "../../db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, or } from "drizzle-orm";
 import {
   hashPassword,
   setSessionUser,
   getSessionUser,
   generateId,
   generateReferralCode,
+  normalizeIndianPhone,
 } from "../../lib/auth";
 import { getSettings } from "../../services/cms";
 import { translateObject } from "../../lib/translations";
@@ -75,8 +76,10 @@ const translations = {
     haveAccount: "પહેલેથી જ ખાતું છે? લોગિન કરો",
     noAccount: "નવું ખાતું બનાવવું છે? રજીસ્ટ્રેશન કરો",
     errInvalid: "ખોટો ફોન નંબર અથવા પાસવર્ડ.",
+    errInvalidPhone: "કૃપા કરીને માન્ય 10 અંકનો ભારતીય મોબાઇલ નંબર દાખલ કરો (દા.ત. 6353485415).",
     errRefInvalid: "દાખલ કરેલ રેફરલ કોડ અમાન્ય છે.",
     errPhoneExists: "આ ફોન નંબર પર પહેલેથી જ ખાતું બનેલું છે.",
+    errSuspended: "સિસ્ટમના દુરુપયોગને કારણે તમારું ખાતું સસ્પેન્ડ (નિષ્ક્રિય) કરવામાં આવ્યું છે. કૃપા કરીને સપોર્ટનો સંપર્ક કરો.",
     errGeneric: "કંઈક ખોટું થયું. કૃપા કરીને ફરી પ્રયાસ કરો.",
     forgotPassword: "પાસવર્ડ ભૂલી ગયા છો?",
   },
@@ -93,8 +96,10 @@ const translations = {
     haveAccount: "Already have an account? Login",
     noAccount: "Need an account? Register",
     errInvalid: "Invalid phone number or password.",
+    errInvalidPhone: "Please enter a valid 10-digit Indian mobile number (e.g. 6353485415).",
     errRefInvalid: "The entered referral code is invalid.",
     errPhoneExists: "An account with this phone number already exists.",
+    errSuspended: "Your account has been suspended due to system misuse. Please contact support.",
     errGeneric: "Something went wrong. Please try again.",
     forgotPassword: "Forgot Password?",
   },
@@ -111,83 +116,104 @@ if (Astro.request.method === "POST") {
     const formAction = formData.get("formAction")?.toString() || "login";
     activeTab = formAction;
 
-    const phone = formData.get("phone")?.toString().trim() || "";
+    const rawPhone = formData.get("phone")?.toString().trim() || "";
     const password = formData.get("password")?.toString() || "";
+    const normalized = normalizeIndianPhone(rawPhone);
 
     if (formAction === "login") {
       const hashedPassword = hashPassword(password);
-      const [user] = await db
-        .select()
-        .from(users)
-        .where(and(eq(users.phone, phone), eq(users.password, hashedPassword)));
+      let user: any = null;
+
+      if (normalized.isValid) {
+        [user] = await db
+          .select()
+          .from(users)
+          .where(and(eq(users.phone, normalized.phone), eq(users.password, hashedPassword)));
+      }
+
+      // Fallback check for legacy accounts created prior to strict normalization
+      if (!user && rawPhone) {
+        [user] = await db
+          .select()
+          .from(users)
+          .where(and(eq(users.phone, rawPhone), eq(users.password, hashedPassword)));
+      }
 
       if (user) {
-        Astro.response.headers.set(
-          "Cache-Control",
-          "no-cache, no-store, must-revalidate",
-        );
-        const destination = redirectParam
-          ? redirectParam
-          : user.role === "admin"
-            ? "/admin"
-            : locale === "en"
-              ? "/en/account"
-              : "/account";
-        setSessionUser(Astro.cookies, user.id, Astro.url);
-        return Astro.redirect(destination);
+        if (user.isSuspended) {
+          error = t.errSuspended;
+        } else {
+          Astro.response.headers.set(
+            "Cache-Control",
+            "no-cache, no-store, must-revalidate",
+          );
+          const destination = redirectParam
+            ? redirectParam
+            : user.role === "admin"
+              ? "/admin"
+              : locale === "en"
+                ? "/en/account"
+                : "/account";
+          setSessionUser(Astro.cookies, user.id, Astro.url);
+          return Astro.redirect(destination);
+        }
       } else {
         error = t.errInvalid;
       }
     } else if (formAction === "register") {
-      const name = formData.get("name")?.toString().trim() || "";
-      const refCode =
-        formData.get("refCode")?.toString().trim().toUpperCase() || "";
-
-      // Check phone existence
-      const [existingUser] = await db
-        .select()
-        .from(users)
-        .where(eq(users.phone, phone));
-
-      if (existingUser) {
-        error = t.errPhoneExists;
+      if (!normalized.isValid) {
+        error = t.errInvalidPhone;
       } else {
-        let referredById: string | null = null;
-        let referrer: any = null;
+        const cleanPhone = normalized.phone;
+        const name = formData.get("name")?.toString().trim() || "";
+        const refCode =
+          formData.get("refCode")?.toString().trim().toUpperCase() || "";
 
-        // Validate Referral Code if provided
-        if (refCode) {
-          const [foundReferrer] = await db
-            .select()
-            .from(users)
-            .where(eq(users.referralCode, refCode));
+        // Check phone existence with canonical phone number (and raw string as backup check)
+        const [existingUser] = await db
+          .select()
+          .from(users)
+          .where(or(eq(users.phone, cleanPhone), eq(users.phone, rawPhone)));
 
-          if (!foundReferrer) {
-            error = t.errRefInvalid;
-          } else {
-            referredById = foundReferrer.id;
-            referrer = foundReferrer;
+        if (existingUser) {
+          error = t.errPhoneExists;
+        } else {
+          let referredById: string | null = null;
+          let referrer: any = null;
+
+          // Validate Referral Code if provided
+          if (refCode) {
+            const [foundReferrer] = await db
+              .select()
+              .from(users)
+              .where(eq(users.referralCode, refCode));
+
+            if (!foundReferrer) {
+              error = t.errRefInvalid;
+            } else {
+              referredById = foundReferrer.id;
+              referrer = foundReferrer;
+            }
           }
-        }
 
-        if (!error) {
-          const newUserId = generateId();
-          const userRefCode = generateReferralCode();
+          if (!error) {
+            const newUserId = generateId();
+            const userRefCode = generateReferralCode();
 
-          // Referred user gets signup bonus points, normal user gets 0
-          const initialCredits = referredById ? signupBonusPoints : 0;
+            // Referred user gets signup bonus points, normal user gets 0
+            const initialCredits = referredById ? signupBonusPoints : 0;
 
-          await db.insert(users).values({
-            id: newUserId,
-            name,
-            phone,
-            password: hashPassword(password),
-            role: "customer",
-            referralCode: userRefCode,
-            referredById,
-            credits: initialCredits,
-            createdAt: new Date().toISOString(),
-          });
+            await db.insert(users).values({
+              id: newUserId,
+              name,
+              phone: cleanPhone,
+              password: hashPassword(password),
+              role: "customer",
+              referralCode: userRefCode,
+              referredById,
+              credits: initialCredits,
+              createdAt: new Date().toISOString(),
+            });
 
           // Reward referrer and record history
           if (referredById && referrer) {
@@ -231,6 +257,7 @@ if (Astro.request.method === "POST") {
         }
       }
     }
+  }
   } catch (e) {
     console.error("[User Auth Error]:", e);
     error = t.errGeneric;
