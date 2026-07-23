@@ -192,11 +192,19 @@ export function setupDeferredUploadForm(options: FormManagerOptions) {
     for (let i = 0; i < totalLocal; i++) {
       const item = localItems[i];
       if (progressStatus) progressStatus.textContent = `Uploading file ${i + 1} of ${totalLocal}...`;
-      const pct = Math.round(20 + (i / totalLocal) * 50);
-      if (progressBar) progressBar.style.width = `${pct}%`;
-      if (progressPercent) progressPercent.textContent = `${pct}%`;
+      const startPct = Math.round((i / totalLocal) * 80);
+      if (progressBar) progressBar.style.width = `${startPct}%`;
+      if (progressPercent) progressPercent.textContent = `${startPct}%`;
 
-      const uploadedId = await fileManager.upload(item.val as File, options.folder);
+      const uploadedId = await fileManager.upload(
+        item.val as File, 
+        options.folder,
+        (filePercent) => {
+          const currentPct = Math.round(((i + filePercent / 100) / totalLocal) * 80);
+          if (progressBar) progressBar.style.width = `${currentPct}%`;
+          if (progressPercent) progressPercent.textContent = `${currentPct}%`;
+        }
+      );
       item.type = 'uploaded';
       item.val = uploadedId;
     }
